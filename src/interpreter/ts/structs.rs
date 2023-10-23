@@ -18,16 +18,19 @@ impl Interpreter for Field {
         _entities: &Entities,
         buf: &mut BufWriter<File>,
         _offset: Offset,
-    ) -> Result<(), Error> {
+    ) -> Result<bool, Error> {
         buf.write_all(format!("{}: ", self.name).as_bytes())?;
-        Ok(())
+        Ok(true)
     }
     fn reference(
         &self,
         entities: &Entities,
         buf: &mut BufWriter<File>,
         offset: Offset,
-    ) -> Result<(), Error> {
+    ) -> Result<bool, Error> {
+        if self.ty.is_self_returned() {
+            return Ok(false);
+        }
         if matches!(self.ty, Types::Composite(Composite::Func(_, _, _, _))) {
             buf.write_all(format!("{}{}", offset, self.name).as_bytes())?;
         } else {
@@ -43,33 +46,23 @@ impl Interpreter for Structs {
         entities: &Entities,
         buf: &mut BufWriter<File>,
         offset: Offset,
-    ) -> Result<(), Error> {
-        buf.write_all(
-            format!(
-                "{}{} {} {{\n",
-                offset,
-                if self.args.as_class() {
-                    "export abstract class"
-                } else {
-                    "export interface"
-                },
-                self.name
-            )
-            .as_bytes(),
-        )?;
+    ) -> Result<bool, Error> {
+        buf.write_all(format!("{}export interface {} {{\n", offset, self.name).as_bytes())?;
         for (_name, field) in &self.fields {
-            field.reference(entities, buf, offset.inc())?;
-            buf.write_all(format!(";\n").as_bytes())?;
+            if field.reference(entities, buf, offset.inc())? {
+                buf.write_all(format!(";\n").as_bytes())?;
+            }
         }
         buf.write_all(format!("{}}}\n", offset).as_bytes())?;
-        Ok(())
+        Ok(true)
     }
     fn reference(
         &self,
         _entities: &Entities,
         buf: &mut BufWriter<File>,
         _offset: Offset,
-    ) -> Result<(), Error> {
-        buf.write_all(format!("{}", self.name).as_bytes())
+    ) -> Result<bool, Error> {
+        buf.write_all(format!("{}", self.name).as_bytes())?;
+        Ok(true)
     }
 }

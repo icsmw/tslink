@@ -119,6 +119,14 @@ impl Args {
         self.args.contains_key(&Arg::Class.to_string())
     }
 
+    pub fn set_as_class(&self) -> Self {
+        let mut clonned = self.clone();
+        if !clonned.as_class() {
+            clonned.args.insert(Arg::Class.to_string(), Arg::Class);
+        }
+        clonned
+    }
+
     pub fn rename(&self, origin: &str) -> Option<String> {
         if let Some(arg) = self.args.get(&Arg::Rename(String::new()).to_string()) {
             if let Arg::Rename(name) = arg {

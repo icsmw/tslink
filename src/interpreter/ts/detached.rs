@@ -15,7 +15,7 @@ impl Interpreter for Detached {
         entities: &Entities,
         buf: &mut BufWriter<File>,
         offset: Offset,
-    ) -> Result<(), Error> {
+    ) -> Result<bool, Error> {
         match &self.ty {
             Types::Composite(composite) => match composite {
                 Composite::Func(name, args, out, asyncness) => {
@@ -39,7 +39,8 @@ impl Interpreter for Detached {
                     if *asyncness {
                         buf.write_all(format!(">").as_bytes())?;
                     }
-                    buf.write_all(format!(" {{\n{offset}}}\n").as_bytes())
+                    buf.write_all(format!(" {{\n{offset}}}\n").as_bytes())?;
+                    Ok(true)
                 }
                 _ => Err(Error::new(
                     ErrorKind::Other,
@@ -57,11 +58,12 @@ impl Interpreter for Detached {
         _entities: &Entities,
         buf: &mut BufWriter<File>,
         offset: Offset,
-    ) -> Result<(), Error> {
+    ) -> Result<bool, Error> {
         match &self.ty {
             Types::Composite(composite) => match composite {
                 Composite::Func(name, _args, _out, _asyncness) => {
-                    buf.write_all(format!("{}{name}", offset).as_bytes())
+                    buf.write_all(format!("{}{name}", offset).as_bytes())?;
+                    Ok(true)
                 }
                 _ => Err(Error::new(
                     ErrorKind::Other,

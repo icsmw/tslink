@@ -19,6 +19,17 @@ pub enum Types {
 }
 
 impl Types {
+    pub fn is_self_returned(&self) -> bool {
+        if let Types::Composite(Composite::Func(_, _, out, _)) = self {
+            if let Some(Types::Composite(Composite::RefByName(re))) = out.as_deref() {
+                re == "Self"
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
     fn bind(&mut self, ty: Types) {
         match self {
             Self::Primitive(_) => abort!("error", "Primitive type cannot be bound"),

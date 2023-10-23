@@ -69,9 +69,10 @@ fn read(item: Item, entities: &mut Entities, args: Args) -> Result<(), String> {
             }
         }
         Item::Fn(item_fn) => {
-            if Structs::is_struct_method(&item_fn.sig) {
+            if Structs::is_struct_method(&item_fn) {
                 return Ok(());
             }
+            println!(">>>>>>>>>>>>>>>>>>>>>>> Item::Fn");
             let name = item_fn.sig.ident.to_string();
             if entities.get(&name).is_some() {
                 Err(format!("Fn \"{name}\" already exists"))
@@ -93,6 +94,9 @@ fn read(item: Item, entities: &mut Entities, args: Args) -> Result<(), String> {
             } else {
                 return Err(format!("Fail to find a struct for method"));
             };
+            entities
+                .entry(parent.clone())
+                .or_insert(Entity::Struct(Structs::new(&parent, args.set_as_class())));
             if let Some(entity) = entities.get_mut(&parent) {
                 if let Entity::Struct(strct) = entity {
                     strct.read_impl(&item_impl.items, &args)?;

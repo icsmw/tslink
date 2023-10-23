@@ -18,34 +18,30 @@ pub const EXT: &str = "ts";
 pub trait Interpreter {
     fn declaration(
         &self,
-        entities: &Entities,
-        buf: &mut BufWriter<File>,
-        offset: Offset,
-    ) -> Result<(), Error>;
+        _entities: &Entities,
+        _buf: &mut BufWriter<File>,
+        _offset: Offset,
+    ) -> Result<bool, Error> {
+        Ok(false)
+    }
 
     fn reference(
-        &self,
-        entities: &Entities,
-        buf: &mut BufWriter<File>,
-        offset: Offset,
-    ) -> Result<(), Error>;
-}
-
-impl Interpreter for Types {
-    fn declaration(
         &self,
         _entities: &Entities,
         _buf: &mut BufWriter<File>,
         _offset: Offset,
-    ) -> Result<(), Error> {
-        Ok(())
+    ) -> Result<bool, Error> {
+        Ok(false)
     }
+}
+
+impl Interpreter for Types {
     fn reference(
         &self,
         entities: &Entities,
         buf: &mut BufWriter<File>,
         offset: Offset,
-    ) -> Result<(), Error> {
+    ) -> Result<bool, Error> {
         match self {
             Self::Primitive(primitive) => primitive.reference(entities, buf, offset),
             Self::Composite(composite) => composite.reference(entities, buf, offset),

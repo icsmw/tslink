@@ -2,7 +2,7 @@ use super::Interpreter;
 use crate::{
     defs::{Entities, Entity},
     interpreter::Offset,
-    types::composite::Composite,
+    types::{composite::Composite, Types},
 };
 use std::{
     fs::File,
@@ -51,8 +51,18 @@ impl Interpreter for Composite {
                     ));
                 }
             }
-            Self::Func(_name, args, out, asyncness) => {
-                buf.write_all(format!("(").as_bytes())?;
+            Self::Func(name, args, out, asyncness) => {
+                let constructor =
+                    if let Some(Types::Composite(Composite::RefByName(re))) = out.as_deref() {
+                        re == "Self"
+                    } else {
+                        false
+                    };
+                if constructor {
+                    buf.write_all(format!("constructor(").as_bytes())?;
+                } else {
+                    buf.write_all(format!("{name}(").as_bytes())?;
+                }
                 for (i, (name, ty)) in args.iter().enumerate() {
                     buf.write_all(format!("{name}: ").as_bytes())?;
                     ty.reference(entities, buf, offset.clone())?;
@@ -60,17 +70,26 @@ impl Interpreter for Composite {
                         buf.write_all(", ".as_bytes())?;
                     }
                 }
-                buf.write_all(format!("): ").as_bytes())?;
-                if *asyncness {
-                    buf.write_all(format!("Promise<").as_bytes())?;
+                buf.write_all(format!(")").as_bytes())?;
+                if constructor && *asyncness {
+                    return Err(Error::new(
+                        ErrorKind::Other,
+                        "Async constructor isn't supported",
+                    ));
                 }
-                if let Some(out) = out {
-                    out.reference(entities, buf, offset.clone())?;
-                } else {
-                    buf.write_all(format!("void").as_bytes())?;
-                }
-                if *asyncness {
-                    buf.write_all(format!(">").as_bytes())?;
+                if !constructor {
+                    buf.write_all(format!(": ").as_bytes())?;
+                    if *asyncness {
+                        buf.write_all(format!("Promise<").as_bytes())?;
+                    }
+                    if let Some(out) = out {
+                        out.reference(entities, buf, offset.clone())?;
+                    } else {
+                        buf.write_all(format!("void").as_bytes())?;
+                    }
+                    if *asyncness {
+                        buf.write_all(format!(">").as_bytes())?;
+                    }
                 }
             }
             Self::Tuple(tys) => {

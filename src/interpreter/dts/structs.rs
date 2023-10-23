@@ -29,7 +29,7 @@ impl Interpreter for Field {
         offset: Offset,
     ) -> Result<(), Error> {
         if matches!(self.ty, Types::Composite(Composite::Func(_, _, _, _))) {
-            buf.write_all(format!("{}{}", offset, self.name).as_bytes())?;
+            buf.write_all(format!("{}", offset).as_bytes())?;
         } else {
             buf.write_all(format!("{}{}: ", offset, self.name).as_bytes())?;
         }

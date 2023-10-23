@@ -3,7 +3,7 @@ use crate::{
     types::Types,
 };
 use std::{collections::HashMap, convert::From};
-use syn::{Fields, ImplItem, Signature};
+use syn::{Fields, ImplItem, ItemFn};
 
 #[derive(Clone, Debug)]
 pub struct Field {
@@ -32,11 +32,18 @@ impl ArgsWriter for Structs {
 }
 
 impl Structs {
-    pub fn is_struct_method(sig: &Signature) -> bool {
-        sig.inputs
+    pub fn is_struct_method(item_fn: &ItemFn) -> bool {
+        if item_fn
+            .sig
+            .inputs
             .iter()
             .find(|input| matches!(input, syn::FnArg::Receiver(_)))
             .is_some()
+        {
+            true
+        } else {
+            Types::from(item_fn).is_self_returned()
+        }
     }
     fn ignore(args: &Option<Args>) -> bool {
         if let Some(args) = args {

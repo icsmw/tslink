@@ -10,21 +10,12 @@ use std::{
 };
 
 impl Interpreter for Composite {
-    fn declaration(
-        &self,
-        _entities: &Entities,
-        _buf: &mut BufWriter<File>,
-        _offset: Offset,
-    ) -> Result<(), std::io::Error> {
-        Ok(())
-    }
-
     fn reference(
         &self,
         entities: &Entities,
         buf: &mut BufWriter<File>,
         offset: Offset,
-    ) -> Result<(), std::io::Error> {
+    ) -> Result<bool, std::io::Error> {
         match self {
             Self::Vec(ty) => {
                 if let Some(ty) = ty {
@@ -107,10 +98,10 @@ impl Interpreter for Composite {
                         Entity::Struct(strct) => strct.reference(entities, buf, offset)?,
                         Entity::Enum(enums) => enums.reference(entities, buf, offset)?,
                         Entity::Detached(detached) => detached.reference(entities, buf, offset)?,
-                    }
+                    };
                 }
             }
         }
-        Ok(())
+        Ok(true)
     }
 }
