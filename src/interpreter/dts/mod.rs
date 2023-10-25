@@ -13,25 +13,7 @@ pub mod enums;
 pub mod primitives;
 pub mod structs;
 
-pub const EXT: &str = "d.ts";
-
 pub trait Interpreter {
-    fn declaration(
-        &self,
-        entities: &Entities,
-        buf: &mut BufWriter<File>,
-        offset: Offset,
-    ) -> Result<(), Error>;
-
-    fn reference(
-        &self,
-        entities: &Entities,
-        buf: &mut BufWriter<File>,
-        offset: Offset,
-    ) -> Result<(), Error>;
-}
-
-impl Interpreter for Types {
     fn declaration(
         &self,
         _entities: &Entities,
@@ -40,6 +22,18 @@ impl Interpreter for Types {
     ) -> Result<(), Error> {
         Ok(())
     }
+
+    fn reference(
+        &self,
+        _entities: &Entities,
+        _buf: &mut BufWriter<File>,
+        _offset: Offset,
+    ) -> Result<(), Error> {
+        Ok(())
+    }
+}
+
+impl Interpreter for Types {
     fn reference(
         &self,
         entities: &Entities,
@@ -60,7 +54,13 @@ where
     let path = CONFIG
         .read()
         .map_err(|e| Error::new(ErrorKind::Other, e.to_string()))?
-        .get_path(Some(w.get_args()), EXT)?;
+        .node_mod_dist
+        .clone()
+        .ok_or(Error::new(
+            ErrorKind::Other,
+            "No path to folder with node module. Set correct path in tslink.toml; field \"node\"",
+        ))?
+        .join("lib.d.ts");
     if !dropped.contains(&path) {
         if path.exists() {
             fs::remove_file(&path)?;

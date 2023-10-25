@@ -11,8 +11,6 @@ use std::{
 
 mod enums;
 
-pub const EXT: &str = "js";
-
 pub trait Interpreter {
     fn declaration(
         &self,
@@ -25,20 +23,45 @@ pub trait Interpreter {
 }
 
 pub fn write(entities: &Entities) -> Result<(), Error> {
-    let path = CONFIG
+    let config = CONFIG
         .read()
-        .map_err(|e| Error::new(ErrorKind::Other, e.to_string()))?
-        .get_path(None, EXT)?;
-    if path.exists() {
-        fs::remove_file(&path)?;
+        .map_err(|e| Error::new(ErrorKind::Other, e.to_string()))?;
+    let dist = config.node_mod_dist.clone().ok_or(Error::new(
+        ErrorKind::Other,
+        "No path to folder with node module. Set correct path in tslink.toml; field \"node\"",
+    ))?;
+    let node_module = config.node_mod_filename.clone().ok_or(Error::new(
+        ErrorKind::Other,
+        "No node module file name. Set correct path in tslink.toml; field \"node\"",
+    ))?;
+    drop(config);
+    let lib_file = dist.join("lib.js");
+    if lib_file.exists() {
+        fs::remove_file(&lib_file)?;
     }
-    File::create(&path)?;
-    let file = OpenOptions::new().write(true).append(true).open(&path)?;
+    File::create(&lib_file)?;
+    let file = OpenOptions::new()
+        .write(true)
+        .append(true)
+        .open(&lib_file)?;
     let mut buf_writer = BufWriter::new(file);
     buf_writer.write_all(
         format!(
             "\"use strict\";
-Object.defineProperty(exports, \"__esModule\", {{ value: true }});\n"
+Object.defineProperty(exports, \"__esModule\", {{ value: true }});
+
+const path = require(\"path\");
+const fs = require(\"fs\");
+
+function native() {{
+    const modulePath = path.resolve(module.path, './{node_module}');
+    if (!fs.existsSync(modulePath)) {{
+        throw new Error(`Fail to find native module in: ${{modulePath}}`);
+    }}
+    return require(modulePath);
+}}
+
+"
         )
         .as_bytes(),
     )?;

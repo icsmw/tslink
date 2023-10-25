@@ -6,10 +6,11 @@ use crate::{
     },
     interpreter::Offset,
     types::{composite::Composite, Types},
+    CONFIG,
 };
 use std::{
     fs::File,
-    io::{BufWriter, Error, Write},
+    io::{BufWriter, Error, ErrorKind, Write},
 };
 
 impl Interpreter for Field {
@@ -28,12 +29,34 @@ impl Interpreter for Field {
         buf: &mut BufWriter<File>,
         offset: Offset,
     ) -> Result<(), Error> {
+        let config = CONFIG
+            .read()
+            .map_err(|e| Error::new(ErrorKind::Other, e.to_string()))?;
         if matches!(self.ty, Types::Composite(Composite::Func(_, _, _, _))) {
+            let name = if let Some(args) = self.args.as_ref() {
+                if let Some(name) = args.rename(&self.name) {
+                    name
+                } else {
+                    self.name.clone()
+                }
+            } else {
+                config.rename_method(&self.name)
+            };
             buf.write_all(format!("{}", offset).as_bytes())?;
+            self.ty.reference(entities, buf, offset)
         } else {
-            buf.write_all(format!("{}{}: ", offset, self.name).as_bytes())?;
+            let name = if let Some(args) = self.args.as_ref() {
+                if let Some(name) = args.rename(&self.name) {
+                    name
+                } else {
+                    self.name.clone()
+                }
+            } else {
+                config.rename_field(&self.name)
+            };
+            buf.write_all(format!("{}{name}: ", offset,).as_bytes())?;
+            self.ty.reference(entities, buf, offset)
         }
-        self.ty.reference(entities, buf, offset)
     }
 }
 

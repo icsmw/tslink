@@ -7,6 +7,7 @@ resolver = "2"
 
 [lib]
 crate-type = ["cdylib"]
+path = "rs/lib.rs"
 
 [build-dependencies]
 node-bindgen = {git = "https://github.com/infinyon/node-bindgen.git", branch="master", default-features = false, features = ["build"] }

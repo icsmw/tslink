@@ -134,9 +134,10 @@ impl Args {
             }
         }
         if let Some(_arg) = self.args.get(&Arg::SnakeCaseNaming.to_string()) {
-            Some(origin.to_case(Case::Camel));
+            Some(origin.to_case(Case::Camel))
+        } else {
+            None
         }
-        None
     }
 
     pub fn path(&self) -> Option<PathBuf> {

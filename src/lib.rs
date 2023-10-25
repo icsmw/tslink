@@ -2,6 +2,7 @@ mod args;
 mod config;
 mod defs;
 mod interpreter;
+mod package;
 mod types;
 
 #[macro_use]
@@ -72,7 +73,6 @@ fn read(item: Item, entities: &mut Entities, args: Args) -> Result<(), String> {
             if Structs::is_struct_method(&item_fn) {
                 return Ok(());
             }
-            println!(">>>>>>>>>>>>>>>>>>>>>>> Item::Fn");
             let name = item_fn.sig.ident.to_string();
             if entities.get(&name).is_some() {
                 Err(format!("Fn \"{name}\" already exists"))
@@ -114,7 +114,9 @@ fn read(item: Item, entities: &mut Entities, args: Args) -> Result<(), String> {
         }
         _ => Ok(()),
     }?;
-
+    if let Err(err) = package::create() {
+        abort!(item_ref, err.to_string());
+    }
     if let Err(err) = interpreter::ts(entities) {
         abort!(item_ref, err.to_string());
     }
