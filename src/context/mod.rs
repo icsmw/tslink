@@ -80,7 +80,14 @@ impl Context {
     }
 
     pub fn as_class(&self) -> bool {
-        self.inputs.iter().any(|i| matches!(i, Input::Class))
+        if self.inputs.iter().any(|i| matches!(i, Input::Class)) {
+            return true;
+        }
+        if let Some(parent) = self.parent.as_ref() {
+            parent.as_class()
+        } else {
+            false
+        }
     }
 
     pub fn set_as_class(&self) -> Self {

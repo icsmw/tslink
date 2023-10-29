@@ -53,13 +53,18 @@ pub fn read_fields(fields: &Fields, parent: &mut Nature, parent_context: Context
 pub fn read_impl(
     items: &Vec<ImplItem>,
     parent: &mut Nature,
-    parent_context: Context,
+    struct_context: Context,
+    _parent_context: Context,
 ) -> Result<(), E> {
     for item in items.iter() {
         match item {
             ImplItem::Fn(fn_item) => {
                 let mut context = Context::try_from_or_default(&fn_item.attrs)?;
-                context.set_parent(parent_context.clone());
+                context.set_parent(struct_context.clone());
+                println!(
+                    ">>>>>>>>>>>>>>>>>>>>>>>>>>>> AS CLASS PARENT={}",
+                    struct_context.as_class()
+                );
                 if context.ignore_self() {
                     continue;
                 }

@@ -3,10 +3,19 @@ use std::collections::HashMap;
 
 use tslink::tslink;
 struct upd {}
-#[tslink(class)]
+#[tslink]
 struct Nested {
     pub a: u8,
     pub b: u8,
+}
+#[tslink]
+impl Nested {
+    pub fn method_a(&self, abs: u8) -> u8 {
+        0
+    }
+    pub fn method_b(&self, abs: u8) -> u8 {
+        0
+    }
 }
 #[tslink]
 enum SomeEnum {

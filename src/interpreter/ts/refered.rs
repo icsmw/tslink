@@ -68,7 +68,7 @@ impl Interpreter for Refered {
                 if let Nature::Composite(Composite::Func(args, out, asyncness)) = func.deref() {
                     buf.write_all(
                         format!(
-                            "{}export function {}(",
+                            "{}export declare function {}(",
                             offset,
                             context.rename_method(name)?
                         )
@@ -92,7 +92,7 @@ impl Interpreter for Refered {
                     if *asyncness {
                         buf.write_all(format!(">").as_bytes())?;
                     }
-                    buf.write_all(format!(" {{\n{offset}}}\n").as_bytes())?;
+                    buf.write_all(format!(";\n").as_bytes())?;
                 } else {
                     return Err(E::Parsing(format!("Cannot find body of function {name}")));
                 }
@@ -139,7 +139,15 @@ impl Interpreter for Refered {
             }
             Refered::Field(name, context, nature) => {
                 if matches!(nature.deref(), Nature::Composite(Composite::Func(_, _, _))) {
-                    buf.write_all(format!("{offset}{}", context.rename_method(name)?).as_bytes())?;
+                    if context.as_class() {
+                        buf.write_all(
+                            format!("{offset}abstract {}", context.rename_method(name)?).as_bytes(),
+                        )?;
+                    } else {
+                        buf.write_all(
+                            format!("{offset}{}", context.rename_method(name)?).as_bytes(),
+                        )?;
+                    }
                     nature.reference(natures, buf, offset)?;
                 } else {
                     buf.write_all(format!("{offset}{}: ", context.rename_field(name)?).as_bytes())?;

@@ -66,7 +66,7 @@ impl Interpreter for Refered {
             }
             Refered::Func(name, _context, func) => {
                 if let Nature::Composite(Composite::Func(args, out, asyncness)) = func.deref() {
-                    buf.write_all(format!("{}export function {name}(", offset).as_bytes())?;
+                    buf.write_all(format!("{}export declare function {name}(", offset).as_bytes())?;
                     for (i, ty) in args.iter().enumerate() {
                         ty.declaration(natures, buf, Offset::new())?;
                         if i < args.len() - 1 {

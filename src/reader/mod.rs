@@ -1,6 +1,8 @@
 mod enums;
 mod structs;
 
+use std::ops::Deref;
+
 use crate::{
     context::Context,
     error::E,
@@ -69,8 +71,13 @@ pub fn read(item: Item, natures: &mut Natures, context: Context) -> Result<(), E
                 return Err(E::FailIdentify);
             };
             if let Some(nature) = natures.get_mut(&parent) {
-                if matches!(nature, Nature::Refered(Refered::Struct(_, _, _))) {
-                    structs::read_impl(&item_impl.items, nature, context.clone())
+                if let Nature::Refered(Refered::Struct(_, struct_context, _)) = nature.deref() {
+                    structs::read_impl(
+                        &item_impl.items,
+                        nature,
+                        struct_context.clone(),
+                        context.clone(),
+                    )
                 } else {
                     Err(E::NotFoundStruct)
                 }
