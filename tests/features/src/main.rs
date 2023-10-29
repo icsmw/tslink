@@ -27,6 +27,7 @@ enum FlatEnum {
     Five,
     Six,
     Seven,
+    Nine,
 }
 #[tslink(class)]
 struct Testing {
@@ -58,11 +59,14 @@ fn testB(a: Testing, b: u8) -> u8 {
 
 #[tslink]
 impl Testing {
-    #[tslink(ignore)]
     pub fn method_a(&self, abs: u8) -> u8 {
         0
     }
-    #[tslink(rename = "methodA")]
+    #[tslink(ignore)]
+    pub fn method_d(&self, abs: u8) -> u8 {
+        0
+    }
+    #[tslink(rename = "methodRenamed")]
     pub async fn method_b(&self) {
         println!(">>>>>>>>>>");
     }
@@ -72,13 +76,13 @@ impl Testing {
         println!(">>>>>>>>>>");
     }
 }
-#[tslink(target = ".ts; .d.ts", ignore = "_p8; p16;_p32")]
-struct TestingA {
-    pub _p8: u8,
-    pub _p16: u16,
-    pub _p32: u32,
-    pub _p64: u64,
-}
+// #[tslink(target = ".ts; .d.ts", ignore = "_p8; p16;_p32")]
+// struct TestingA {
+//     pub _p8: u8,
+//     pub _p16: u16,
+//     pub _p32: u32,
+//     pub _p64: u64,
+// }
 fn main() {
     // let a = Testing {
     //     _p8: 0,

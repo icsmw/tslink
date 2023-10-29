@@ -1,132 +1,95 @@
 use super::Interpreter;
 use crate::{
-    defs::{Entities, Entity},
+    error::E,
     interpreter::Offset,
-    types::{composite::Composite, Types},
+    nature::{Composite, Nature, Natures, Refered},
 };
 use std::{
     fs::File,
-    io::{BufWriter, Error, ErrorKind, Write},
+    io::{BufWriter, Write},
+    ops::Deref,
 };
 
 impl Interpreter for Composite {
-    fn declaration(
-        &self,
-        _entities: &Entities,
-        _buf: &mut BufWriter<File>,
-        _offset: Offset,
-    ) -> Result<(), std::io::Error> {
-        Ok(())
-    }
-
     fn reference(
         &self,
-        entities: &Entities,
+        natures: &Natures,
         buf: &mut BufWriter<File>,
         offset: Offset,
-    ) -> Result<(), std::io::Error> {
+    ) -> Result<(), E> {
         match self {
             Self::Vec(ty) => {
                 if let Some(ty) = ty {
-                    ty.reference(entities, buf, offset)?;
+                    ty.reference(natures, buf, offset)?;
                     buf.write_all("[]".as_bytes())?;
                 } else {
-                    return Err(Error::new(
-                        ErrorKind::Other,
+                    return Err(E::Parsing(String::from(
                         "Type Vec doesn't include reference to type",
-                    ));
+                    )));
                 }
             }
             Self::HashMap(key, ty) => {
                 if let (Some(key), Some(ty)) = (key, ty) {
                     buf.write_all("Map<".as_bytes())?;
-                    key.reference(entities, buf, offset.clone())?;
+                    key.reference(natures, buf, offset.clone())?;
                     buf.write_all(", ".as_bytes())?;
-                    ty.reference(entities, buf, offset)?;
+                    ty.reference(natures, buf, offset)?;
                     buf.write_all(">".as_bytes())?;
                 } else {
-                    return Err(Error::new(
-                        ErrorKind::Other,
+                    return Err(E::Parsing(String::from(
                         "Type HashMap doesn't include reference to type or key",
-                    ));
+                    )));
                 }
             }
-            Self::Func(name, args, out, asyncness) => {
-                let constructor =
-                    if let Some(Types::Composite(Composite::RefByName(re))) = out.as_deref() {
-                        re == "Self"
+            Self::Func(args, out, asyncness) => {
+                buf.write_all(format!("(").as_bytes())?;
+                for (i, nature) in args.iter().enumerate() {
+                    if let Nature::Refered(Refered::FuncArg(name, _context, nature)) =
+                        nature.deref()
+                    {
+                        buf.write_all(format!("{name}: ").as_bytes())?;
+                        nature.reference(natures, buf, offset.clone())?;
+                        if i < args.len() - 1 {
+                            buf.write_all(", ".as_bytes())?;
+                        }
                     } else {
-                        false
-                    };
-                if constructor {
-                    buf.write_all(format!("constructor(").as_bytes())?;
+                        return Err(E::Parsing(String::from(
+                            "Only Refered::FuncArg can be used as function's arguments",
+                        )));
+                    }
+                }
+                buf.write_all(format!("): ").as_bytes())?;
+                if *asyncness {
+                    buf.write_all(format!("Promise<").as_bytes())?;
+                }
+                if let Some(out) = out {
+                    out.reference(natures, buf, offset.clone())?;
                 } else {
-                    buf.write_all(format!("{name}(").as_bytes())?;
+                    buf.write_all(format!("void").as_bytes())?;
                 }
-                for (i, (name, ty)) in args.iter().enumerate() {
-                    buf.write_all(format!("{name}: ").as_bytes())?;
-                    ty.reference(entities, buf, offset.clone())?;
-                    if i < args.len() - 1 {
-                        buf.write_all(", ".as_bytes())?;
-                    }
-                }
-                buf.write_all(format!(")").as_bytes())?;
-                if constructor && *asyncness {
-                    return Err(Error::new(
-                        ErrorKind::Other,
-                        "Async constructor isn't supported",
-                    ));
-                }
-                if !constructor {
-                    buf.write_all(format!(": ").as_bytes())?;
-                    if *asyncness {
-                        buf.write_all(format!("Promise<").as_bytes())?;
-                    }
-                    if let Some(out) = out {
-                        out.reference(entities, buf, offset.clone())?;
-                    } else {
-                        buf.write_all(format!("void").as_bytes())?;
-                    }
-                    if *asyncness {
-                        buf.write_all(format!(">").as_bytes())?;
-                    }
+                if *asyncness {
+                    buf.write_all(format!(">").as_bytes())?;
                 }
             }
             Self::Tuple(tys) => {
                 buf.write_all("[".as_bytes())?;
                 let last = tys.len() - 1;
                 for (i, ty) in tys.iter().enumerate() {
-                    ty.reference(entities, buf, offset.clone())?;
+                    ty.reference(natures, buf, offset.clone())?;
                     if i < last {
                         buf.write_all(", ".as_bytes())?;
                     }
                 }
                 buf.write_all("]".as_bytes())?;
             }
-            Self::Enum(enums) => {
-                enums.reference(entities, buf, offset)?;
-            }
-            Self::Struct(strct) => {
-                strct.reference(entities, buf, offset)?;
-            }
             Self::Option(ty) => {
                 if let Some(ty) = ty {
-                    ty.reference(entities, buf, offset)?;
+                    ty.reference(natures, buf, offset)?;
                     buf.write_all(" | undefined".as_bytes())?;
                 } else {
-                    return Err(Error::new(
-                        ErrorKind::Other,
+                    return Err(E::Parsing(String::from(
                         "Type Option doesn't include reference to type",
-                    ));
-                }
-            }
-            Self::RefByName(name) => {
-                if let Some(entity) = entities.get(name) {
-                    match entity {
-                        Entity::Struct(strct) => strct.reference(entities, buf, offset)?,
-                        Entity::Enum(enums) => enums.reference(entities, buf, offset)?,
-                        Entity::Detached(detached) => detached.reference(entities, buf, offset)?,
-                    }
+                    )));
                 }
             }
         }

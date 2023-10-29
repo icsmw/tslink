@@ -4,7 +4,7 @@ use std::{
     io::{Error, ErrorKind},
 };
 
-#[derive(Debug, Eq, Hash, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum SnakeCaseNaming {
     Methods,
     Fields,

@@ -1,4 +1,4 @@
-use crate::{args::Args, CONFIG};
+use crate::{context::Context, error::E, CONFIG};
 use cfg::{Cfg, SnakeCaseNaming};
 use convert_case::{Case, Casing};
 use std::{
@@ -13,7 +13,7 @@ use toml::Table;
 
 pub mod cfg;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Config {
     inited: bool,
     path_buf: Option<PathBuf>,
@@ -64,9 +64,9 @@ impl Config {
         self.cargo = Some(cargo);
     }
 
-    pub fn get_path(&self, args: Option<&Args>, ext: &str) -> Result<PathBuf, Error> {
-        let path = if let Some(args) = args {
-            args.path()
+    pub fn get_path(&self, context: Option<&Context>, ext: &str) -> Result<PathBuf, E> {
+        let path = if let Some(context) = context {
+            context.path()
         } else {
             None
         };
@@ -119,10 +119,10 @@ impl Config {
     }
 }
 
-pub fn setup() -> Result<(), Error> {
+pub fn setup() -> Result<(), E> {
     if CONFIG
         .read()
-        .map_err(|e| Error::new(ErrorKind::Other, e.to_string()))?
+        .map_err(|e| E::AccessError(e.to_string()))?
         .inited
     {
         return Ok(());
@@ -131,25 +131,30 @@ pub fn setup() -> Result<(), Error> {
     let cargo = root.join("Cargo.toml");
     let config = root.join("tslink.toml");
     if !cargo.exists() {
-        return Err(Error::new(
-            ErrorKind::NotFound,
-            format!("Cargo.toml isn't found in {}", root.to_string_lossy()),
-        ));
+        return Err(E::FileNotFound(format!(
+            "Cargo.toml isn't found in {}",
+            root.to_string_lossy()
+        )));
     }
     if !config.exists() {
-        return Err(Error::new(
-            ErrorKind::NotFound,
-            format!("tslink.toml isn't found in {}", root.to_string_lossy()),
-        ));
+        return Err(E::FileNotFound(format!(
+            "tslink.toml isn't found in {}",
+            root.to_string_lossy()
+        )));
     }
     CONFIG
         .write()
-        .map_err(|e| Error::new(ErrorKind::Other, e.to_string()))?
+        .map_err(|e| E::AccessError(e.to_string()))?
         .overwrite(
-            toml::from_str(&fs::read_to_string(config)?)
-                .map_err(|e| Error::new(ErrorKind::Other, e.to_string()))?,
-            toml::from_str(&fs::read_to_string(cargo)?)
-                .map_err(|e| Error::new(ErrorKind::Other, e.to_string()))?,
+            toml::from_str(&fs::read_to_string(config)?)?,
+            toml::from_str(&fs::read_to_string(cargo)?)?,
         );
     Ok(())
+}
+
+pub fn get() -> Result<Config, E> {
+    Ok(CONFIG
+        .read()
+        .map_err(|e| E::AccessError(e.to_string()))?
+        .clone())
 }
