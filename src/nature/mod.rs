@@ -146,6 +146,43 @@ impl Nature {
         }
         false
     }
+
+    pub fn is_field_ignored(&self) -> bool {
+        if let Nature::Refered(Refered::Field(name, context, _)) = self {
+            context.is_ignored(name)
+        } else {
+            false
+        }
+    }
+
+    pub fn check_ignored_fields(&self) -> Result<(), E> {
+        if let Nature::Refered(Refered::Struct(name, context, fields)) = self.deref() {
+            let ignored = context.ignored_list();
+            if ignored.is_empty() {
+                return Ok(());
+            }
+            let existed = fields
+                .iter()
+                .filter_map(|f| {
+                    if let Nature::Refered(Refered::Field(name, _, _)) = f.deref() {
+                        Some(name.to_owned())
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<String>>();
+            for n in ignored {
+                if !existed.iter().any(|name| name == &n) {
+                    return Err(E::Parsing(format!(
+                        "Field in ignored list \"{n}\" isn't found in struct \"{name}\""
+                    )));
+                }
+            }
+            Ok(())
+        } else {
+            Ok(())
+        }
+    }
 }
 
 pub trait Extract<T> {

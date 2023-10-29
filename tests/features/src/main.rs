@@ -85,13 +85,14 @@ impl Testing {
         println!(">>>>>>>>>>");
     }
 }
-// #[tslink(target = ".ts; .d.ts", ignore = "_p8; p16;_p32")]
-// struct TestingA {
-//     pub _p8: u8,
-//     pub _p16: u16,
-//     pub _p32: u32,
-//     pub _p64: u64,
-// }
+#[tslink(target = ".ts; .d.ts", ignore = "_p8; _p16;_p32")]
+struct TestingA {
+    pub _p8: u8,
+    pub _p16: u16,
+    pub _p32: u32,
+    pub _p64: u64,
+    pub _a64: u64,
+}
 fn main() {
     // let a = Testing {
     //     _p8: 0,

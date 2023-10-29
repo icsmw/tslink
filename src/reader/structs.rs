@@ -44,6 +44,7 @@ pub fn read_fields(fields: &Fields, parent: &mut Nature, parent_context: Context
                     Box::new(Nature::extract(&field.ty, context.clone())?),
                 )))?;
             }
+            parent.check_ignored_fields()?;
         }
         _ => {}
     }

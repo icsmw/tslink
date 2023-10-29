@@ -112,6 +112,9 @@ impl Interpreter for Refered {
                     .as_bytes(),
                 )?;
                 for field in fields {
+                    if field.is_field_ignored() {
+                        continue;
+                    }
                     field.reference(natures, buf, offset.inc())?;
                     buf.write_all(format!(";\n").as_bytes())?;
                 }

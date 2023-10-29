@@ -75,6 +75,16 @@ impl Context {
         a || b
     }
 
+    pub fn ignored_list(&self) -> Vec<String> {
+        if let Some(Input::Ignore(list)) =
+            self.inputs.iter().find(|i| matches!(i, Input::Ignore(_)))
+        {
+            list.clone()
+        } else {
+            vec![]
+        }
+    }
+
     pub fn as_interface(&self) -> bool {
         self.inputs.iter().any(|i| matches!(i, Input::Interface))
     }
@@ -180,7 +190,10 @@ impl Parse for Context {
                                             .map(|s| match Target::try_from(s.trim()) {
                                                 Ok(t) => t,
                                                 Err(e) => {
-                                                    abort!(left, format!("Unknown target: {s}"))
+                                                    abort!(
+                                                        left,
+                                                        format!("Unknown target: {s} ({e})")
+                                                    )
                                                 }
                                             })
                                             .collect::<Vec<Target>>(),
@@ -188,7 +201,7 @@ impl Parse for Context {
                                     Input::Ignore(_) => Input::Ignore(
                                         value
                                             .split(';')
-                                            .map(|s| s.to_owned())
+                                            .map(|s| s.trim().to_owned())
                                             .collect::<Vec<String>>(),
                                     ),
                                     _ => abort!(
@@ -197,7 +210,7 @@ impl Parse for Context {
                                         left
                                     ),
                                 },
-                                Err(e) => abort!(left, "Unknown attribute: {}", left),
+                                Err(e) => abort!(left, "Unknown attribute: {} ({})", left, e),
                             };
                             inputs.push(input);
                         } else {
@@ -222,7 +235,7 @@ impl Parse for Context {
                                     ident
                                 ),
                             },
-                            Err(e) => abort!(p, "Unknown attribute: {}", ident),
+                            Err(e) => abort!(p, "Unknown attribute: {} ({})", ident, e),
                         };
                         inputs.push(input);
                     } else {
