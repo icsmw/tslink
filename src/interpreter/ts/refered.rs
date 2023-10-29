@@ -69,7 +69,9 @@ impl Interpreter for Refered {
                     func.deref()
                 {
                     if *constructor {
-                        return Ok(());
+                        return Err(E::Parsing(format!(
+                            "Cannot declare constructor for abstract class"
+                        )));
                     }
                     buf.write_all(
                         format!(
@@ -119,6 +121,9 @@ impl Interpreter for Refered {
                     .as_bytes(),
                 )?;
                 for field in fields {
+                    if context.as_class() && field.is_method_constructor() {
+                        continue;
+                    }
                     field.reference(natures, buf, offset.inc())?;
                     buf.write_all(format!(";\n").as_bytes())?;
                 }
@@ -145,10 +150,22 @@ impl Interpreter for Refered {
             Refered::Field(name, context, nature) => {
                 if let Nature::Composite(Composite::Func(_, _, _, constructor)) = nature.deref() {
                     if *constructor {
+                        if context.as_class() {
+                            return Ok(());
+                        }
                         buf.write_all(format!("{offset}constructor").as_bytes())?;
                     } else {
                         buf.write_all(
-                            format!("{offset}{}", context.rename_method(name)?).as_bytes(),
+                            format!(
+                                "{offset}{}{}",
+                                if context.as_class() {
+                                    "public abstract "
+                                } else {
+                                    ""
+                                },
+                                context.rename_method(name)?,
+                            )
+                            .as_bytes(),
                         )?;
                     }
                     nature.reference(natures, buf, offset)?;

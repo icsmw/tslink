@@ -6,7 +6,7 @@ struct Struct {
     b: Option<String>,
 }
 
-#[tslink]
+#[tslink(class)]
 #[node_bindgen]
 impl Struct {
     #[tslink(constructor)]

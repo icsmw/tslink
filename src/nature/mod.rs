@@ -6,7 +6,10 @@ use crate::{context::Context, error::E};
 pub use composite::Composite;
 pub use primitive::Primitive;
 pub use refered::Refered;
-use std::collections::{hash_map::Iter, HashMap};
+use std::{
+    collections::{hash_map::Iter, HashMap},
+    ops::Deref,
+};
 use syn::{
     punctuated::Punctuated,
     token::{Comma, PathSep},
@@ -133,6 +136,15 @@ impl Nature {
                 _ => Err(E::NotSupported),
             },
         }
+    }
+
+    pub fn is_method_constructor(&self) -> bool {
+        if let Nature::Refered(Refered::Field(_, _, nature)) = self {
+            if let Nature::Composite(Composite::Func(_, _, _, constructor)) = nature.deref() {
+                return *constructor;
+            }
+        }
+        false
     }
 }
 
