@@ -14,7 +14,7 @@ use syn::{
     punctuated::Punctuated,
     AttrStyle, Attribute, Expr, Lit, Token,
 };
-use target::Target;
+pub use target::Target;
 
 const ATTR_ALIAS: &str = "tslink";
 

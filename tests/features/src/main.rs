@@ -87,7 +87,7 @@ impl Testing {
 }
 #[tslink(
     target = "./dist/interfaces/interfaces.ts; ./dist/interfaces/interfaces.d.ts",
-    ignore = "_p8; _p16;_p32"
+    ignore = "_p8;_p16;_p32"
 )]
 struct TestingA {
     pub _p8: u8,

@@ -15,7 +15,7 @@ use nature::Natures;
 use proc_macro::TokenStream;
 use proc_macro_error::{abort, proc_macro_error};
 use std::sync::RwLock;
-use syn::{parse_macro_input, Item, ItemEnum, ItemStruct};
+use syn::{parse_macro_input, Item};
 
 lazy_static! {
     static ref CONFIG: RwLock<Config> = RwLock::new(Config::default());
@@ -35,9 +35,9 @@ pub fn tslink(args: TokenStream, item: TokenStream) -> TokenStream {
         let mut natures = NATURES.write().expect("Get access to list of entities");
         let output = item.clone();
         let item = parse_macro_input!(item as Item);
+        let item_ref = item.clone();
         if let Err(err) = reader::read(item, &mut natures, context) {
-            panic!("{err}");
-            // abort!(output, err.to_string());
+            abort!(item_ref, err.to_string());
         }
         output
     }

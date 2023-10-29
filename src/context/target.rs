@@ -1,6 +1,6 @@
 use std::{convert::TryFrom, fmt};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Target {
     Ts,
     DTs,

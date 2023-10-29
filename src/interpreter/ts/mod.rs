@@ -4,8 +4,9 @@ mod refered;
 
 use crate::{
     config,
+    context::Target,
     error::E,
-    interpreter::{create_node_located_file, Offset},
+    interpreter::{create_target_file, Offset},
     nature::{Nature, Natures},
 };
 use std::{
@@ -63,13 +64,11 @@ impl Interpreter for Nature {
     }
 }
 
-pub fn write<T>(w: &T, natures: &Natures, dropped: &mut HashSet<PathBuf>) -> Result<(), E>
+pub fn write<T>(w: &T, natures: &Natures, buf_writer: &mut BufWriter<File>) -> Result<(), E>
 where
     T: Interpreter,
 {
-    let file = create_node_located_file("lib.ts", dropped)?;
-    let mut buf_writer = BufWriter::new(file);
-    w.declaration(natures, &mut buf_writer, Offset::new())?;
+    w.declaration(natures, buf_writer, Offset::new())?;
     buf_writer.flush()?;
     Ok(())
 }

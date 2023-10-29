@@ -183,6 +183,24 @@ impl Nature {
             Ok(())
         }
     }
+
+    pub fn get_context(&self) -> Result<&Context, E> {
+        Ok(match self {
+            Self::Primitive(_) => Err(E::Parsing(String::from("Primitives do not have context")))?,
+            Self::Composite(composite) => {
+                Err(E::Parsing(String::from("Composite do not have context")))?
+            }
+            Self::Refered(refered) => match refered {
+                Refered::Enum(_, context, _) => context,
+                Refered::EnumVariant(_, context, _, _) => context,
+                Refered::Field(_, context, _) => context,
+                Refered::Func(_, context, _) => context,
+                Refered::FuncArg(_, context, _) => context,
+                Refered::Struct(_, context, _) => context,
+                Refered::Ref(_) => Err(E::Parsing(String::from("Reference do not have context")))?,
+            },
+        })
+    }
 }
 
 pub trait Extract<T> {

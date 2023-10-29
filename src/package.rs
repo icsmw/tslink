@@ -1,7 +1,7 @@
 use crate::{config, error::E};
 use std::{
     fs,
-    fs::{File, OpenOptions},
+    fs::{create_dir_all, File, OpenOptions},
     io::{BufWriter, Write},
 };
 use toml::Value;
@@ -42,6 +42,15 @@ pub fn create() -> Result<(), E> {
     let package_file = dist.join("package.json");
     if package_file.exists() {
         fs::remove_file(&package_file)?;
+    } else if let Some(basepath) = package_file.parent() {
+        if !basepath.exists() {
+            create_dir_all(basepath)?;
+        }
+    } else {
+        return Err(E::FileNotFound(format!(
+            "Fail to get basepath from: {}",
+            package_file.to_string_lossy()
+        )));
     }
     File::create(&package_file)?;
     let file = OpenOptions::new()
