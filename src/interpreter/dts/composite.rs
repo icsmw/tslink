@@ -41,7 +41,7 @@ impl Interpreter for Composite {
                     )));
                 }
             }
-            Self::Func(args, out, asyncness) => {
+            Self::Func(args, out, asyncness, constructor) => {
                 buf.write_all(format!("(").as_bytes())?;
                 for (i, nature) in args.iter().enumerate() {
                     if let Nature::Refered(Refered::FuncArg(name, _context, nature)) =
@@ -57,6 +57,10 @@ impl Interpreter for Composite {
                             "Only Refered::FuncArg can be used as function's arguments",
                         )));
                     }
+                }
+                if *constructor {
+                    buf.write_all(format!(")").as_bytes())?;
+                    return Ok(());
                 }
                 buf.write_all(format!("): ").as_bytes())?;
                 if *asyncness {

@@ -61,10 +61,6 @@ pub fn read_impl(
             ImplItem::Fn(fn_item) => {
                 let mut context = Context::try_from_or_default(&fn_item.attrs)?;
                 context.set_parent(struct_context.clone());
-                println!(
-                    ">>>>>>>>>>>>>>>>>>>>>>>>>>>> AS CLASS PARENT={}",
-                    struct_context.as_class()
-                );
                 if context.ignore_self() {
                     continue;
                 }

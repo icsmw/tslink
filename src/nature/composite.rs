@@ -6,6 +6,6 @@ pub enum Composite {
     HashMap(Option<Primitive>, Option<Box<Nature>>),
     Tuple(Vec<Box<Nature>>),
     Option(Option<Box<Nature>>),
-    // (Vec(Args), Output, async)
-    Func(Vec<Box<Nature>>, Option<Box<Nature>>, bool),
+    // (Vec(Args), Output, async, constructor)
+    Func(Vec<Box<Nature>>, Option<Box<Nature>>, bool, bool),
 }

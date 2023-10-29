@@ -7,7 +7,7 @@ use crate::{
     context::Context,
     error::E,
     interpreter,
-    nature::{Extract, Nature, Natures, Refered},
+    nature::{Composite, Extract, Nature, Natures, Refered},
     package,
 };
 use proc_macro_error::abort;
@@ -46,6 +46,13 @@ pub fn read(item: Item, natures: &mut Natures, context: Context) -> Result<(), E
             if structs::is_method(&item_fn) {
                 return Ok(());
             }
+            if let Nature::Composite(Composite::Func(_, _, _, constructor)) =
+                Nature::extract(&item_fn, context.clone())?
+            {
+                if constructor {
+                    return Ok(());
+                }
+            }
             let name = item_fn.sig.ident.to_string();
             if natures.contains(&name) {
                 Err(E::EntityExist(name))
@@ -65,12 +72,19 @@ pub fn read(item: Item, natures: &mut Natures, context: Context) -> Result<(), E
                 syn::Type::Path(ref p) => p.path.get_ident(),
                 _ => None,
             };
-            let parent = if let Some(ident) = ident {
+            let struct_name = if let Some(ident) = ident {
                 ident.to_string()
             } else {
                 return Err(E::FailIdentify);
             };
-            if let Some(nature) = natures.get_mut(&parent) {
+            if let Some(nature) = natures.get_mut(
+                &struct_name,
+                Some(Nature::Refered(Refered::Struct(
+                    struct_name.clone(),
+                    context.clone(),
+                    vec![],
+                ))),
+            ) {
                 if let Nature::Refered(Refered::Struct(_, struct_context, _)) = nature.deref() {
                     structs::read_impl(
                         &item_impl.items,

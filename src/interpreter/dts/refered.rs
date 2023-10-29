@@ -65,7 +65,12 @@ impl Interpreter for Refered {
                 buf.write_all(format!("{}: ", context.rename_field(name)?).as_bytes())?
             }
             Refered::Func(name, _context, func) => {
-                if let Nature::Composite(Composite::Func(args, out, asyncness)) = func.deref() {
+                if let Nature::Composite(Composite::Func(args, out, asyncness, constructor)) =
+                    func.deref()
+                {
+                    if *constructor {
+                        return Ok(());
+                    }
                     buf.write_all(format!("{}export declare function {name}(", offset).as_bytes())?;
                     for (i, ty) in args.iter().enumerate() {
                         ty.declaration(natures, buf, Offset::new())?;
@@ -131,8 +136,14 @@ impl Interpreter for Refered {
                 buf.write_all(format!("{offset}{name}: ").as_bytes())?
             }
             Refered::Field(name, context, nature) => {
-                if matches!(nature.deref(), Nature::Composite(Composite::Func(_, _, _))) {
-                    buf.write_all(format!("{offset}{}", context.rename_method(name)?).as_bytes())?;
+                if let Nature::Composite(Composite::Func(_, _, _, constructor)) = nature.deref() {
+                    if *constructor {
+                        buf.write_all(format!("{offset}constructor").as_bytes())?;
+                    } else {
+                        buf.write_all(
+                            format!("{offset}{}", context.rename_method(name)?).as_bytes(),
+                        )?;
+                    }
                     nature.reference(natures, buf, offset)?;
                 } else {
                     buf.write_all(format!("{offset}{}: ", context.rename_field(name)?).as_bytes())?;

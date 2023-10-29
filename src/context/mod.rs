@@ -90,6 +90,10 @@ impl Context {
         }
     }
 
+    pub fn as_constructor(&self) -> bool {
+        self.inputs.iter().any(|i| matches!(i, Input::Constructor))
+    }
+
     pub fn set_as_class(&self) -> Self {
         let mut clonned = self.clone();
         if !clonned.as_class() {

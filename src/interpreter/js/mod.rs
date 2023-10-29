@@ -77,7 +77,7 @@ function native() {{
     }
     buf_writer.write_all(format!("const {{ ").as_bytes())?;
     let mut exporting: Vec<String> = vec![];
-    for (i, (name, entity)) in natures.iter().enumerate() {
+    for (_i, (name, entity)) in natures.iter().enumerate() {
         if match entity {
             Nature::Refered(Refered::Struct(_, context, _)) => {
                 if context.as_class() {
@@ -99,7 +99,7 @@ function native() {{
         }
     }
     buf_writer.write_all(format!(" }} = native();").as_bytes())?;
-    for (i, name) in exporting.iter().enumerate() {
+    for (_i, name) in exporting.iter().enumerate() {
         buf_writer.write_all(format!("\nexports.{name} = {name};").as_bytes())?;
     }
     buf_writer.flush()?;

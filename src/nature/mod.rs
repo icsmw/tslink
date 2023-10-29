@@ -32,7 +32,12 @@ impl Natures {
         }
     }
 
-    pub fn get_mut(&mut self, name: &str) -> Option<&mut Nature> {
+    pub fn get_mut(&mut self, name: &str, defaults: Option<Nature>) -> Option<&mut Nature> {
+        if let (exists, Some(defaults)) = (self.0.contains_key(name), defaults) {
+            if !exists {
+                let _ = self.0.insert(name.to_owned(), defaults);
+            }
+        }
         self.0.get_mut(name)
     }
 
@@ -63,18 +68,6 @@ pub enum Nature {
 }
 
 impl Nature {
-    pub fn is_self_returned(&self) -> bool {
-        if let Nature::Composite(Composite::Func(_, out, _)) = self {
-            if let Some(Nature::Refered(Refered::Ref(re))) = out.as_deref() {
-                re == "Self"
-            } else {
-                false
-            }
-        } else {
-            false
-        }
-    }
-
     pub fn bind(&mut self, nature: Nature) -> Result<(), E> {
         match self {
             Self::Primitive(_) => Err(E::Parsing(String::from("Primitive type cannot be bound"))),
@@ -256,10 +249,16 @@ impl Extract<&ImplItemFn> for Nature {
             ReturnType::Default => None,
             ReturnType::Type(_, ty) => Some(Box::new(Self::extract(*ty.clone(), context.clone())?)),
         };
+        let constructor = if let Some(Nature::Refered(Refered::Ref(re))) = out.as_deref() {
+            re == "Self"
+        } else {
+            false
+        } || context.as_constructor();
         Ok(Self::Composite(Composite::Func(
             args,
             out,
             fn_item.sig.asyncness.is_some(),
+            constructor,
         )))
     }
 }
@@ -285,10 +284,16 @@ impl Extract<&ItemFn> for Nature {
             ReturnType::Default => None,
             ReturnType::Type(_, ty) => Some(Box::new(Self::extract(*ty.clone(), context.clone())?)),
         };
+        let constructor = if let Some(Nature::Refered(Refered::Ref(re))) = out.as_deref() {
+            re == "Self"
+        } else {
+            false
+        } || context.as_constructor();
         Ok(Self::Composite(Composite::Func(
             args,
             out,
             fn_item.sig.asyncness.is_some(),
+            constructor,
         )))
     }
 }
