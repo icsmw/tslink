@@ -1,12 +1,11 @@
 use crate::context::Target;
-use std::{convert::TryFrom, fmt};
+use std::{convert::TryFrom, fmt, path::PathBuf};
 
 #[derive(Clone, Debug)]
 pub enum Input {
     Ignore(Vec<String>),
     Rename(String),
-    Target(Vec<Target>),
-    Path(String),
+    Target(Vec<(Target, PathBuf)>),
     IgnoreSelf,
     Constructor,
     SnakeCaseNaming,
@@ -33,8 +32,6 @@ impl TryFrom<&str> for Input {
             Ok(Input::Rename(String::new()))
         } else if Input::Target(vec![]).to_string() == value {
             Ok(Input::Target(vec![]))
-        } else if Input::Path(String::new()).to_string() == value {
-            Ok(Input::Path(String::new()))
         } else {
             Err(format!("Unknown attribute \"{value}\""))
         }
@@ -67,7 +64,6 @@ impl fmt::Display for Input {
                 Self::Interface => "interface",
                 Self::Target(_) => "target",
                 Self::Class => "class",
-                Self::Path(_) => "path",
             }
         )
     }

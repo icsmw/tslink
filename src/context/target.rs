@@ -28,9 +28,9 @@ impl fmt::Display for Target {
             f,
             "{}",
             match self {
-                Self::Ts => ".ts",
-                Self::DTs => ".d.ts",
-                Self::Js => ".js",
+                Self::Ts => "ts",
+                Self::DTs => "d.ts",
+                Self::Js => "js",
             }
         )
     }

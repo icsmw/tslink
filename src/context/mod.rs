@@ -21,7 +21,7 @@ const ATTR_ALIAS: &str = "tslink";
 #[derive(Clone, Debug)]
 pub struct Context {
     pub inputs: Vec<Input>,
-    pub targets: Vec<Target>,
+    pub targets: Vec<(Target, PathBuf)>,
     pub parent: Option<Box<Context>>,
 }
 
@@ -37,7 +37,7 @@ impl Default for Context {
 
 impl Context {
     pub(self) fn new(inputs: Vec<Input>) -> Self {
-        let targets: Vec<Target> = if let Some(Input::Target(targets)) =
+        let targets: Vec<(Target, PathBuf)> = if let Some(Input::Target(targets)) =
             inputs.iter().find(|i| matches!(i, Input::Target(_)))
         {
             targets.clone()
@@ -144,11 +144,11 @@ impl Context {
     }
 
     pub fn path(&self) -> Option<PathBuf> {
-        if let Some(arg) = self.inputs.iter().find(|i| matches!(i, Input::Path(_))) {
-            if let Input::Path(path) = arg {
-                return Some(PathBuf::from(path));
-            }
-        }
+        // if let Some(arg) = self.inputs.iter().find(|i| matches!(i, Input::Path(_))) {
+        //     if let Input::Path(path) = arg {
+        //         return Some(PathBuf::from(path));
+        //     }
+        // }
         None
     }
 
@@ -183,21 +183,33 @@ impl Parse for Context {
                             let input = match Input::try_from(left.to_string().as_ref()) {
                                 Ok(input) => match input {
                                     Input::Rename(_) => Input::Rename(value),
-                                    Input::Path(_) => Input::Path(value),
-                                    Input::Target(_) => Input::Target(
+                                    Input::Target(_) => {
+                                        
+                                        Input::Target(
                                         value
                                             .split(';')
-                                            .map(|s| match Target::try_from(s.trim()) {
-                                                Ok(t) => t,
-                                                Err(e) => {
+                                            .map(|s| {
+                                                let path = PathBuf::from(s.trim());
+                                                if let Some(ext) = path.extension() {
+                                                    match Target::try_from(ext.to_string_lossy().to_string().as_str()) {
+                                                        Ok(t) => (t, path),
+                                                        Err(e) => {
+                                                            abort!(
+                                                                left,
+                                                                format!("Unknown target: {s} ({e})")
+                                                            )
+                                                        }
+                                                    }
+                                                } else {
                                                     abort!(
                                                         left,
-                                                        format!("Unknown target: {s} ({e})")
+                                                        format!("Cannot get extension of file: {s}; expecting .ts; .d.ts; .js")
                                                     )
                                                 }
+                                                
                                             })
-                                            .collect::<Vec<Target>>(),
-                                    ),
+                                            .collect::<Vec<(Target, PathBuf)>>(),
+                                    )},
                                     Input::Ignore(_) => Input::Ignore(
                                         value
                                             .split(';')
