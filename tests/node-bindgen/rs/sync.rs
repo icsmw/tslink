@@ -1,5 +1,14 @@
 use node_bindgen::derive::node_bindgen;
+use serde::{Deserialize, Serialize};
 use tslink::tslink;
+
+#[tslink]
+#[derive(Serialize, Deserialize)]
+struct Data {
+    pub a: i32,
+    pub b: i32,
+    pub s: String,
+}
 
 struct Struct {
     a: String,
@@ -25,5 +34,12 @@ impl Struct {
     #[node_bindgen]
     fn get_b(&self) -> Option<String> {
         self.b.clone()
+    }
+
+    #[tslink(data = "Data")]
+    #[node_bindgen]
+    fn get_data(&self, data: String) -> Result<(), String> {
+        println!("{}", data.s);
+        Ok(())
     }
 }

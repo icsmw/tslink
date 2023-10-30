@@ -96,6 +96,24 @@ impl Interpreter for Composite {
                     )));
                 }
             }
+            Self::Result(res, err) => {
+                if let (Some(res), Some(err)) = (res, err) {
+                    res.reference(natures, buf, offset.clone())?;
+                    buf.write_all(" | ".as_bytes())?;
+                    err.reference(natures, buf, offset)?;
+                } else if let Some(res) = res {
+                    res.reference(natures, buf, offset)?;
+                    buf.write_all(" | undefined".as_bytes())?;
+                } else if let Some(err) = err {
+                    buf.write_all("undefined | ".as_bytes())?;
+                    err.reference(natures, buf, offset)?;
+                } else {
+                    buf.write_all("undefined".as_bytes())?;
+                }
+            }
+            Self::Undefined => {
+                buf.write_all("undefined".as_bytes())?;
+            }
         }
         Ok(())
     }

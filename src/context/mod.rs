@@ -143,6 +143,15 @@ impl Context {
             .ok_or(E::Other(String::from("Fail to get renaming settings")))
     }
 
+    pub fn get_bindings(&self) -> Vec<(String, String)> {
+        if let Some(arg) = self.inputs.iter().find(|i| matches!(i, Input::Binding(_))) {
+            if let Input::Binding(arguments) = arg {
+                return arguments.clone();
+            }
+        }
+        vec![]
+    }
+
     pub fn path(&self) -> Option<PathBuf> {
         // if let Some(arg) = self.inputs.iter().find(|i| matches!(i, Input::Path(_))) {
         //     if let Input::Path(path) = arg {
@@ -172,6 +181,7 @@ impl Context {
 impl Parse for Context {
     fn parse(input: ParseStream) -> parse::Result<Self> {
         let mut inputs: Vec<Input> = vec![];
+        let mut bindings: Vec<(String, String)> = vec![];
         Punctuated::<Expr, Token![,]>::parse_terminated(input)?
             .into_iter()
             .for_each(|expr| match expr {
@@ -180,51 +190,57 @@ impl Parse for Context {
                     if let (Expr::Path(left), Expr::Lit(right)) = (*a.left, *a.right) {
                         if let (Some(left), Lit::Str(value)) = (left.path.get_ident(), right.lit) {
                             let value = value.value();
-                            let input = match Input::try_from(left.to_string().as_ref()) {
+                            let mut input = match Input::try_from(left.to_string().as_ref()) {
                                 Ok(input) => match input {
-                                    Input::Rename(_) => Input::Rename(value),
+                                    Input::Rename(_) => Some(Input::Rename(value)),
                                     Input::Target(_) => {
-                                        
-                                        Input::Target(
-                                        value
-                                            .split(';')
-                                            .map(|s| {
-                                                let path = PathBuf::from(s.trim());
-                                                if let Some(ext) = path.extension() {
-                                                    match Target::try_from(ext.to_string_lossy().to_string().as_str()) {
-                                                        Ok(t) => (t, path),
-                                                        Err(e) => {
-                                                            abort!(
-                                                                left,
-                                                                format!("Unknown target: {s} ({e})")
-                                                            )
+                                        Some(Input::Target(
+                                            value
+                                                .split(';')
+                                                .map(|s| {
+                                                    let path = PathBuf::from(s.trim());
+                                                    if let Some(ext) = path.extension() {
+                                                        match Target::try_from(ext.to_string_lossy().to_string().as_str()) {
+                                                            Ok(t) => (t, path),
+                                                            Err(e) => {
+                                                                abort!(
+                                                                    left,
+                                                                    format!("Unknown target: {s} ({e})")
+                                                                )
+                                                            }
                                                         }
+                                                    } else {
+                                                        abort!(
+                                                            left,
+                                                            format!("Cannot get extension of file: {s}; expecting .ts; .d.ts; .js")
+                                                        )
                                                     }
-                                                } else {
-                                                    abort!(
-                                                        left,
-                                                        format!("Cannot get extension of file: {s}; expecting .ts; .d.ts; .js")
-                                                    )
-                                                }
-                                                
-                                            })
-                                            .collect::<Vec<(Target, PathBuf)>>(),
+                                                    
+                                                })
+                                                .collect::<Vec<(Target, PathBuf)>>()),
                                     )},
-                                    Input::Ignore(_) => Input::Ignore(
+                                    Input::Ignore(_) => Some(Input::Ignore(
                                         value
                                             .split(';')
                                             .map(|s| s.trim().to_owned())
                                             .collect::<Vec<String>>(),
-                                    ),
-                                    _ => abort!(
-                                        left,
-                                        "Attribute \"{}\" cannot be applied on this level",
-                                        left
-                                    ),
+                                    )),
+                                    _ => {
+                                        abort!(
+                                            left,
+                                            "Attribute \"{}\" cannot be applied on this level",
+                                            left
+                                        )
+                                    },
                                 },
-                                Err(e) => abort!(left, "Unknown attribute: {} ({})", left, e),
+                                Err(_e) => {
+                                    bindings.push((left.to_string(), value));
+                                    None
+                                },
                             };
-                            inputs.push(input);
+                            if let Some(input) = input.take() {
+                                inputs.push(input);
+                            }
                         } else {
                             abort!(link, "Expecting expr like key = \"value as String\"");
                         }
@@ -261,6 +277,9 @@ impl Parse for Context {
                     );
                 }
             });
+        if !bindings.is_empty() {
+            inputs.push(Input::Binding(bindings));
+        }
         Ok(Context::new(inputs))
     }
 }

@@ -10,6 +10,7 @@ pub enum Input {
     Constructor,
     SnakeCaseNaming,
     Interface,
+    Binding(Vec<(String, String)>),
     Class,
 }
 
@@ -63,6 +64,7 @@ impl fmt::Display for Input {
                 Self::SnakeCaseNaming => "snake_case_naming",
                 Self::Interface => "interface",
                 Self::Target(_) => "target",
+                Self::Binding(_) => "**THIS_IS_RESERVED_KEY_WORD**",
                 Self::Class => "class",
             }
         )

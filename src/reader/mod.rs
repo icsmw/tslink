@@ -13,7 +13,7 @@ use crate::{
 use proc_macro_error::abort;
 use syn::{Item, ItemEnum, ItemStruct};
 
-pub fn read(item: Item, natures: &mut Natures, context: Context) -> Result<(), E> {
+pub fn read(item: &mut Item, natures: &mut Natures, context: Context) -> Result<(), E> {
     let item_ref = item.clone();
     match item {
         Item::Struct(item_struct) => {
@@ -47,7 +47,7 @@ pub fn read(item: Item, natures: &mut Natures, context: Context) -> Result<(), E
                 return Ok(());
             }
             if let Nature::Composite(Composite::Func(_, _, _, constructor)) =
-                Nature::extract(&item_fn, context.clone())?
+                Nature::extract(&*item_fn, context.clone())?
             {
                 if constructor {
                     return Ok(());
@@ -62,7 +62,7 @@ pub fn read(item: Item, natures: &mut Natures, context: Context) -> Result<(), E
                     Nature::Refered(Refered::Func(
                         name.clone(),
                         context.clone(),
-                        Box::new(Nature::extract(&item_fn, context.clone())?),
+                        Box::new(Nature::extract(&*item_fn, context.clone())?),
                     )),
                 )
             }
@@ -87,7 +87,7 @@ pub fn read(item: Item, natures: &mut Natures, context: Context) -> Result<(), E
             ) {
                 if let Nature::Refered(Refered::Struct(_, struct_context, _)) = nature.deref() {
                     structs::read_impl(
-                        &item_impl.items,
+                        &mut item_impl.items,
                         nature,
                         struct_context.clone(),
                         context.clone(),

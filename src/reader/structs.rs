@@ -1,9 +1,13 @@
+use std::ops::Deref;
+
 use crate::{
     context::Context,
     error::E,
-    nature::{Extract, Nature, Refered},
+    nature::{Composite, Extract, Nature, Refered},
 };
-use syn::{Fields, ImplItem, ItemFn};
+use proc_macro2::TokenStream;
+use quote::{format_ident, quote};
+use syn::{parse_quote, Block, Fields, ImplItem, ImplItemFn, ItemFn, Stmt};
 
 pub fn is_method(item_fn: &ItemFn) -> bool {
     item_fn
@@ -52,12 +56,12 @@ pub fn read_fields(fields: &Fields, parent: &mut Nature, parent_context: Context
 }
 
 pub fn read_impl(
-    items: &Vec<ImplItem>,
+    items: &mut Vec<ImplItem>,
     parent: &mut Nature,
     struct_context: Context,
     _parent_context: Context,
 ) -> Result<(), E> {
-    for item in items.iter() {
+    for item in items.iter_mut() {
         match item {
             ImplItem::Fn(fn_item) => {
                 let mut context = Context::try_from_or_default(&fn_item.attrs)?;
@@ -69,11 +73,58 @@ pub fn read_impl(
                 if context.is_ignored(&name) {
                     continue;
                 }
+                let fn_nature = Nature::extract(&*fn_item, context.clone())?;
                 parent.bind(Nature::Refered(Refered::Field(
                     name.to_string(),
                     context.clone(),
-                    Box::new(Nature::extract(fn_item, context.clone())?),
+                    Box::new(fn_nature.clone()),
                 )))?;
+                let (args, out) =
+                    if let Nature::Composite(Composite::Func(args, out, _, _)) = fn_nature {
+                        (args, out)
+                    } else {
+                        return Err(E::Parsing(format!("Fail to parse method \"{name}\"")));
+                    };
+                let bindings = context.get_bindings();
+                let mut unknown: Vec<String> = vec![];
+                bindings.iter().for_each(|(name, _)| {
+                    if !args.iter().any(|nature| {
+                        if let Nature::Refered(Refered::FuncArg(n, _, _)) = nature.deref() {
+                            name == n
+                        } else {
+                            false
+                        }
+                    }) {
+                        unknown.push(name.to_owned());
+                    }
+                });
+                if !unknown.is_empty() {
+                    return Err(E::Parsing(format!(
+                        "Unknown arguments to bind: {}",
+                        unknown.join(", ")
+                    )));
+                }
+                let bindings = bindings
+                    .iter()
+                    .map(|(name, ref_name)| {
+                        let varname = format_ident!("{}", name);
+                        let refname = format_ident!("{}", ref_name);
+                        quote!{
+                            #[allow(unused_mut)]
+                            let mut #varname: #refname = serde_json::from_str(&#varname).map_err(|e| e.to_string())?;
+                        }
+                    })
+                    .collect::<Vec<TokenStream>>();
+                if !bindings.is_empty() {
+                    let stmts = &fn_item.block.stmts;
+                    let q = quote! {
+                        use serde_json;
+                        let some = 123;
+                        #(#bindings)*;
+                        #(#stmts);*
+                    };
+                    fn_item.block = parse_quote! {{#q}};
+                }
             }
             _ => {}
         }

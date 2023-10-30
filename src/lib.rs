@@ -14,6 +14,7 @@ use context::Context;
 use nature::Natures;
 use proc_macro::TokenStream;
 use proc_macro_error::{abort, proc_macro_error};
+use quote::ToTokens;
 use std::sync::RwLock;
 use syn::{parse_macro_input, Item};
 
@@ -33,12 +34,10 @@ pub fn tslink(args: TokenStream, item: TokenStream) -> TokenStream {
         item
     } else {
         let mut natures = NATURES.write().expect("Get access to list of entities");
-        let output = item.clone();
-        let item = parse_macro_input!(item as Item);
-        let item_ref = item.clone();
-        if let Err(err) = reader::read(item, &mut natures, context) {
-            abort!(item_ref, err.to_string());
+        let mut item = parse_macro_input!(item as Item);
+        if let Err(err) = reader::read(&mut item, &mut natures, context) {
+            abort!(item, err.to_string());
         }
-        output
+        proc_macro::TokenStream::from(item.to_token_stream())
     }
 }

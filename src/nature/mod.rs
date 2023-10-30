@@ -119,6 +119,19 @@ impl Nature {
                         Ok(())
                     }
                 }
+                composite::Composite::Result(r, e) => {
+                    if r.is_some() && e.is_some() {
+                        Err(E::Parsing(String::from(
+                            "Result entity already has been bound",
+                        )))
+                    } else if r.is_none() {
+                        let _ = r.insert(Box::new(nature));
+                        Ok(())
+                    } else {
+                        let _ = e.insert(Box::new(nature));
+                        Ok(())
+                    }
+                }
                 composite::Composite::Tuple(tys) => {
                     tys.push(Box::new(nature));
                     Ok(())
@@ -187,7 +200,7 @@ impl Nature {
     pub fn get_context(&self) -> Result<&Context, E> {
         Ok(match self {
             Self::Primitive(_) => Err(E::Parsing(String::from("Primitives do not have context")))?,
-            Self::Composite(composite) => {
+            Self::Composite(_composite) => {
                 Err(E::Parsing(String::from("Composite do not have context")))?
             }
             Self::Refered(refered) => match refered {
@@ -240,6 +253,7 @@ impl Extract<&Punctuated<PathSegment, PathSep>> for Nature {
                 "Vec" => Nature::Composite(composite::Composite::Vec(None)),
                 "HashMap" => Nature::Composite(composite::Composite::HashMap(None, None)),
                 "Option" => Nature::Composite(composite::Composite::Option(None)),
+                "Result" => Nature::Composite(composite::Composite::Result(None, None)),
                 _ => {
                     return Err(E::Parsing(String::from(
                         "Only Vec, HashMap and Option are supported",
@@ -265,11 +279,15 @@ impl Extract<&Punctuated<PathSegment, PathSep>> for Nature {
 
 impl Extract<&Punctuated<Type, Comma>> for Nature {
     fn extract(elements: &Punctuated<Type, Comma>, context: Context) -> Result<Nature, E> {
-        let mut ty = Nature::Composite(composite::Composite::Tuple(vec![]));
-        for element in elements.iter() {
-            ty.bind(Nature::extract(element, context.clone())?)?;
+        if elements.is_empty() {
+            Ok(Nature::Composite(Composite::Undefined))
+        } else {
+            let mut ty = Nature::Composite(composite::Composite::Tuple(vec![]));
+            for element in elements.iter() {
+                ty.bind(Nature::extract(element, context.clone())?)?;
+            }
+            Ok(ty)
         }
-        Ok(ty)
     }
 }
 
