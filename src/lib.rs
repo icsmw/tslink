@@ -2,6 +2,7 @@ mod config;
 mod context;
 mod error;
 mod interpreter;
+mod modificator;
 mod nature;
 mod package;
 mod reader;

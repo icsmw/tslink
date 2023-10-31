@@ -1,16 +1,18 @@
 mod enums;
 mod structs;
 
-use std::ops::Deref;
-
 use crate::{
     context::Context,
     error::E,
-    interpreter,
-    nature::{Composite, Extract, Nature, Natures, Refered},
+    interpreter, modificator,
+    nature::{Composite, Extract, Nature, Natures, Refered, VariableTokenStream},
     package,
 };
+use proc_macro2::TokenStream;
 use proc_macro_error::abort;
+use quote::{format_ident, quote};
+use std::ops::Deref;
+use syn::parse_quote;
 use syn::{Item, ItemEnum, ItemStruct};
 
 pub fn read(item: &mut Item, natures: &mut Natures, context: Context) -> Result<(), E> {
@@ -57,14 +59,17 @@ pub fn read(item: &mut Item, natures: &mut Natures, context: Context) -> Result<
             if natures.contains(&name) {
                 Err(E::EntityExist(name))
             } else {
-                natures.insert(
+                let fn_nature = Nature::extract(&*item_fn, context.clone())?;
+                let _ = natures.insert(
                     &name,
                     Nature::Refered(Refered::Func(
                         name.clone(),
                         context.clone(),
-                        Box::new(Nature::extract(&*item_fn, context.clone())?),
+                        Box::new(fn_nature.clone()),
                     )),
-                )
+                );
+                modificator::bind_fn(item_fn, &name, &context, &fn_nature)?;
+                Ok(())
             }
         }
         Item::Impl(item_impl) => {

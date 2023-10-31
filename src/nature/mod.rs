@@ -171,7 +171,7 @@ impl Nature {
     }
 
     pub fn check_ignored_fields(&self) -> Result<(), E> {
-        if let Nature::Refered(Refered::Struct(name, context, fields)) = self.deref() {
+        if let Nature::Refered(Refered::Struct(name, context, fields)) = self {
             let ignored = context.ignored_list();
             if ignored.is_empty() {
                 return Ok(());
