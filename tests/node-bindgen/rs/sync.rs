@@ -33,13 +33,34 @@ impl Struct {
     #[tslink(snake_case_naming)]
     #[node_bindgen]
     fn get_b(&self) -> Option<String> {
-        self.b.clone()
+        { Ok::<Option<String>, String>(self.b.clone()) }.expect("bla")
     }
 
-    #[tslink(data = "Data")]
+    // fn m(data: String) -> Result<String, String> {
+    //     match {
+    //         use serde_json;
+    //         #[allow(unused_mut)]
+    //         let mut data: Data = serde_json::from_str(&data).map_err(|e| e.to_string())?;
+    //         println!("{}", data.s);
+    //         Ok(Data {
+    //             a: 1,
+    //             b: 2,
+    //             s: String::from("test"),
+    //         })
+    //     } {
+    //         Ok(res) => Ok(serde_json::to_string(&res).map_err(|e| e.to_string())?),
+    //         Err(err) => Err(err),
+    //     }
+    // }
+
+    #[tslink(data = "Data", result = "json")]
     #[node_bindgen]
-    fn get_data(&self, data: String) -> Result<(), String> {
+    fn get_data(&self, data: String) -> Result<Data, String> {
         println!("{}", data.s);
-        Ok(())
+        Ok(Data {
+            a: 1,
+            b: 2,
+            s: String::from("test"),
+        })
     }
 }

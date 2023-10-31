@@ -3,11 +3,11 @@ use std::ops::Deref;
 use crate::{
     context::Context,
     error::E,
-    nature::{Composite, Extract, Nature, Refered},
+    nature::{Composite, Extract, Nature, Refered, VariableTokenStream},
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{parse_quote, Block, Fields, ImplItem, ImplItemFn, ItemFn, Stmt};
+use syn::{parse_quote, Block, Fields, ImplItem, ImplItemFn, ItemFn, ReturnType, Stmt};
 
 pub fn is_method(item_fn: &ItemFn) -> bool {
     item_fn
@@ -85,7 +85,7 @@ pub fn read_impl(
                     } else {
                         return Err(E::Parsing(format!("Fail to parse method \"{name}\"")));
                     };
-                let bindings = context.get_bindings();
+                let bindings = context.get_bound_args();
                 let mut unknown: Vec<String> = vec![];
                 bindings.iter().for_each(|(name, _)| {
                     if !args.iter().any(|nature| {
@@ -95,7 +95,9 @@ pub fn read_impl(
                             false
                         }
                     }) {
-                        unknown.push(name.to_owned());
+                        if name != "result" {
+                            unknown.push(name.to_owned());
+                        }
                     }
                 });
                 if !unknown.is_empty() {
@@ -111,19 +113,36 @@ pub fn read_impl(
                         let refname = format_ident!("{}", ref_name);
                         quote!{
                             #[allow(unused_mut)]
-                            let mut #varname: #refname = serde_json::from_str(&#varname).map_err(|e| e.to_string())?;
+                            let mut #varname: #refname = serde_json::from_str(&#varname).map_err(|e| e.to_string())?
                         }
                     })
                     .collect::<Vec<TokenStream>>();
                 if !bindings.is_empty() {
                     let stmts = &fn_item.block.stmts;
-                    let q = quote! {
+                    let block = quote! {
                         use serde_json;
-                        let some = 123;
                         #(#bindings)*;
-                        #(#stmts);*
+                        #(#stmts)*
                     };
-                    fn_item.block = parse_quote! {{#q}};
+                    fn_item.block = parse_quote! {{#block}};
+                }
+                if context.result_as_json()? {
+                    if let Some(Nature::Composite(Composite::Result(Some(fn_res), Some(fn_err)))) =
+                        out.as_deref()
+                    {
+                        let res_token = fn_res.token_stream("res")?;
+                        let err_token = fn_err.token_stream("err")?;
+                        let stmts = &fn_item.block.stmts;
+                        let block = quote! {
+                            match {#(#stmts)*} {
+                                Ok(res) => Ok(#res_token),
+                                Err(err) => Err(#err_token)
+                            }
+                        };
+                        fn_item.block = parse_quote! {{#block}};
+                        let output = quote! { -> Result<String, String>};
+                        fn_item.sig.output = parse_quote! {#output};
+                    }
                 }
             }
             _ => {}

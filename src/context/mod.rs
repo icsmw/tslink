@@ -143,13 +143,29 @@ impl Context {
             .ok_or(E::Other(String::from("Fail to get renaming settings")))
     }
 
-    pub fn get_bindings(&self) -> Vec<(String, String)> {
+    pub fn get_bound_args(&self) -> Vec<(String, String)> {
         if let Some(arg) = self.inputs.iter().find(|i| matches!(i, Input::Binding(_))) {
             if let Input::Binding(arguments) = arg {
-                return arguments.clone();
+                return arguments.iter().filter(|(n, _)| n != "result").cloned().collect();
             }
         }
         vec![]
+    }
+
+    // This is always Result<Ref, Ref>
+    pub fn result_as_json(&self) -> Result<bool, E> {
+        if let Some(arg) = self.inputs.iter().find(|i| matches!(i, Input::Binding(_))) {
+            if let Input::Binding(arguments) = arg {
+                if let Some((_, result_fmt)) = arguments.iter().find(|(n, _)| n == "result") {
+                    return if result_fmt.trim() == "json" {
+                        Ok(true)
+                    } else {
+                        Err(E::Parsing(String::from("Binding results to JSON string supported only for now. Use \"json\" keyword to activate")))
+                    };
+                }
+            }
+        }
+        Ok(false)
     }
 
     pub fn path(&self) -> Option<PathBuf> {

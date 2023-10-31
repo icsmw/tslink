@@ -1,6 +1,11 @@
+use crate::{
+    context::Context,
+    error::E,
+    nature::{Nature, VariableTokenStream},
+};
+use proc_macro2::TokenStream;
 use std::ops::Deref;
-
-use crate::{context::Context, error::E, nature::Nature};
+use quote::{quote, format_ident};
 
 #[derive(Clone, Debug)]
 pub enum Refered {
@@ -33,6 +38,22 @@ impl Refered {
             Refered::is_flat_varians(&variants)
         } else {
             Err(E::Parsing(String::from("Given Nature isn't enum")))
+        }
+    }
+}
+
+impl VariableTokenStream for Refered {
+    fn token_stream(&self, var_name: &str) -> Result<TokenStream, E> {
+        let var_name = format_ident!("{}", var_name);
+        match self {   
+            Self::Ref(_) => {
+                Ok(quote!{
+                    serde_json::to_string(&#var_name).map_err(|e| e.to_string())?
+                })
+            },
+            _ => {
+                Err(E::Parsing(format!("Only reference to entity (struct / enum) can be convert into JSON string (var: {var_name})")))
+            }
         }
     }
 }

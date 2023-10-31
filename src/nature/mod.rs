@@ -5,6 +5,8 @@ mod refered;
 use crate::{context::Context, error::E};
 pub use composite::Composite;
 pub use primitive::Primitive;
+use proc_macro2::TokenStream;
+use quote::{format_ident, quote};
 pub use refered::Refered;
 use std::{
     collections::{hash_map::Iter, HashMap},
@@ -218,6 +220,20 @@ impl Nature {
 
 pub trait Extract<T> {
     fn extract(t: T, context: Context) -> Result<Nature, E>;
+}
+
+pub trait VariableTokenStream {
+    fn token_stream(&self, var_name: &str) -> Result<TokenStream, E>;
+}
+
+impl VariableTokenStream for Nature {
+    fn token_stream(&self, var_name: &str) -> Result<TokenStream, E> {
+        match self {
+            Nature::Composite(v) => v.token_stream(var_name),
+            Nature::Primitive(v) => v.token_stream(var_name),
+            Nature::Refered(v) => v.token_stream(var_name),
+        }
+    }
 }
 
 impl Extract<&GenericArgument> for Nature {
