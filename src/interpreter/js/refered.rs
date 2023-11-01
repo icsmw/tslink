@@ -22,7 +22,7 @@ impl Interpreter for Refered {
                 buf.write_all(
                     format!("\nconst {{ {struct_name} }} = nativeModuleRef;").as_bytes(),
                 )?;
-                if Natures::is_any_bound(fields)? {
+                if Natures::is_any_bound(fields) {
                     buf.write_all(format!("\nexports.{struct_name} = {struct_name};").as_bytes())?;
                 } else {
                     let alias = format!("$${struct_name}");
@@ -35,7 +35,7 @@ impl Interpreter for Refered {
                     )?;
                     // Render fields
                     for field in fields.iter() {
-                        if let Nature::Refered(Refered::Field(name, _, nature)) = field.deref() {
+                        if let Nature::Refered(Refered::Field(name, _, nature, _)) = field.deref() {
                             if !matches!(
                                 nature.deref(),
                                 Nature::Composite(Composite::Func(_, _, _, _))
@@ -57,7 +57,8 @@ impl Interpreter for Refered {
                     // Render constructor
                     let mut constuctor_rendered = false;
                     for field in fields.iter() {
-                        if let Nature::Refered(Refered::Field(name, context, nature)) = &**field {
+                        if let Nature::Refered(Refered::Field(name, context, nature, _)) = &**field
+                        {
                             if let Nature::Composite(Composite::Func(args, _, _, true)) = &**nature
                             {
                                 let bound = context.get_bound_args();
@@ -112,7 +113,7 @@ impl Interpreter for Refered {
                     }
                     // Render methods
                     for field in fields.iter() {
-                        if let Nature::Refered(Refered::Field(name, context, nature)) =
+                        if let Nature::Refered(Refered::Field(name, context, nature, _)) =
                             field.deref()
                         {
                             if let Nature::Composite(Composite::Func(args, _, _, constructor)) =

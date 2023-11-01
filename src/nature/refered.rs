@@ -9,13 +9,19 @@ use quote::{quote, format_ident};
 
 #[derive(Clone, Debug)]
 pub enum Refered {
+    // Name, Context, Fields
     Struct(String, Context, Vec<Box<Nature>>),
+    // Name, Context, Variants
     Enum(String, Context, Vec<Box<Nature>>),
     // name, context, values, is_flat
     EnumVariant(String, Context, Vec<Box<Nature>>, bool),
+    // Name, Context, FuncNature
     Func(String, Context, Box<Nature>),
-    Field(String, Context, Box<Nature>),
-    FuncArg(String, Context, Box<Nature>),
+    // Name, Context, Nature, Binding
+    Field(String, Context, Box<Nature>, Option<String>),
+    // Name, Context, Nature, Binding
+    FuncArg(String, Context, Box<Nature>, Option<String>),
+    // Name
     Ref(String),
 }
 

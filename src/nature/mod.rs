@@ -25,23 +25,21 @@ impl Natures {
     pub fn new() -> Self {
         Natures(HashMap::new())
     }
-    pub fn is_any_bound(natures: &Vec<Box<Nature>>) -> Result<bool, E> {
+    pub fn is_any_bound(natures: &Vec<Box<Nature>>) -> bool {
         for nature in natures.iter() {
-            if let Nature::Refered(Refered::Field(_, _, nature)) = nature.deref() {
-                if let Ok(context) = nature.get_context() {
-                    if !context.get_bound_args().is_empty() || context.result_as_json()? {
-                        return Ok(true);
-                    }
+            if let Nature::Refered(Refered::Field(_, _, nature, binding)) = nature.deref() {
+                if binding.is_some() {
+                    return true;
                 }
             }
         }
-        Ok(false)
+        false
     }
 
     pub fn get_fn_args_names(args: &Vec<Box<Nature>>) -> Vec<String> {
         args.iter()
             .filter_map(|arg| {
-                if let Nature::Refered(Refered::FuncArg(name, _, _)) = arg.deref() {
+                if let Nature::Refered(Refered::FuncArg(name, _, _, _)) = arg.deref() {
                     Some(name.to_owned())
                 } else {
                     None
@@ -185,7 +183,7 @@ impl Nature {
     }
 
     pub fn is_method_constructor(&self) -> bool {
-        if let Nature::Refered(Refered::Field(_, _, nature)) = self {
+        if let Nature::Refered(Refered::Field(_, _, nature, _)) = self {
             if let Nature::Composite(Composite::Func(_, _, _, constructor)) = nature.deref() {
                 return *constructor;
             }
@@ -194,7 +192,7 @@ impl Nature {
     }
 
     pub fn is_field_ignored(&self) -> bool {
-        if let Nature::Refered(Refered::Field(name, context, _)) = self {
+        if let Nature::Refered(Refered::Field(name, context, _, _)) = self {
             context.is_ignored(name)
         } else {
             false
@@ -210,7 +208,7 @@ impl Nature {
             let existed = fields
                 .iter()
                 .filter_map(|f| {
-                    if let Nature::Refered(Refered::Field(name, _, _)) = f.deref() {
+                    if let Nature::Refered(Refered::Field(name, _, _, _)) = f.deref() {
                         Some(name.to_owned())
                     } else {
                         None
@@ -239,9 +237,9 @@ impl Nature {
             Self::Refered(refered) => match refered {
                 Refered::Enum(_, context, _) => context,
                 Refered::EnumVariant(_, context, _, _) => context,
-                Refered::Field(_, context, _) => context,
+                Refered::Field(_, context, _, _) => context,
                 Refered::Func(_, context, _) => context,
-                Refered::FuncArg(_, context, _) => context,
+                Refered::FuncArg(_, context, _, _) => context,
                 Refered::Struct(_, context, _) => context,
                 Refered::Ref(_) => Err(E::Parsing(String::from("Reference do not have context")))?,
             },
@@ -371,9 +369,10 @@ impl Extract<&ImplItemFn> for Nature {
                     return Err(E::Parsing(String::from("Cannot find ident for FnArg")));
                 };
                 args.push(Box::new(Nature::Refered(Refered::FuncArg(
-                    arg_name,
+                    arg_name.clone(),
                     context.clone(),
                     Box::new(Nature::extract(*ty.ty.clone(), context.clone())?),
+                    context.get_bound(&arg_name),
                 ))));
             }
         }
@@ -406,9 +405,10 @@ impl Extract<&ItemFn> for Nature {
                     return Err(E::Parsing(String::from("Cannot find ident for FnArg")));
                 };
                 args.push(Box::new(Nature::Refered(Refered::FuncArg(
-                    arg_name,
+                    arg_name.clone(),
                     context.clone(),
                     Box::new(Nature::extract(*ty.ty.clone(), context.clone())?),
+                    context.get_bound(&arg_name),
                 ))));
             }
         }

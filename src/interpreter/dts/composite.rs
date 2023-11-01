@@ -44,11 +44,15 @@ impl Interpreter for Composite {
             Self::Func(args, out, asyncness, constructor) => {
                 buf.write_all(format!("(").as_bytes())?;
                 for (i, nature) in args.iter().enumerate() {
-                    if let Nature::Refered(Refered::FuncArg(name, _context, nature)) =
+                    if let Nature::Refered(Refered::FuncArg(name, _context, nature, binding)) =
                         nature.deref()
                     {
                         buf.write_all(format!("{name}: ").as_bytes())?;
-                        nature.reference(natures, buf, offset.clone())?;
+                        if let Some(ref_name) = binding {
+                            buf.write_all(ref_name.as_bytes())?;
+                        } else {
+                            nature.reference(natures, buf, offset.clone())?;
+                        }
                         if i < args.len() - 1 {
                             buf.write_all(", ".as_bytes())?;
                         }

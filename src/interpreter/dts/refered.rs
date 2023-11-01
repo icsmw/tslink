@@ -61,17 +61,20 @@ impl Interpreter for Refered {
                     buf.write_all(format!("] | undefined").as_bytes())?;
                 }
             }
-            Refered::Field(name, context, _) => {
+            Refered::Field(name, context, _, _) => {
                 buf.write_all(format!("{}: ", context.rename_field(name)?).as_bytes())?
             }
-            Refered::Func(name, _context, func) => {
+            Refered::Func(name, context, func) => {
                 if let Nature::Composite(Composite::Func(args, out, asyncness, constructor)) =
                     func.deref()
                 {
                     if *constructor {
                         return Ok(());
                     }
-                    buf.write_all(format!("{}export declare function {name}(", offset).as_bytes())?;
+                    let renamed = context.rename_method(name)?;
+                    buf.write_all(
+                        format!("{}export declare function {renamed}(", offset).as_bytes(),
+                    )?;
                     for (i, ty) in args.iter().enumerate() {
                         ty.declaration(natures, buf, Offset::new())?;
                         if i < args.len() - 1 {
@@ -95,9 +98,13 @@ impl Interpreter for Refered {
                     return Err(E::Parsing(format!("Cannot find body of function {name}")));
                 }
             }
-            Refered::FuncArg(name, _context, nature) => {
+            Refered::FuncArg(name, _context, nature, binding) => {
                 buf.write_all(format!("{name}: ").as_bytes())?;
-                nature.reference(natures, buf, offset.clone())?;
+                if let Some(ref_name) = binding {
+                    buf.write_all(ref_name.as_bytes())?;
+                } else {
+                    nature.reference(natures, buf, offset.clone())?;
+                }
             }
             Refered::Struct(name, context, fields) => {
                 buf.write_all(
@@ -138,7 +145,7 @@ impl Interpreter for Refered {
             Refered::EnumVariant(name, _, _, _) => {
                 buf.write_all(format!("{offset}{name}: ").as_bytes())?
             }
-            Refered::Field(name, context, nature) => {
+            Refered::Field(name, context, nature, _) => {
                 if let Nature::Composite(Composite::Func(_, _, _, constructor)) = nature.deref() {
                     if *constructor {
                         buf.write_all(format!("{offset}constructor").as_bytes())?;
@@ -154,7 +161,7 @@ impl Interpreter for Refered {
                 }
             }
             Refered::Func(name, _, _) => buf.write_all(name.as_bytes())?,
-            Refered::FuncArg(name, _, _) => {
+            Refered::FuncArg(name, _, _, _) => {
                 return Err(E::Parsing(format!(
                     "Function argument {name} can be refered"
                 )));

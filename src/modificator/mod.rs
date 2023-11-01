@@ -55,7 +55,7 @@ fn bind(item: &mut FnItem, name: &str, context: &Context, fn_nature: &Nature) ->
     let mut unknown: Vec<String> = vec![];
     bindings.iter().for_each(|(name, _)| {
         if !args.iter().any(|nature| {
-            if let Nature::Refered(Refered::FuncArg(n, _, _)) = nature.deref() {
+            if let Nature::Refered(Refered::FuncArg(n, _, _, _)) = nature.deref() {
                 name == n
             } else {
                 false

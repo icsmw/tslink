@@ -33,6 +33,7 @@ pub fn read_fields(fields: &Fields, parent: &mut Nature, parent_context: Context
                     name.to_string(),
                     context.clone(),
                     Box::new(Nature::extract(&field.ty, context.clone())?),
+                    context.get_bound(&name.to_string()),
                 )))?;
             }
             parent.check_ignored_fields()?;
@@ -62,9 +63,10 @@ pub fn read_impl(
                 }
                 let fn_nature = Nature::extract(&*fn_item, context.clone())?;
                 parent.bind(Nature::Refered(Refered::Field(
-                    name.to_string(),
+                    name.clone(),
                     context.clone(),
                     Box::new(fn_nature.clone()),
+                    context.get_bound(&name),
                 )))?;
                 modificator::bind_impl_fn(fn_item, &name, &context, &fn_nature)?;
             }

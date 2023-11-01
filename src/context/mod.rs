@@ -152,6 +152,15 @@ impl Context {
         vec![]
     }
 
+    pub fn get_bound(&self, name: &str) -> Option<String> {
+        if let Some(arg) = self.inputs.iter().find(|i| matches!(i, Input::Binding(_))) {
+            if let Input::Binding(arguments) = arg {
+                return arguments.iter().find_map(|(n, ref_name)| if n == name { Some(ref_name.to_owned())} else { None});
+            }
+        }
+        None
+    }
+
     // This is always Result<Ref, Ref>
     pub fn result_as_json(&self) -> Result<bool, E> {
         if let Some(arg) = self.inputs.iter().find(|i| matches!(i, Input::Binding(_))) {
