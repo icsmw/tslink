@@ -6,7 +6,6 @@ use crate::{context::Context, error::E};
 pub use composite::Composite;
 pub use primitive::Primitive;
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
 pub use refered::Refered;
 use std::{
     collections::{hash_map::Iter, HashMap},
@@ -27,7 +26,7 @@ impl Natures {
     }
     pub fn is_any_bound(natures: &Vec<Box<Nature>>) -> bool {
         for nature in natures.iter() {
-            if let Nature::Refered(Refered::Field(_, _, nature, binding)) = nature.deref() {
+            if let Nature::Refered(Refered::Field(_, _, _, binding)) = nature.deref() {
                 if binding.is_some() {
                     return true;
                 }
@@ -80,10 +79,6 @@ impl Natures {
 
     pub fn iter(&self) -> Iter<'_, std::string::String, Nature> {
         self.0.iter()
-    }
-
-    pub fn len(&self) -> usize {
-        self.0.len()
     }
 }
 

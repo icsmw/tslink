@@ -3,17 +3,13 @@ mod primitive;
 mod refered;
 
 use crate::{
-    config,
-    context::Target,
     error::E,
-    interpreter::{create_target_file, Offset},
+    interpreter::Offset,
     nature::{Nature, Natures},
 };
 use std::{
-    collections::HashSet,
     fs::File,
     io::{BufWriter, Write},
-    path::PathBuf,
 };
 
 pub trait Interpreter {

@@ -39,18 +39,6 @@ impl TryFrom<&str> for Input {
     }
 }
 
-impl Input {
-    pub fn is_ignore(input: &str) -> bool {
-        Input::Ignore(vec![]).to_string() == input
-    }
-    pub fn is_ignore_self(input: &str) -> bool {
-        Input::IgnoreSelf.to_string() == input
-    }
-    pub fn is_constructor(input: &str) -> bool {
-        Input::Constructor.to_string() == input
-    }
-}
-
 impl fmt::Display for Input {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(

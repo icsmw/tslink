@@ -85,10 +85,6 @@ impl Context {
         }
     }
 
-    pub fn as_interface(&self) -> bool {
-        self.inputs.iter().any(|i| matches!(i, Input::Interface))
-    }
-
     pub fn as_class(&self) -> bool {
         if self.inputs.iter().any(|i| matches!(i, Input::Class)) {
             return true;
@@ -102,14 +98,6 @@ impl Context {
 
     pub fn as_constructor(&self) -> bool {
         self.inputs.iter().any(|i| matches!(i, Input::Constructor))
-    }
-
-    pub fn set_as_class(&self) -> Self {
-        let mut clonned = self.clone();
-        if !clonned.as_class() {
-            clonned.inputs.push(Input::Class);
-        }
-        clonned
     }
 
     fn rename(&self, origin: &str) -> Option<String> {
@@ -175,15 +163,6 @@ impl Context {
             }
         }
         Ok(false)
-    }
-
-    pub fn path(&self) -> Option<PathBuf> {
-        // if let Some(arg) = self.inputs.iter().find(|i| matches!(i, Input::Path(_))) {
-        //     if let Input::Path(path) = arg {
-        //         return Some(PathBuf::from(path));
-        //     }
-        // }
-        None
     }
 
     pub fn try_from_or_default(attrs: &Vec<Attribute>) -> Result<Self, E> {

@@ -1,6 +1,5 @@
 use super::Interpreter;
 use crate::{
-    config,
     error::E,
     interpreter::Offset,
     nature::{Composite, Nature, Natures, Refered},

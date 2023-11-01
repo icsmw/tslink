@@ -57,8 +57,7 @@ impl Interpreter for Refered {
                     // Render constructor
                     let mut constuctor_rendered = false;
                     for field in fields.iter() {
-                        if let Nature::Refered(Refered::Field(name, context, nature, _)) = &**field
-                        {
+                        if let Nature::Refered(Refered::Field(_, context, nature, _)) = &**field {
                             if let Nature::Composite(Composite::Func(args, _, _, true)) = &**nature
                             {
                                 let bound = context.get_bound_args();

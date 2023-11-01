@@ -5,14 +5,11 @@ use crate::{
     context::Context,
     error::E,
     interpreter, modificator,
-    nature::{Composite, Extract, Nature, Natures, Refered, VariableTokenStream},
+    nature::{Composite, Extract, Nature, Natures, Refered},
     package,
 };
-use proc_macro2::TokenStream;
 use proc_macro_error::abort;
-use quote::{format_ident, quote};
 use std::ops::Deref;
-use syn::parse_quote;
 use syn::{Item, ItemEnum, ItemStruct};
 
 pub fn read(item: &mut Item, natures: &mut Natures, context: Context) -> Result<(), E> {

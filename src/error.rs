@@ -1,4 +1,3 @@
-use crate::config::Config;
 use thiserror::Error;
 
 #[derive(Error, Debug)]

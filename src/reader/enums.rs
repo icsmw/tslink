@@ -1,7 +1,7 @@
 use crate::{
     context::Context,
     error::E,
-    nature::{Composite, Extract, Nature, Primitive, Refered},
+    nature::{Extract, Nature, Refered},
 };
 use syn::{punctuated::Punctuated, token::Comma, Fields};
 

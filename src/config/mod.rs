@@ -1,14 +1,7 @@
-use crate::{context::Context, error::E, CONFIG};
+use crate::{error::E, CONFIG};
 use cfg::{Cfg, SnakeCaseNaming};
 use convert_case::{Case, Casing};
-use std::{
-    collections::HashSet,
-    default::Default,
-    env::current_dir,
-    fs,
-    io::{Error, ErrorKind},
-    path::PathBuf,
-};
+use std::{collections::HashSet, default::Default, fs, path::PathBuf};
 use toml::Table;
 
 pub mod cfg;
@@ -62,32 +55,6 @@ impl Config {
             });
         }
         self.cargo = Some(cargo);
-    }
-
-    pub fn get_path(&self, context: Option<&Context>, ext: &str) -> Result<PathBuf, E> {
-        let path = if let Some(context) = context {
-            context.path()
-        } else {
-            None
-        };
-        let path = path
-            .or_else(|| self.path_buf.clone())
-            .ok_or(Error::new(ErrorKind::Other, "Dest path isn't set"))?;
-        let mut path = if path.is_relative() {
-            current_dir()?.join(path)
-        } else {
-            path
-        };
-        if let Some(ex) = path.extension() {
-            if let Some(ex) = ex.to_str() {
-                if ex != ext {
-                    path.set_extension(ext);
-                }
-            }
-        } else {
-            path.set_extension(ext);
-        }
-        Ok(path)
     }
 
     pub fn get_cargo(&self) -> &Table {

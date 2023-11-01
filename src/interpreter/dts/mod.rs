@@ -3,7 +3,6 @@ mod primitive;
 mod refered;
 
 use crate::{
-    config,
     error::E,
     interpreter::{create_node_located_file, Offset},
     nature::{Nature, Natures},

@@ -1,14 +1,10 @@
-use std::ops::Deref;
-
 use crate::{
     context::Context,
     error::E,
     modificator,
-    nature::{Composite, Extract, Nature, Refered, VariableTokenStream},
+    nature::{Extract, Nature, Refered},
 };
-use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
-use syn::{parse_quote, Fields, ImplItem, ItemFn};
+use syn::{Fields, ImplItem, ItemFn};
 
 pub fn is_method(item_fn: &ItemFn) -> bool {
     item_fn
