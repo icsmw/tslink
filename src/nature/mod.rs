@@ -97,6 +97,13 @@ pub enum Nature {
 }
 
 impl Nature {
+    pub fn get_fn_args_names(&self) -> Result<Vec<String>, E> {
+        if let Nature::Composite(Composite::Func(args, _, _, _)) = self {
+            Ok(Natures::get_fn_args_names(&args))
+        } else {
+            Err(E::Parsing(format!("Fail to find arguments of function")))
+        }
+    }
     pub fn bind(&mut self, nature: Nature) -> Result<(), E> {
         match self {
             Self::Primitive(_) => Err(E::Parsing(String::from("Primitive type cannot be bound"))),

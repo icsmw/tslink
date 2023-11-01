@@ -1,6 +1,5 @@
 use super::Interpreter;
 use crate::{
-    context,
     error::E,
     interpreter::Offset,
     nature::{Composite, Nature, Natures, Refered},
@@ -66,7 +65,7 @@ impl Interpreter for Refered {
                                     let args = Natures::get_fn_args_names(&args).join(", ");
                                     buf.write_all(
                                         format!(
-                                            "\n
+                                            "
     constructor({args}) {{
         this.#_origin = new {struct_name}({args});
     }}"
@@ -152,8 +151,7 @@ impl Interpreter for Refered {
                                         "
     {name}({}){{
         return {call_exp};
-    }}
-        ",
+    }}",
                                         args.join(", ")
                                     )
                                     .as_bytes(),
@@ -162,7 +160,7 @@ impl Interpreter for Refered {
                         }
                     }
                     buf.write_all(format!("\n}}").as_bytes())?;
-                    buf.write_all(format!("\nexports.{struct_name} = {alias};").as_bytes())?;
+                    buf.write_all(format!("\nexports.{struct_name} = {alias};\n").as_bytes())?;
                 }
             }
             Refered::Enum(name, _context, variants) => {
@@ -189,48 +187,41 @@ impl Interpreter for Refered {
                     buf.write_all(format!("\nexports.{fn_name} = {fn_name};").as_bytes())?;
                     return Ok(());
                 }
-                if let Nature::Composite(Composite::Func(args, _, _, _)) = nature.deref() {
-                    let alias = format!("$${fn_name}");
-                    let args = Natures::get_fn_args_names(args);
-                    let call_exp = if bound.is_empty() {
-                        format!("{fn_name}({})", args.join(", "))
-                    } else {
-                        format!(
-                            "{fn_name}({})",
-                            args.iter()
-                                .map(|a| {
-                                    if bound.iter().any(|(name, _)| name == a) {
-                                        format!("JSON.stringify({a})")
-                                    } else {
-                                        a.to_owned()
-                                    }
-                                })
-                                .collect::<Vec<String>>()
-                                .join(", ")
-                        )
-                    };
-                    let call_exp = if !context.result_as_json()? {
-                        call_exp
-                    } else {
-                        format!("JSON.parse({call_exp})")
-                    };
-                    buf.write_all(
-                        format!(
-                            "
+                let args = nature.get_fn_args_names()?;
+                let alias = format!("$${fn_name}");
+                let call_exp = if bound.is_empty() {
+                    format!("{fn_name}({})", args.join(", "))
+                } else {
+                    format!(
+                        "{fn_name}({})",
+                        args.iter()
+                            .map(|a| {
+                                if bound.iter().any(|(name, _)| name == a) {
+                                    format!("JSON.stringify({a})")
+                                } else {
+                                    a.to_owned()
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                            .join(", ")
+                    )
+                };
+                let call_exp = if !context.result_as_json()? {
+                    call_exp
+                } else {
+                    format!("JSON.parse({call_exp})")
+                };
+                buf.write_all(
+                    format!(
+                        "
 function {alias}({}){{
     return {call_exp};
-}}
-",
-                            args.join(", ")
-                        )
-                        .as_bytes(),
-                    )?;
-                    buf.write_all(format!("\nexports.{fn_name} = {alias};").as_bytes())?;
-                } else {
-                    return Err(E::Parsing(format!(
-                        "Fail to find arguments of function \"{fn_name}\""
-                    )));
-                }
+}}",
+                        args.join(", ")
+                    )
+                    .as_bytes(),
+                )?;
+                buf.write_all(format!("\nexports.{fn_name} = {alias};\n").as_bytes())?;
             }
             _ => {
                 return Err(E::Parsing(format!(

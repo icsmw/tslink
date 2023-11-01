@@ -1,4 +1,3 @@
-mod composite;
 mod refered;
 
 use crate::{
