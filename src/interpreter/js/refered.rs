@@ -180,6 +180,7 @@ impl Interpreter for Refered {
                 buf.write_all(format!("{}}});\n", offset).as_bytes())?;
             }
             Refered::Func(fn_name, context, nature) => {
+                let fn_name = context.rename_method(fn_name)?;
                 let bound = context.get_bound_args();
                 let json_res = context.result_as_json()?;
                 buf.write_all(format!("\nconst {{ {fn_name} }} = nativeModuleRef;").as_bytes())?;
