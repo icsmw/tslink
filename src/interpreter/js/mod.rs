@@ -1,3 +1,4 @@
+mod composite;
 mod refered;
 
 use crate::{
@@ -63,7 +64,7 @@ function native() {{
     }}
     return require(modulePath);
 }}
-
+const nativeModuleRef = native();
 "
         )
         .as_bytes(),
@@ -75,33 +76,46 @@ function native() {{
             }
         }
     }
-    buf_writer.write_all(format!("const {{ ").as_bytes())?;
-    let mut exporting: Vec<String> = vec![];
-    for (_i, (name, entity)) in natures.iter().enumerate() {
-        if match entity {
-            Nature::Refered(Refered::Struct(_, context, _)) => {
-                if context.as_class() {
-                    true
-                } else {
-                    false
-                }
+    for (_, filtered) in natures.iter().filter(|(_, nature)| match nature {
+        Nature::Refered(Refered::Struct(_, context, _)) => {
+            if context.as_class() {
+                true
+            } else {
+                false
             }
-            Nature::Refered(Refered::Func(_, _, _)) => true,
-            _ => false,
-        } {
-            exporting.push(name.clone());
+        }
+        Nature::Refered(Refered::Func(_, _, _)) => true,
+        _ => false,
+    }) {
+        if let Nature::Refered(nature) = filtered {
+            nature.declaration(&natures, &mut buf_writer, Offset::new())?;
         }
     }
-    for (i, name) in exporting.iter().enumerate() {
-        buf_writer.write_all(format!("{name}").as_bytes())?;
-        if i < exporting.len() - 1 {
-            buf_writer.write_all(format!(", ").as_bytes())?;
-        }
-    }
-    buf_writer.write_all(format!(" }} = native();").as_bytes())?;
-    for (_i, name) in exporting.iter().enumerate() {
-        buf_writer.write_all(format!("\nexports.{name} = {name};").as_bytes())?;
-    }
+    // for (_i, (name, entity)) in natures.iter().enumerate() {
+    //     if match entity {
+    //         Nature::Refered(Refered::Struct(_, context, _)) => {
+    //             if context.as_class() {
+    //                 true
+    //             } else {
+    //                 false
+    //             }
+    //         }
+    //         Nature::Refered(Refered::Func(_, _, _)) => true,
+    //         _ => false,
+    //     } {
+    //         exporting.push(name.clone());
+    //     }
+    // }
+    // for (i, name) in exporting.iter().enumerate() {
+    //     buf_writer.write_all(format!("{name}").as_bytes())?;
+    //     if i < exporting.len() - 1 {
+    //         buf_writer.write_all(format!(", ").as_bytes())?;
+    //     }
+    // }
+    // buf_writer.write_all(format!(" }} = native();").as_bytes())?;
+    // for (_i, name) in exporting.iter().enumerate() {
+    //     buf_writer.write_all(format!("\nexports.{name} = {name};").as_bytes())?;
+    // }
     buf_writer.flush()?;
     Ok(())
 }

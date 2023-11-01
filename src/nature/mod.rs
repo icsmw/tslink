@@ -25,6 +25,30 @@ impl Natures {
     pub fn new() -> Self {
         Natures(HashMap::new())
     }
+    pub fn is_any_bound(natures: &Vec<Box<Nature>>) -> Result<bool, E> {
+        for nature in natures.iter() {
+            if let Nature::Refered(Refered::Field(_, _, nature)) = nature.deref() {
+                if let Ok(context) = nature.get_context() {
+                    if !context.get_bound_args().is_empty() || context.result_as_json()? {
+                        return Ok(true);
+                    }
+                }
+            }
+        }
+        Ok(false)
+    }
+
+    pub fn get_fn_args_names(args: &Vec<Box<Nature>>) -> Vec<String> {
+        args.iter()
+            .filter_map(|arg| {
+                if let Nature::Refered(Refered::FuncArg(name, _, _)) = arg.deref() {
+                    Some(name.to_owned())
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<String>>()
+    }
     pub fn contains(&self, name: &str) -> bool {
         self.0.contains_key(name)
     }

@@ -53,7 +53,7 @@ impl Struct {
     //     }
     // }
 
-    #[tslink(data = "Data", result = "json")]
+    #[tslink(data = "Data", result = "json", snake_case_naming)]
     #[node_bindgen]
     fn get_data(&self, data: String) -> Result<Data, String> {
         println!("{}", data.s);
@@ -63,4 +63,15 @@ impl Struct {
             s: String::from("test"),
         })
     }
+}
+
+#[tslink(data = "Data", result = "json", snake_case_naming)]
+#[node_bindgen]
+fn get_data_func(data: String, a: i64, b: i64) -> Result<Data, String> {
+    println!("{}", data.s);
+    Ok(Data {
+        a: 1,
+        b: 2,
+        s: String::from("test"),
+    })
 }
