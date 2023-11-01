@@ -6,7 +6,7 @@ use toml::Table;
 
 pub mod cfg;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Config {
     inited: bool,
     path_buf: Option<PathBuf>,
@@ -16,23 +16,10 @@ pub struct Config {
     pub snake_case_naming: HashSet<SnakeCaseNaming>,
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Config {
-            path_buf: None,
-            node_mod_filename: None,
-            node_mod_dist: None,
-            snake_case_naming: HashSet::new(),
-            cargo: None,
-            inited: false,
-        }
-    }
-}
-
 impl Config {
     pub fn overwrite(&mut self, cfg: Cfg, cargo: Table) {
         self.inited = true;
-        self.path_buf = cfg.path.map(|s| PathBuf::from(s));
+        self.path_buf = cfg.path.map(PathBuf::from);
         self.node_mod_dist = cfg
             .node
             .clone()
@@ -58,7 +45,7 @@ impl Config {
     }
 
     pub fn get_cargo(&self) -> &Table {
-        &self.cargo.as_ref().expect("Cargo.toml should be available")
+        self.cargo.as_ref().expect("Cargo.toml should be available")
     }
 
     pub fn rename_field(&self, origin: &str) -> String {

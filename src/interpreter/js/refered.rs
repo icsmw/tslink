@@ -35,7 +35,7 @@ impl Interpreter for Refered {
                     )?;
                     // Render fields
                     for field in fields.iter() {
-                        if let Nature::Refered(Refered::Field(name, _, nature, _)) = field.deref() {
+                        if let Nature::Refered(Refered::Field(name, _, nature, _)) = field {
                             if !matches!(
                                 nature.deref(),
                                 Nature::Composite(Composite::Func(_, _, _, _))
@@ -57,12 +57,12 @@ impl Interpreter for Refered {
                     // Render constructor
                     let mut constuctor_rendered = false;
                     for field in fields.iter() {
-                        if let Nature::Refered(Refered::Field(_, context, nature, _)) = &**field {
+                        if let Nature::Refered(Refered::Field(_, context, nature, _)) = field {
                             if let Nature::Composite(Composite::Func(args, _, _, true)) = &**nature
                             {
                                 let bound = context.get_bound_args();
                                 if bound.is_empty() {
-                                    let args = Natures::get_fn_args_names(&args).join(", ");
+                                    let args = Natures::get_fn_args_names(args).join(", ");
                                     buf.write_all(
                                         format!(
                                             "
@@ -73,7 +73,7 @@ impl Interpreter for Refered {
                                         .as_bytes(),
                                     )?;
                                 } else {
-                                    let args = Natures::get_fn_args_names(&args);
+                                    let args = Natures::get_fn_args_names(args);
                                     buf.write_all(
                                         format!(
                                             "\n
@@ -112,9 +112,7 @@ impl Interpreter for Refered {
                     }
                     // Render methods
                     for field in fields.iter() {
-                        if let Nature::Refered(Refered::Field(name, context, nature, _)) =
-                            field.deref()
-                        {
+                        if let Nature::Refered(Refered::Field(name, context, nature, _)) = field {
                             if let Nature::Composite(Composite::Func(args, _, _, constructor)) =
                                 nature.deref()
                             {
@@ -123,7 +121,7 @@ impl Interpreter for Refered {
                                 }
                                 let name = context.rename_field(name)?;
                                 let bound = context.get_bound_args();
-                                let args = Natures::get_fn_args_names(&args);
+                                let args = Natures::get_fn_args_names(args);
                                 let call_exp = if bound.is_empty() {
                                     format!("this.#_origin.{name}({})", args.join(", "))
                                 } else {
@@ -159,14 +157,14 @@ impl Interpreter for Refered {
                             }
                         }
                     }
-                    buf.write_all(format!("\n}}").as_bytes())?;
+                    buf.write_all("\n}}".as_bytes())?;
                     buf.write_all(format!("\nexports.{struct_name} = {alias};\n").as_bytes())?;
                 }
             }
             Refered::Enum(name, _context, variants) => {
                 buf.write_all(format!("{}exports.{name} = Object.freeze({{\n", offset).as_bytes())?;
                 for (i, variant) in variants.iter().enumerate() {
-                    if let Nature::Refered(Refered::EnumVariant(name, _, _, _)) = variant.deref() {
+                    if let Nature::Refered(Refered::EnumVariant(name, _, _, _)) = variant {
                         buf.write_all(
                             format!("{}{name}: {i}, \"{i}\": \"{name}\",\n", offset.inc())
                                 .as_bytes(),
@@ -225,9 +223,9 @@ function {alias}({}){{
                 buf.write_all(format!("\nexports.{fn_name} = {alias};\n").as_bytes())?;
             }
             _ => {
-                return Err(E::Parsing(format!(
-                    "Given nature cannot be declared for JS"
-                )));
+                return Err(E::Parsing(
+                    "Given nature cannot be declared for JS".to_string(),
+                ));
             }
         }
         Ok(())

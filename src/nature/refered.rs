@@ -4,17 +4,16 @@ use crate::{
     nature::{Nature, VariableTokenStream},
 };
 use proc_macro2::TokenStream;
-use std::ops::Deref;
 use quote::{quote, format_ident};
 
 #[derive(Clone, Debug)]
 pub enum Refered {
     // Name, Context, Fields
-    Struct(String, Context, Vec<Box<Nature>>),
+    Struct(String, Context, Vec<Nature>),
     // Name, Context, Variants
-    Enum(String, Context, Vec<Box<Nature>>),
+    Enum(String, Context, Vec<Nature>),
     // name, context, values, is_flat
-    EnumVariant(String, Context, Vec<Box<Nature>>, bool),
+    EnumVariant(String, Context, Vec<Nature>, bool),
     // Name, Context, FuncNature
     Func(String, Context, Box<Nature>),
     // Name, Context, Nature, Binding
@@ -26,9 +25,9 @@ pub enum Refered {
 }
 
 impl Refered {
-    pub fn is_flat_varians(variants: &Vec<Box<Nature>>) -> Result<bool, E> {
+    pub fn is_flat_varians(variants: &[Nature]) -> Result<bool, E> {
         for variant in variants {
-            if let Nature::Refered(Refered::EnumVariant(_, _, values, _)) = variant.deref() {
+            if let Nature::Refered(Refered::EnumVariant(_, _, values, _)) = variant {
                 if !values.is_empty() {
                     return Ok(false);
                 }
@@ -41,7 +40,7 @@ impl Refered {
 
     pub fn is_enum_flat(&self) -> Result<bool, E> {
         if let Refered::Enum(_, _, variants) = self {
-            Refered::is_flat_varians(&variants)
+            Refered::is_flat_varians(variants)
         } else {
             Err(E::Parsing(String::from("Given Nature isn't enum")))
         }

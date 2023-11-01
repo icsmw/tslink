@@ -19,7 +19,7 @@ impl Interpreter for Refered {
     ) -> Result<(), E> {
         match self {
             Refered::Enum(name, _context, variants) => {
-                let flat = Refered::is_flat_varians(&variants)?;
+                let flat = Refered::is_flat_varians(variants)?;
                 buf.write_all(
                     format!(
                         "{offset}export {} {name} {{\n",
@@ -29,7 +29,7 @@ impl Interpreter for Refered {
                 )?;
                 for variant in variants.iter() {
                     variant.declaration(natures, buf, offset.inc())?;
-                    buf.write_all(format!("{}", if flat { ",\n" } else { ";\n" }).as_bytes())?;
+                    buf.write_all(if flat { ",\n" } else { ";\n" }.as_bytes())?;
                 }
                 buf.write_all(format!("{offset}}}\n",).as_bytes())?;
             }
@@ -48,16 +48,16 @@ impl Interpreter for Refered {
                             "Expecting single field for Variant",
                         )))?
                         .reference(natures, buf, offset.inc())?;
-                    buf.write_all(format!(" | undefined").as_bytes())?;
+                    buf.write_all(" | undefined".as_bytes())?;
                 } else {
                     buf.write_all(format!("{offset}{name}: [").as_bytes())?;
                     for (i, field) in fields.iter().enumerate() {
                         field.reference(natures, buf, offset.inc())?;
                         if i < fields.len() - 1 {
-                            buf.write_all(format!(", ").as_bytes())?;
+                            buf.write_all(", ".as_bytes())?;
                         }
                     }
-                    buf.write_all(format!("] | undefined").as_bytes())?;
+                    buf.write_all("] | undefined".as_bytes())?;
                 }
             }
             Refered::Field(name, context, _, _) => {
@@ -80,19 +80,19 @@ impl Interpreter for Refered {
                             buf.write_all(", ".as_bytes())?;
                         }
                     }
-                    buf.write_all(format!("): ").as_bytes())?;
+                    buf.write_all("): ".as_bytes())?;
                     if *asyncness {
-                        buf.write_all(format!("Promise<").as_bytes())?;
+                        buf.write_all("Promise<".as_bytes())?;
                     }
                     if let Some(out) = out {
                         out.reference(natures, buf, offset.clone())?;
                     } else {
-                        buf.write_all(format!("void").as_bytes())?;
+                        buf.write_all("void".as_bytes())?;
                     }
                     if *asyncness {
-                        buf.write_all(format!(">").as_bytes())?;
+                        buf.write_all(">".as_bytes())?;
                     }
-                    buf.write_all(format!(";\n").as_bytes())?;
+                    buf.write_all(";\n".as_bytes())?;
                 } else {
                     return Err(E::Parsing(format!("Cannot find body of function {name}")));
                 }
@@ -122,7 +122,7 @@ impl Interpreter for Refered {
                         continue;
                     }
                     field.reference(natures, buf, offset.inc())?;
-                    buf.write_all(format!(";\n").as_bytes())?;
+                    buf.write_all(";\n".as_bytes())?;
                 }
                 buf.write_all(format!("{offset}}}\n",).as_bytes())?;
             }

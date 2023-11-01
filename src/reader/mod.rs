@@ -23,7 +23,7 @@ pub fn read(item: &mut Item, natures: &mut Natures, context: Context) -> Result<
             } else {
                 let mut nature =
                     Nature::Refered(Refered::Struct(name.clone(), context.clone(), vec![]));
-                structs::read_fields(&fields, &mut nature, context.clone())?;
+                structs::read_fields(fields, &mut nature, context.clone())?;
                 natures.insert(&name, nature)
             }
         }
@@ -37,12 +37,12 @@ pub fn read(item: &mut Item, natures: &mut Natures, context: Context) -> Result<
             } else {
                 let mut nature =
                     Nature::Refered(Refered::Enum(name.clone(), context.clone(), vec![]));
-                enums::read(&variants, &mut nature, context.clone())?;
+                enums::read(variants, &mut nature, context.clone())?;
                 natures.insert(&name, nature)
             }
         }
         Item::Fn(item_fn) => {
-            if structs::is_method(&item_fn) {
+            if structs::is_method(item_fn) {
                 return Ok(());
             }
             if let Nature::Composite(Composite::Func(_, _, _, constructor)) =

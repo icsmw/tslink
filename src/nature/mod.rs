@@ -24,9 +24,9 @@ impl Natures {
     pub fn new() -> Self {
         Natures(HashMap::new())
     }
-    pub fn is_any_bound(natures: &Vec<Box<Nature>>) -> bool {
+    pub fn is_any_bound(natures: &[Nature]) -> bool {
         for nature in natures.iter() {
-            if let Nature::Refered(Refered::Field(_, _, _, binding)) = nature.deref() {
+            if let Nature::Refered(Refered::Field(_, _, _, binding)) = nature {
                 if binding.is_some() {
                     return true;
                 }
@@ -34,11 +34,10 @@ impl Natures {
         }
         false
     }
-
-    pub fn get_fn_args_names(args: &Vec<Box<Nature>>) -> Vec<String> {
+    pub fn get_fn_args_names(args: &[Nature]) -> Vec<String> {
         args.iter()
             .filter_map(|arg| {
-                if let Nature::Refered(Refered::FuncArg(name, _, _, _)) = arg.deref() {
+                if let Nature::Refered(Refered::FuncArg(name, _, _, _)) = arg {
                     Some(name.to_owned())
                 } else {
                     None
@@ -92,9 +91,9 @@ pub enum Nature {
 impl Nature {
     pub fn get_fn_args_names(&self) -> Result<Vec<String>, E> {
         if let Nature::Composite(Composite::Func(args, _, _, _)) = self {
-            Ok(Natures::get_fn_args_names(&args))
+            Ok(Natures::get_fn_args_names(args))
         } else {
-            Err(E::Parsing(format!("Fail to find arguments of function")))
+            Err(E::Parsing("Fail to find arguments of function".to_string()))
         }
     }
     pub fn bind(&mut self, nature: Nature) -> Result<(), E> {
@@ -102,15 +101,15 @@ impl Nature {
             Self::Primitive(_) => Err(E::Parsing(String::from("Primitive type cannot be bound"))),
             Self::Refered(re) => match re {
                 Refered::Struct(_, _, natures) => {
-                    natures.push(Box::new(nature));
+                    natures.push(nature);
                     Ok(())
                 }
                 Refered::Enum(_, _, natures) => {
-                    natures.push(Box::new(nature));
+                    natures.push(nature);
                     Ok(())
                 }
                 Refered::EnumVariant(_, _, natures, _) => {
-                    natures.push(Box::new(nature));
+                    natures.push(nature);
                     Ok(())
                 }
                 _ => Err(E::NotSupported),
@@ -159,7 +158,7 @@ impl Nature {
                     }
                 }
                 composite::Composite::Tuple(tys) => {
-                    tys.push(Box::new(nature));
+                    tys.push(nature);
                     Ok(())
                 }
                 composite::Composite::Vec(v) => {
@@ -203,7 +202,7 @@ impl Nature {
             let existed = fields
                 .iter()
                 .filter_map(|f| {
-                    if let Nature::Refered(Refered::Field(name, _, _, _)) = f.deref() {
+                    if let Nature::Refered(Refered::Field(name, _, _, _)) = f {
                         Some(name.to_owned())
                     } else {
                         None
@@ -363,12 +362,12 @@ impl Extract<&ImplItemFn> for Nature {
                 } else {
                     return Err(E::Parsing(String::from("Cannot find ident for FnArg")));
                 };
-                args.push(Box::new(Nature::Refered(Refered::FuncArg(
+                args.push(Nature::Refered(Refered::FuncArg(
                     arg_name.clone(),
                     context.clone(),
                     Box::new(Nature::extract(*ty.ty.clone(), context.clone())?),
                     context.get_bound(&arg_name),
-                ))));
+                )));
             }
         }
         let out = match &fn_item.sig.output {
@@ -399,12 +398,12 @@ impl Extract<&ItemFn> for Nature {
                 } else {
                     return Err(E::Parsing(String::from("Cannot find ident for FnArg")));
                 };
-                args.push(Box::new(Nature::Refered(Refered::FuncArg(
+                args.push(Nature::Refered(Refered::FuncArg(
                     arg_name.clone(),
                     context.clone(),
                     Box::new(Nature::extract(*ty.ty.clone(), context.clone())?),
                     context.get_bound(&arg_name),
-                ))));
+                )));
             }
         }
         let out = match &fn_item.sig.output {

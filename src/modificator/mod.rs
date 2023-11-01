@@ -5,7 +5,6 @@ use crate::{
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use std::ops::Deref;
 use syn::{parse_quote, ReturnType};
 use syn::{Block, ImplItemFn, ItemFn};
 
@@ -55,15 +54,14 @@ fn bind(item: &mut FnItem, name: &str, context: &Context, fn_nature: &Nature) ->
     let mut unknown: Vec<String> = vec![];
     bindings.iter().for_each(|(name, _)| {
         if !args.iter().any(|nature| {
-            if let Nature::Refered(Refered::FuncArg(n, _, _, _)) = nature.deref() {
+            if let Nature::Refered(Refered::FuncArg(n, _, _, _)) = nature {
                 name == n
             } else {
                 false
             }
-        }) {
-            if name != "result" {
-                unknown.push(name.to_owned());
-            }
+        }) && name != "result"
+        {
+            unknown.push(name.to_owned());
         }
     });
     if !unknown.is_empty() {

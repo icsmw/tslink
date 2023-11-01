@@ -7,7 +7,6 @@ use crate::{
 use std::{
     fs::File,
     io::{BufWriter, Write},
-    ops::Deref,
 };
 
 impl Interpreter for Composite {
@@ -42,11 +41,9 @@ impl Interpreter for Composite {
                 }
             }
             Self::Func(args, out, asyncness, constructor) => {
-                buf.write_all(format!("(").as_bytes())?;
+                buf.write_all("(".as_bytes())?;
                 for (i, nature) in args.iter().enumerate() {
-                    if let Nature::Refered(Refered::FuncArg(name, _context, nature, _)) =
-                        nature.deref()
-                    {
+                    if let Nature::Refered(Refered::FuncArg(name, _context, nature, _)) = nature {
                         buf.write_all(format!("{name}: ").as_bytes())?;
                         nature.reference(natures, buf, offset.clone())?;
                         if i < args.len() - 1 {
@@ -59,20 +56,20 @@ impl Interpreter for Composite {
                     }
                 }
                 if *constructor {
-                    buf.write_all(format!(")").as_bytes())?;
+                    buf.write_all(")".as_bytes())?;
                     return Ok(());
                 }
-                buf.write_all(format!("): ").as_bytes())?;
+                buf.write_all("): ".as_bytes())?;
                 if *asyncness {
-                    buf.write_all(format!("Promise<").as_bytes())?;
+                    buf.write_all("Promise<".as_bytes())?;
                 }
                 if let Some(out) = out {
                     out.reference(natures, buf, offset.clone())?;
                 } else {
-                    buf.write_all(format!("void").as_bytes())?;
+                    buf.write_all("void".as_bytes())?;
                 }
                 if *asyncness {
-                    buf.write_all(format!(">").as_bytes())?;
+                    buf.write_all(">".as_bytes())?;
                 }
             }
             Self::Tuple(tys) => {

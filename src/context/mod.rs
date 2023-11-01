@@ -18,21 +18,11 @@ pub use target::Target;
 
 const ATTR_ALIAS: &str = "tslink";
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Context {
     pub inputs: Vec<Input>,
     pub targets: Vec<(Target, PathBuf)>,
     pub parent: Option<Box<Context>>,
-}
-
-impl Default for Context {
-    fn default() -> Self {
-        Context {
-            inputs: vec![],
-            targets: vec![],
-            parent: None,
-        }
-    }
 }
 
 impl Context {
@@ -101,15 +91,13 @@ impl Context {
     }
 
     fn rename(&self, origin: &str) -> Option<String> {
-        if let Some(arg) = self.inputs.iter().find(|i| matches!(i, Input::Rename(_))) {
-            if let Input::Rename(name) = arg {
-                return Some(name.to_owned());
-            }
+        if let Some(Input::Rename(name)) = self.inputs.iter().find(|i| matches!(i, Input::Rename(_))) {
+            return Some(name.to_owned());
         }
-        if let Some(_arg) = self
+        if self
             .inputs
             .iter()
-            .find(|i| matches!(i, Input::SnakeCaseNaming))
+            .any(|i| matches!(i, Input::SnakeCaseNaming))
         {
             Some(origin.to_case(Case::Camel))
         } else {
@@ -132,49 +120,43 @@ impl Context {
     }
 
     pub fn get_bound_args(&self) -> Vec<(String, String)> {
-        if let Some(arg) = self.inputs.iter().find(|i| matches!(i, Input::Binding(_))) {
-            if let Input::Binding(arguments) = arg {
-                return arguments.iter().filter(|(n, _)| n != "result").cloned().collect();
-            }
+        if let Some(Input::Binding(arguments)) = self.inputs.iter().find(|i| matches!(i, Input::Binding(_))) {
+            return arguments.iter().filter(|(n, _)| n != "result").cloned().collect();
         }
         vec![]
     }
 
     pub fn get_bound(&self, name: &str) -> Option<String> {
-        if let Some(arg) = self.inputs.iter().find(|i| matches!(i, Input::Binding(_))) {
-            if let Input::Binding(arguments) = arg {
-                return arguments.iter().find_map(|(n, ref_name)| if n == name { Some(ref_name.to_owned())} else { None});
-            }
+        if let Some(Input::Binding(arguments)) = self.inputs.iter().find(|i| matches!(i, Input::Binding(_))) {
+            return arguments.iter().find_map(|(n, ref_name)| if n == name { Some(ref_name.to_owned())} else { None});
         }
         None
     }
 
     // This is always Result<Ref, Ref>
     pub fn result_as_json(&self) -> Result<bool, E> {
-        if let Some(arg) = self.inputs.iter().find(|i| matches!(i, Input::Binding(_))) {
-            if let Input::Binding(arguments) = arg {
-                if let Some((_, result_fmt)) = arguments.iter().find(|(n, _)| n == "result") {
-                    return if result_fmt.trim() == "json" {
-                        Ok(true)
-                    } else {
-                        Err(E::Parsing(String::from("Binding results to JSON string supported only for now. Use \"json\" keyword to activate")))
-                    };
-                }
+        if let Some(Input::Binding(arguments)) = self.inputs.iter().find(|i| matches!(i, Input::Binding(_))) {
+            if let Some((_, result_fmt)) = arguments.iter().find(|(n, _)| n == "result") {
+                return if result_fmt.trim() == "json" {
+                    Ok(true)
+                } else {
+                    Err(E::Parsing(String::from("Binding results to JSON string supported only for now. Use \"json\" keyword to activate")))
+                };
             }
         }
         Ok(false)
     }
 
-    pub fn try_from_or_default(attrs: &Vec<Attribute>) -> Result<Self, E> {
+    pub fn try_from_or_default(attrs: &[Attribute]) -> Result<Self, E> {
         for attr in attrs.iter() {
             if let (true, Some(ident)) = (
                 matches!(attr.style, AttrStyle::Outer),
                 attr.path().get_ident(),
             ) {
                 if ident == ATTR_ALIAS {
-                    return Ok(attr
+                    return attr
                         .parse_args_with(Context::parse)
-                        .map_err(|e| E::PasringContext(e.to_string()))?);
+                        .map_err(|e| E::PasringContext(e.to_string()));
                 }
             }
         }

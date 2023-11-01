@@ -12,9 +12,9 @@ pub enum SnakeCaseNaming {
 
 impl SnakeCaseNaming {
     pub fn from_str(value: &str) -> Result<Self, Error> {
-        if value == &SnakeCaseNaming::Methods.to_string() {
+        if value == SnakeCaseNaming::Methods.to_string() {
             Ok(SnakeCaseNaming::Methods)
-        } else if value == &SnakeCaseNaming::Fields.to_string() {
+        } else if value == SnakeCaseNaming::Fields.to_string() {
             Ok(SnakeCaseNaming::Fields)
         } else {
             Err(Error::new(

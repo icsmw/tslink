@@ -71,50 +71,19 @@ const nativeModuleRef = native();
     for en_nature in natures.filter(|n| matches!(n, Nature::Refered(Refered::Enum(_, _, _)))) {
         if let Nature::Refered(en_nature) = en_nature {
             if en_nature.is_enum_flat()? {
-                en_nature.declaration(&natures, &mut buf_writer, Offset::new())?;
+                en_nature.declaration(natures, &mut buf_writer, Offset::new())?;
             }
         }
     }
     for (_, filtered) in natures.iter().filter(|(_, nature)| match nature {
-        Nature::Refered(Refered::Struct(_, context, _)) => {
-            if context.as_class() {
-                true
-            } else {
-                false
-            }
-        }
+        Nature::Refered(Refered::Struct(_, context, _)) => context.as_class(),
         Nature::Refered(Refered::Func(_, _, _)) => true,
         _ => false,
     }) {
         if let Nature::Refered(nature) = filtered {
-            nature.declaration(&natures, &mut buf_writer, Offset::new())?;
+            nature.declaration(natures, &mut buf_writer, Offset::new())?;
         }
     }
-    // for (_i, (name, entity)) in natures.iter().enumerate() {
-    //     if match entity {
-    //         Nature::Refered(Refered::Struct(_, context, _)) => {
-    //             if context.as_class() {
-    //                 true
-    //             } else {
-    //                 false
-    //             }
-    //         }
-    //         Nature::Refered(Refered::Func(_, _, _)) => true,
-    //         _ => false,
-    //     } {
-    //         exporting.push(name.clone());
-    //     }
-    // }
-    // for (i, name) in exporting.iter().enumerate() {
-    //     buf_writer.write_all(format!("{name}").as_bytes())?;
-    //     if i < exporting.len() - 1 {
-    //         buf_writer.write_all(format!(", ").as_bytes())?;
-    //     }
-    // }
-    // buf_writer.write_all(format!(" }} = native();").as_bytes())?;
-    // for (_i, name) in exporting.iter().enumerate() {
-    //     buf_writer.write_all(format!("\nexports.{name} = {name};").as_bytes())?;
-    // }
     buf_writer.flush()?;
     Ok(())
 }

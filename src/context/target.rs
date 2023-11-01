@@ -10,11 +10,11 @@ pub enum Target {
 impl TryFrom<&str> for Target {
     type Error = String;
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        if value == &Target::Ts.to_string() {
+        if value == Target::Ts.to_string() {
             Ok(Target::Ts)
-        } else if value == &Target::DTs.to_string() {
+        } else if value == Target::DTs.to_string() {
             Ok(Target::DTs)
-        } else if value == &Target::Js.to_string() {
+        } else if value == Target::Js.to_string() {
             Ok(Target::Js)
         } else {
             Err(format!("{value} is invalid target"))

@@ -5,17 +5,17 @@ use crate::{
 };
 use syn::{punctuated::Punctuated, token::Comma, Fields};
 
-fn read_variant(fields: &Fields, context: Context) -> Result<Vec<Box<Nature>>, E> {
-    let mut values: Vec<Box<Nature>> = vec![];
+fn read_variant(fields: &Fields, context: Context) -> Result<Vec<Nature>, E> {
+    let mut values: Vec<Nature> = vec![];
     match fields {
         Fields::Named(ref fields) => {
             for field in fields.named.iter() {
-                values.push(Box::new(Nature::extract(&field.ty, context.clone())?));
+                values.push(Nature::extract(&field.ty, context.clone())?);
             }
         }
         Fields::Unnamed(ref fields) => {
             for field in fields.unnamed.iter() {
-                values.push(Box::new(Nature::extract(&field.ty, context.clone())?));
+                values.push(Nature::extract(&field.ty, context.clone())?);
             }
         }
         Fields::Unit => {}
@@ -28,7 +28,7 @@ pub fn read(
     parent: &mut Nature,
     context: Context,
 ) -> Result<(), E> {
-    let mut fields: Vec<(String, Vec<Box<Nature>>)> = vec![];
+    let mut fields: Vec<(String, Vec<Nature>)> = vec![];
     for variant in variants {
         let name = variant.ident.to_string();
         if context.is_ignored(&name) {
