@@ -157,7 +157,7 @@ impl Interpreter for Refered {
                             }
                         }
                     }
-                    buf.write_all("\n}}".as_bytes())?;
+                    buf.write_all("\n}".as_bytes())?;
                     buf.write_all(format!("\nexports.{struct_name} = {alias};\n").as_bytes())?;
                 }
             }
