@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use std::convert::From;
 use tslink::tslink;
 
+#[tslink]
 #[derive(Serialize, Deserialize)]
 struct MyCustomError {
     msg: String,
@@ -26,6 +27,7 @@ fn test(data: Data) -> Result<String, MyCustomError> {
     serde_json::to_string(&data).map_err(|e| Into::<MyCustomError>::into(e))
 }
 
+#[tslink]
 struct MyCustomErrorWrapped(MyCustomError);
 
 impl From<serde_json::Error> for MyCustomErrorWrapped {
@@ -49,7 +51,7 @@ impl TryIntoJs for MyCustomErrorWrapped {
     }
 }
 
-// #[tslink]
+#[tslink]
 #[derive(Serialize, Deserialize)]
 struct Data {
     pub a: i32,
@@ -101,6 +103,12 @@ impl Struct {
             b: data.b + 1,
             s: format!("{}{}", data.s, data.s),
         })
+    }
+
+    #[tslink(data = "Data", error = "json", snake_case_naming)]
+    #[node_bindgen]
+    fn get_data_b(&self, data: String) -> Result<i32, MyCustomError> {
+        Ok(666)
     }
 }
 

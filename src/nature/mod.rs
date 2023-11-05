@@ -291,7 +291,7 @@ impl Extract<&Ident> for Nature {
     fn extract(ident: &Ident, _context: Context) -> Result<Nature, E> {
         let origin = ident.to_string();
         Ok(match origin.as_str() {
-            "u8" | "u16" | "u32" | "i8" | "i16" | "i32" => {
+            "u8" | "u16" | "u32" | "i8" | "i16" | "i32" | "usize" => {
                 Nature::Primitive(Primitive::Number(origin.clone()))
             }
             "u64" | "i64" => Nature::Primitive(Primitive::BigInt(origin.clone())),

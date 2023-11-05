@@ -119,46 +119,65 @@ fn bind(item: &mut FnItem, name: &str, context: &Context, fn_nature: &Nature) ->
         };
         item.set_block(parse_quote! {{#block}});
     }
-    if context.result_as_json()? {
-        if let (Some(fn_res), Some(fn_err)) = (fn_res, fn_err) {
-            let res_rust_type = format_ident!("{}", fn_res.rust_type_name()?);
-            let err_rust_type = format_ident!("{}", fn_err.rust_type_name()?);
-            let error_as_json = context.error_as_json()?;
-            let res_token = fn_res
-                .variable_token_stream("res", if error_as_json { None } else { Some(&fn_err) })?;
-            let err_token = if error_as_json {
-                fn_err.variable_token_stream("err", None)?
-            } else {
+    let result_as_json = context.result_as_json()?;
+    let error_as_json = context.error_as_json()?;
+    if result_as_json || error_as_json {
+        let (fn_res, fn_err) = (
+            fn_res.ok_or(E::Parsing("Fail to get Ok option of Result. If result defined as JSON, function/method should return Result<T,E>".to_string()))?,
+            fn_err.ok_or(E::Parsing("Fail to get Err option of Result. If result defined as JSON, function/method should return Result<T,E>".to_string()))?,
+        );
+        let res_rust_type = format_ident!("{}", fn_res.rust_type_name()?);
+        let err_rust_type = format_ident!("{}", fn_err.rust_type_name()?);
+        if result_as_json && error_as_json {
+            let res_token = fn_res.variable_token_stream("res", None)?;
+            let err_token = fn_err.variable_token_stream("err", None)?;
+            let stmts = &item.get_block().stmts;
+            let block = quote! {
+                let result: Result<#res_rust_type, #err_rust_type> = (move || {
+                    #(#stmts)*
+                })();
+                match result {
+                    Ok(res) => Ok(#res_token),
+                    Err(err) => Err(#err_token)
+                }
+            };
+            item.set_block(parse_quote! {{#block}});
+            let output = quote! { -> Result<String, String>};
+            item.set_output(parse_quote! {#output});
+        } else if result_as_json {
+            let res_token = fn_res.variable_token_stream("res", Some(&fn_err))?;
+            let err_token = {
                 let err = format_ident!("{}", "err");
                 quote! {#err}
             };
             let stmts = &item.get_block().stmts;
-            let block = if error_as_json {
-                quote! {
-                    let result: Result<#res_rust_type, #err_rust_type> = (move || {
-                        #(#stmts)*
-                    })();
-                    match result {
-                        Ok(res) => Ok(#res_token),
-                        Err(err) => Err(#err_token)
-                    }
-                }
-            } else {
-                quote! {
-                    match {#(#stmts)*} {
-                        Ok(res) => Ok(#res_token),
-                        Err(err) => Err(#err_token)
-                    }
+            let block = quote! {
+                match {#(#stmts)*} {
+                    Ok(res) => Ok(#res_token),
+                    Err(err) => Err(#err_token)
                 }
             };
-            println!(">>>>>>>>>>>>>>>>>>>>> {block}");
             item.set_block(parse_quote! {{#block}});
-            let output = if error_as_json {
-                quote! { -> Result<String, String>}
-            } else {
-                quote! { -> Result<String, #err_rust_type>}
+            let output = quote! { -> Result<String, #err_rust_type>};
+            item.set_output(parse_quote! {#output});
+        } else if error_as_json {
+            let res_token = {
+                let res = format_ident!("{}", "res");
+                quote! {#res}
             };
-            println!(">>>>>>>>>>>>>>>>>>>>> {output}");
+            let err_token = fn_err.variable_token_stream("err", None)?;
+            let stmts = &item.get_block().stmts;
+            let block = quote! {
+                let result: Result<#res_rust_type, #err_rust_type> = (move || {
+                    #(#stmts)*
+                })();
+                match result {
+                    Ok(res) => Ok(#res_token),
+                    Err(err) => Err(#err_token)
+                }
+            };
+            item.set_block(parse_quote! {{#block}});
+            let output = quote! { -> Result<#res_rust_type, String>};
             item.set_output(parse_quote! {#output});
         }
     }
