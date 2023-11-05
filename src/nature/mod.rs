@@ -246,15 +246,34 @@ pub trait Extract<T> {
 }
 
 pub trait VariableTokenStream {
-    fn token_stream(&self, var_name: &str) -> Result<TokenStream, E>;
+    fn variable_token_stream(&self, var_name: &str, err: Option<&Nature>)
+        -> Result<TokenStream, E>;
+}
+
+pub trait RustTypeName {
+    fn rust_type_name(&self) -> Result<String, E>;
 }
 
 impl VariableTokenStream for Nature {
-    fn token_stream(&self, var_name: &str) -> Result<TokenStream, E> {
+    fn variable_token_stream(
+        &self,
+        var_name: &str,
+        err: Option<&Nature>,
+    ) -> Result<TokenStream, E> {
         match self {
-            Nature::Composite(v) => v.token_stream(var_name),
-            Nature::Primitive(v) => v.token_stream(var_name),
-            Nature::Refered(v) => v.token_stream(var_name),
+            Nature::Composite(v) => v.variable_token_stream(var_name, err),
+            Nature::Primitive(v) => v.variable_token_stream(var_name, err),
+            Nature::Refered(v) => v.variable_token_stream(var_name, err),
+        }
+    }
+}
+
+impl RustTypeName for Nature {
+    fn rust_type_name(&self) -> Result<String, E> {
+        match self {
+            Nature::Composite(v) => v.rust_type_name(),
+            Nature::Primitive(v) => v.rust_type_name(),
+            Nature::Refered(v) => v.rust_type_name(),
         }
     }
 }
@@ -270,9 +289,12 @@ impl Extract<&GenericArgument> for Nature {
 
 impl Extract<&Ident> for Nature {
     fn extract(ident: &Ident, _context: Context) -> Result<Nature, E> {
-        Ok(match ident.to_string().as_str() {
-            "u8" | "u16" | "u32" | "i8" | "i16" | "i32" => Nature::Primitive(Primitive::Number),
-            "u64" | "i64" => Nature::Primitive(Primitive::BigInt),
+        let origin = ident.to_string();
+        Ok(match origin.as_str() {
+            "u8" | "u16" | "u32" | "i8" | "i16" | "i32" => {
+                Nature::Primitive(Primitive::Number(origin.clone()))
+            }
+            "u64" | "i64" => Nature::Primitive(Primitive::BigInt(origin.clone())),
             "bool" => Nature::Primitive(Primitive::Boolean),
             "String" => Nature::Primitive(Primitive::String),
             a => Nature::Refered(Refered::Ref(a.to_string())),
@@ -295,7 +317,7 @@ impl Extract<&Punctuated<PathSegment, PathSep>> for Nature {
                 "Result" => Nature::Composite(composite::Composite::Result(None, None)),
                 _ => {
                     return Err(E::Parsing(String::from(
-                        "Only Vec, HashMap and Option are supported",
+                        "Only Vec, HashMap, Option and Result are supported",
                     )))
                 }
             };

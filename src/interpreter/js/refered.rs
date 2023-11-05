@@ -148,7 +148,17 @@ impl Interpreter for Refered {
                                     format!(
                                         "
     {name}({}){{
-        return {call_exp};
+        try {{
+            return {call_exp};
+        }} catch(e) {{
+            if (e instanceof Error) {{
+                return e;
+            }}
+            if (typeof e === 'string') {{
+                return new Error(e);
+            }}
+            throw e;
+        }}
     }}",
                                         args.join(", ")
                                     )
@@ -214,7 +224,17 @@ impl Interpreter for Refered {
                     format!(
                         "
 function {alias}({}){{
-    return {call_exp};
+    try {{
+        return {call_exp};
+    }} catch(e) {{
+        if (e instanceof Error) {{
+            return e;
+        }}
+        if (typeof e === 'string') {{
+            return new Error(e);
+        }}
+        throw e;
+    }}
 }}",
                         args.join(", ")
                     )

@@ -69,6 +69,7 @@ pub fn create() -> Result<(), E> {
         \"lib.d.ts\"
     ],
     \"module\": \"lib.js\",
+    \"main\": \"lib.js\",
     \"types\": \"lib.d.ts\"
 }}"
         )

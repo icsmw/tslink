@@ -1,8 +1,55 @@
-use node_bindgen::derive::node_bindgen;
+use node_bindgen::{
+    core::{val::JsEnv, NjError, TryIntoJs},
+    derive::node_bindgen,
+    sys::napi_value,
+};
 use serde::{Deserialize, Serialize};
+use std::convert::From;
 use tslink::tslink;
 
-#[tslink]
+#[derive(Serialize, Deserialize)]
+struct MyCustomError {
+    msg: String,
+    code: usize,
+}
+
+impl From<serde_json::Error> for MyCustomError {
+    fn from(value: serde_json::Error) -> Self {
+        MyCustomError {
+            msg: value.to_string(),
+            code: 1,
+        }
+    }
+}
+
+fn test(data: Data) -> Result<String, MyCustomError> {
+    serde_json::to_string(&data).map_err(|e| Into::<MyCustomError>::into(e))
+}
+
+struct MyCustomErrorWrapped(MyCustomError);
+
+impl From<serde_json::Error> for MyCustomErrorWrapped {
+    fn from(value: serde_json::Error) -> Self {
+        MyCustomErrorWrapped(MyCustomError {
+            msg: value.to_string(),
+            code: 1,
+        })
+    }
+}
+
+impl TryIntoJs for MyCustomErrorWrapped {
+    /// serialize into json object
+    fn try_to_js(self, js_env: &JsEnv) -> Result<napi_value, NjError> {
+        match serde_json::to_string(&self.0) {
+            Ok(s) => js_env.create_string_utf8(&s),
+            Err(e) => Err(NjError::Other(format!(
+                "Could not convert Callback event to json: {e}"
+            ))),
+        }
+    }
+}
+
+// #[tslink]
 #[derive(Serialize, Deserialize)]
 struct Data {
     pub a: i32,
@@ -36,42 +83,46 @@ impl Struct {
         { Ok::<Option<String>, String>(self.b.clone()) }.expect("bla")
     }
 
-    // fn m(data: String) -> Result<String, String> {
-    //     match {
-    //         use serde_json;
-    //         #[allow(unused_mut)]
-    //         let mut data: Data = serde_json::from_str(&data).map_err(|e| e.to_string())?;
-    //         println!("{}", data.s);
-    //         Ok(Data {
-    //             a: 1,
-    //             b: 2,
-    //             s: String::from("test"),
-    //         })
-    //     } {
-    //         Ok(res) => Ok(serde_json::to_string(&res).map_err(|e| e.to_string())?),
-    //         Err(err) => Err(err),
-    //     }
-    // }
-
     #[tslink(data = "Data", result = "json", snake_case_naming)]
     #[node_bindgen]
-    fn get_data(&self, data: String) -> Result<Data, String> {
-        println!("{}", data.s);
+    fn get_data(&self, data: String) -> Result<Data, MyCustomErrorWrapped> {
         Ok(Data {
-            a: 1,
-            b: 2,
-            s: String::from("test"),
+            a: data.a + 1,
+            b: data.b + 1,
+            s: format!("{}{}", data.s, data.s),
         })
     }
 }
 
-#[tslink(data = "Data", result = "json", snake_case_naming)]
-#[node_bindgen]
-fn get_data_func(data: String, a: i64, b: i64) -> Result<Data, String> {
-    println!("{}", data.s);
-    Ok(Data {
-        a: 1,
-        b: 2,
-        s: String::from("test"),
-    })
-}
+// #[tslink(data = "Data", result = "json", snake_case_naming)]
+// #[node_bindgen]
+// fn get_data_func(data: String, a: i32, b: i32) -> Result<Data, MyCustomError> {
+//     Ok(Data {
+//         a: data.a + a,
+//         b: data.b + b,
+//         s: format!("{}{}", data.s, data.s),
+//     })
+// }
+
+// #[derive(Serialize, Deserialize)]
+// struct CustomError {
+//     a: String,
+//     b: String,
+// }
+
+// pub(crate) struct CustomErrorWrapper(pub CustomError);
+
+// impl TryIntoJs for CustomErrorWrapper {
+//     fn try_to_js(self, js_env: &JsEnv) -> Result<napi_value, NjError> {
+//         let value = serde_json::to_value(self.0).map_err(|e| NjError::Other(format!("{e}")))?;
+//         value.try_to_js(js_env)
+//     }
+// }
+
+// #[node_bindgen]
+// fn test_error() -> Result<(), CustomErrorWrapper> {
+//     Err(CustomErrorWrapper(CustomError {
+//         a: "a".to_string(),
+//         b: "b".to_string(),
+//     }))
+// }

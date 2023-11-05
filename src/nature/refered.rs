@@ -1,7 +1,7 @@
 use crate::{
     context::Context,
     error::E,
-    nature::{Nature, VariableTokenStream},
+    nature::{Nature, VariableTokenStream, RustTypeName},
 };
 use proc_macro2::TokenStream;
 use quote::{quote, format_ident};
@@ -48,16 +48,36 @@ impl Refered {
 }
 
 impl VariableTokenStream for Refered {
-    fn token_stream(&self, var_name: &str) -> Result<TokenStream, E> {
+    fn variable_token_stream(&self, var_name: &str, err: Option<&Nature>) -> Result<TokenStream, E> {
         let var_name = format_ident!("{}", var_name);
         match self {   
             Self::Ref(_) => {
-                Ok(quote!{
-                    serde_json::to_string(&#var_name).map_err(|e| e.to_string())?
+                Ok(if let Some(nature) = err {
+                    let err_type_ref = format_ident!("{}", nature.rust_type_name()?);
+                    quote! {
+                        serde_json::to_string(&#var_name).map_err(|e| Into::<#err_type_ref>::into(e))?
+                    }
+                } else {
+                    quote! {
+                        serde_json::to_string(&#var_name).expect(format!("Converting {} to JSON string", #var_name))?
+                    }
                 })
             },
             _ => {
                 Err(E::Parsing(format!("Only reference to entity (struct / enum) can be convert into JSON string (var: {var_name})")))
+            }
+        }
+    }
+}
+
+impl RustTypeName for Refered {
+    fn rust_type_name(&self) -> Result<String, E> {
+        match self {   
+            Self::Ref(ref_name) => {
+                Ok(ref_name.to_owned())
+            },
+            _ => {
+                Err(E::Parsing(format!("Only reference to entity (struct / enum) can be convert String")))
             }
         }
     }

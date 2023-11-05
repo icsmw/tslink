@@ -18,8 +18,8 @@ impl Interpreter for Primitive {
     ) -> Result<(), E> {
         Ok(buf.write_all(
             match self {
-                Self::Number => "number",
-                Self::BigInt => "BigInt",
+                Self::Number(_) => "number",
+                Self::BigInt(_) => "BigInt",
                 Self::String => "string",
                 Self::Boolean => "boolean",
             }
