@@ -121,7 +121,7 @@ impl Context {
 
     pub fn get_bound_args(&self) -> Vec<(String, String)> {
         if let Some(Input::Binding(arguments)) = self.inputs.iter().find(|i| matches!(i, Input::Binding(_))) {
-            return arguments.iter().filter(|(n, _)| n != "result").cloned().collect();
+            return arguments.iter().filter(|(n, _)| n != "result" && n != "error").cloned().collect();
         }
         vec![]
     }
@@ -133,10 +133,22 @@ impl Context {
         None
     }
 
-    // This is always Result<Ref, Ref>
     pub fn result_as_json(&self) -> Result<bool, E> {
         if let Some(Input::Binding(arguments)) = self.inputs.iter().find(|i| matches!(i, Input::Binding(_))) {
             if let Some((_, result_fmt)) = arguments.iter().find(|(n, _)| n == "result") {
+                return if result_fmt.trim() == "json" {
+                    Ok(true)
+                } else {
+                    Err(E::Parsing(String::from("Binding results to JSON string supported only for now. Use \"json\" keyword to activate")))
+                };
+            }
+        }
+        Ok(false)
+    }
+
+    pub fn error_as_json(&self) -> Result<bool, E> {
+        if let Some(Input::Binding(arguments)) = self.inputs.iter().find(|i| matches!(i, Input::Binding(_))) {
+            if let Some((_, result_fmt)) = arguments.iter().find(|(n, _)| n == "error") {
                 return if result_fmt.trim() == "json" {
                     Ok(true)
                 } else {

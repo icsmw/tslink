@@ -92,6 +92,25 @@ impl Struct {
             s: format!("{}{}", data.s, data.s),
         })
     }
+
+    #[tslink(data = "Data", result = "json", error = "json", snake_case_naming)]
+    #[node_bindgen]
+    fn get_data_a(&self, data: String) -> Result<Data, MyCustomError> {
+        Ok(Data {
+            a: data.a + 1,
+            b: data.b + 1,
+            s: format!("{}{}", data.s, data.s),
+        })
+    }
+}
+
+fn test2(arg: u8, arg2: u64) -> Result<(), u8> {
+    let res: Result<(), String> = (move || {
+        Some("ffff").ok_or(String::from("fff"))?;
+        println!("{}", arg);
+        Ok(())
+    })();
+    res.map_err(|e: String| 6)
 }
 
 // #[tslink(data = "Data", result = "json", snake_case_naming)]

@@ -33,7 +33,7 @@ impl VariableTokenStream for Composite {
                     }
                 } else {
                     quote! {
-                        serde_json::to_string(&#var_name).expect(format!("Converting {} to JSON string", #var_name))?
+                        serde_json::to_string(&#var_name).expect("Converting to JSON string")
                     }
                 }
             }

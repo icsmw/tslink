@@ -105,7 +105,7 @@ fn bind(item: &mut FnItem, name: &str, context: &Context, fn_nature: &Nature) ->
             } else {
                 quote! {
                     #[allow(unused_mut)]
-                    let mut #varname: #refname = serde_json::from_str(&#varname).expect(format!("Parsing {} from JSON string", #varname))?
+                    let mut #varname: #refname = serde_json::from_str(&#varname).expect("Parsing from JSON string")?
                 }
             }
         })
@@ -121,19 +121,43 @@ fn bind(item: &mut FnItem, name: &str, context: &Context, fn_nature: &Nature) ->
     }
     if context.result_as_json()? {
         if let (Some(fn_res), Some(fn_err)) = (fn_res, fn_err) {
-            let res_token = fn_res.variable_token_stream("res", Some(&fn_err))?;
-            // let err_token = fn_err.variable_token_stream("err")?;
+            let res_rust_type = format_ident!("{}", fn_res.rust_type_name()?);
+            let err_rust_type = format_ident!("{}", fn_err.rust_type_name()?);
+            let error_as_json = context.error_as_json()?;
+            let res_token = fn_res
+                .variable_token_stream("res", if error_as_json { None } else { Some(&fn_err) })?;
+            let err_token = if error_as_json {
+                fn_err.variable_token_stream("err", None)?
+            } else {
+                let err = format_ident!("{}", "err");
+                quote! {#err}
+            };
             let stmts = &item.get_block().stmts;
-            let block = quote! {
-                match {#(#stmts)*} {
-                    Ok(res) => Ok(#res_token),
-                    Err(err) => Err(err)
+            let block = if error_as_json {
+                quote! {
+                    let result: Result<#res_rust_type, #err_rust_type> = (move || {
+                        #(#stmts)*
+                    })();
+                    match result {
+                        Ok(res) => Ok(#res_token),
+                        Err(err) => Err(#err_token)
+                    }
+                }
+            } else {
+                quote! {
+                    match {#(#stmts)*} {
+                        Ok(res) => Ok(#res_token),
+                        Err(err) => Err(#err_token)
+                    }
                 }
             };
             println!(">>>>>>>>>>>>>>>>>>>>> {block}");
             item.set_block(parse_quote! {{#block}});
-            let err_rust_type = format_ident!("{}", fn_err.rust_type_name()?);
-            let output = quote! { -> Result<String, #err_rust_type>};
+            let output = if error_as_json {
+                quote! { -> Result<String, String>}
+            } else {
+                quote! { -> Result<String, #err_rust_type>}
+            };
             println!(">>>>>>>>>>>>>>>>>>>>> {output}");
             item.set_output(parse_quote! {#output});
         }
