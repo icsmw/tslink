@@ -48,7 +48,7 @@ impl<'a> FnItem<'a> {
 
 fn split_fn_out(out: &Option<Box<Nature>>) -> (Option<Nature>, Option<Nature>) {
     if let Some(out) = out {
-        if let Nature::Composite(Composite::Result(res, err)) = out.deref() {
+        if let Nature::Composite(Composite::Result(res, err, _)) = out.deref() {
             (
                 res.as_ref().map(|n| n.deref().clone()),
                 err.as_ref().map(|n| n.deref().clone()),

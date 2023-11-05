@@ -11,7 +11,8 @@ pub enum Composite {
     HashMap(Option<Primitive>, Option<Box<Nature>>),
     Tuple(Vec<Nature>),
     Option(Option<Box<Nature>>),
-    Result(Option<Box<Nature>>, Option<Box<Nature>>),
+    // Ok, Err, exception_suppression
+    Result(Option<Box<Nature>>, Option<Box<Nature>>, bool),
     Undefined,
     // (Vec(Args), Output, async, constructor)
     Func(Vec<Nature>, Option<Box<Nature>>, bool, bool),
@@ -42,7 +43,7 @@ impl VariableTokenStream for Composite {
                     #var_name
                 }
             }
-            Self::Result(_, _) => {
+            Self::Result(_, _, _) => {
                 Err(E::Parsing(format!(
                     "<Result> cannot be converted to JSON string (field: {var_name})"
                 )))
@@ -74,7 +75,7 @@ impl RustTypeName for Composite {
                 format!("({})", tys.join(", "))
             }
             Self::Undefined => "()".to_owned(),
-            Self::Result(Some(res), Some(err)) => format!(
+            Self::Result(Some(res), Some(err), _) => format!(
                 "Result<{}, {}>",
                 res.rust_type_name()?,
                 err.rust_type_name()?

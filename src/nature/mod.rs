@@ -96,6 +96,13 @@ impl Nature {
             Err(E::Parsing("Fail to find arguments of function".to_string()))
         }
     }
+    pub fn get_fn_out(&self) -> Result<Option<Nature>, E> {
+        if let Nature::Composite(Composite::Func(_, out, _, _)) = self {
+            Ok(out.as_deref().cloned())
+        } else {
+            Err(E::Parsing("Fail to find output of function".to_string()))
+        }
+    }
     pub fn bind(&mut self, nature: Nature) -> Result<(), E> {
         match self {
             Self::Primitive(_) => Err(E::Parsing(String::from("Primitive type cannot be bound"))),
@@ -144,13 +151,14 @@ impl Nature {
                         Ok(())
                     }
                 }
-                composite::Composite::Result(r, e) => {
+                composite::Composite::Result(r, e, _) => {
                     if r.is_some() && e.is_some() {
                         Err(E::Parsing(String::from(
                             "Result entity already has been bound",
                         )))
                     } else if r.is_none() {
                         let _ = r.insert(Box::new(nature));
+
                         Ok(())
                     } else {
                         let _ = e.insert(Box::new(nature));
@@ -314,7 +322,11 @@ impl Extract<&Punctuated<PathSegment, PathSep>> for Nature {
                 "Vec" => Nature::Composite(composite::Composite::Vec(None)),
                 "HashMap" => Nature::Composite(composite::Composite::HashMap(None, None)),
                 "Option" => Nature::Composite(composite::Composite::Option(None)),
-                "Result" => Nature::Composite(composite::Composite::Result(None, None)),
+                "Result" => Nature::Composite(composite::Composite::Result(
+                    None,
+                    None,
+                    context.exception_suppression()?,
+                )),
                 _ => {
                     return Err(E::Parsing(String::from(
                         "Only Vec, HashMap, Option and Result are supported",

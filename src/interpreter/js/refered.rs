@@ -10,6 +10,29 @@ use std::{
     ops::Deref,
 };
 
+fn fn_body(call_exp: String, exception_suppression: bool) -> String {
+    if exception_suppression {
+        format!(
+            "try {{
+            return {call_exp};
+        }} catch(e) {{
+            if (e instanceof Error) {{
+                return e;
+            }}
+            if (typeof e === 'string') {{
+                return new Error(e);
+            }} else {{
+                const err = new Error(`Function/method returns error; property [error] = ${{typeof e === 'object' && e !== null ? JSON.stringify(e) : e}}`);
+                err.error = e;
+                return err;
+            }}
+        }}"
+        )
+    } else {
+        format!("return {call_exp};")
+    }
+}
+
 impl Interpreter for Refered {
     fn declaration(
         &self,
@@ -113,7 +136,7 @@ impl Interpreter for Refered {
                     // Render methods
                     for field in fields.iter() {
                         if let Nature::Refered(Refered::Field(name, context, nature, _)) = field {
-                            if let Nature::Composite(Composite::Func(args, _, _, constructor)) =
+                            if let Nature::Composite(Composite::Func(args, out, _, constructor)) =
                                 nature.deref()
                             {
                                 if *constructor {
@@ -147,20 +170,11 @@ impl Interpreter for Refered {
                                 buf.write_all(
                                     format!(
                                         "
-    {name}({}){{
-        try {{
-            return {call_exp};
-        }} catch(e) {{
-            if (e instanceof Error) {{
-                return e;
-            }}
-            if (typeof e === 'string') {{
-                return new Error(e);
-            }}
-            throw e;
-        }}
+    {name}({}) {{
+        {}      
     }}",
-                                        args.join(", ")
+                                        args.join(", "),
+                                        fn_body(call_exp, context.exception_suppression()?)
                                     )
                                     .as_bytes(),
                                 )?;
@@ -223,20 +237,11 @@ impl Interpreter for Refered {
                 buf.write_all(
                     format!(
                         "
-function {alias}({}){{
-    try {{
-        return {call_exp};
-    }} catch(e) {{
-        if (e instanceof Error) {{
-            return e;
-        }}
-        if (typeof e === 'string') {{
-            return new Error(e);
-        }}
-        throw e;
-    }}
+function {alias}({}) {{
+    {}
 }}",
-                        args.join(", ")
+                        args.join(", "),
+                        fn_body(call_exp, context.exception_suppression()?)
                     )
                     .as_bytes(),
                 )?;

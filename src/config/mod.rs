@@ -14,6 +14,7 @@ pub struct Config {
     pub node_mod_filename: Option<String>,
     pub node_mod_dist: Option<PathBuf>,
     pub snake_case_naming: HashSet<SnakeCaseNaming>,
+    pub exception_suppression: bool,
 }
 
 impl Config {
@@ -41,6 +42,11 @@ impl Config {
                 }
             });
         }
+        self.exception_suppression = if let Some(v) = cfg.exception_suppression {
+            v
+        } else {
+            false
+        };
         self.cargo = Some(cargo);
     }
 

@@ -43,4 +43,5 @@ pub struct Cfg {
     pub path: Option<String>,
     pub node: Option<String>,
     pub snake_case_naming: Option<String>,
+    pub exception_suppression: Option<bool>,
 }

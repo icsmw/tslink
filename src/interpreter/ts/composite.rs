@@ -93,19 +93,15 @@ impl Interpreter for Composite {
                     )));
                 }
             }
-            Self::Result(res, err) => {
-                if let (Some(res), Some(err)) = (res, err) {
+            Self::Result(res, _err, exception_suppression) => {
+                if let Some(res) = res {
                     res.reference(natures, buf, offset.clone())?;
-                    buf.write_all(" | ".as_bytes())?;
-                    err.reference(natures, buf, offset)?;
-                } else if let Some(res) = res {
-                    res.reference(natures, buf, offset)?;
-                    buf.write_all(" | undefined".as_bytes())?;
-                } else if let Some(err) = err {
-                    buf.write_all("undefined | ".as_bytes())?;
-                    err.reference(natures, buf, offset)?;
-                } else {
-                    buf.write_all("undefined".as_bytes())?;
+                }
+                if res.is_some() && *exception_suppression {
+                    buf.write_all(" | Error".as_bytes())?;
+                }
+                if res.is_none() && *exception_suppression {
+                    buf.write_all("Error | void".as_bytes())?;
                 }
             }
             Self::Undefined => {

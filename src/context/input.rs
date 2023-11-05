@@ -12,6 +12,7 @@ pub enum Input {
     Interface,
     Binding(Vec<(String, String)>),
     Class,
+    ExceptionSuppression,
 }
 
 impl TryFrom<&str> for Input {
@@ -33,6 +34,8 @@ impl TryFrom<&str> for Input {
             Ok(Input::Rename(String::new()))
         } else if Input::Target(vec![]).to_string() == value {
             Ok(Input::Target(vec![]))
+        } else if Input::ExceptionSuppression.to_string() == value {
+            Ok(Input::ExceptionSuppression)
         } else {
             Err(format!("Unknown attribute \"{value}\""))
         }
@@ -54,6 +57,7 @@ impl fmt::Display for Input {
                 Self::Target(_) => "target",
                 Self::Binding(_) => "**THIS_IS_RESERVED_KEY_WORD**",
                 Self::Class => "class",
+                Self::ExceptionSuppression => "exception_suppression",
             }
         )
     }

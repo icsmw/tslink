@@ -1,13 +1,13 @@
 mod input;
 mod target;
 
-use crate::{config, error::E};
+use crate::{config, error::E, nature::{Nature, Refered, Composite}};
 use convert_case::{Case, Casing};
 use input::Input;
 use proc_macro_error::abort;
 use std::{
     convert::{From, TryFrom},
-    path::PathBuf,
+    path::PathBuf, ops::Deref,
 };
 use syn::{
     parse::{self, Parse, ParseStream},
@@ -89,6 +89,11 @@ impl Context {
     pub fn as_constructor(&self) -> bool {
         self.inputs.iter().any(|i| matches!(i, Input::Constructor))
     }
+
+    pub fn exception_suppression(&self) -> Result<bool, E> {
+        let config = config::get()?;
+        Ok(config.exception_suppression || self.inputs.iter().any(|i| matches!(i, Input::ExceptionSuppression)))    
+    } 
 
     fn rename(&self, origin: &str) -> Option<String> {
         if let Some(Input::Rename(name)) = self.inputs.iter().find(|i| matches!(i, Input::Rename(_))) {
