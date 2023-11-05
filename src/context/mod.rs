@@ -7,12 +7,12 @@ use input::Input;
 use proc_macro_error::abort;
 use std::{
     convert::{From, TryFrom},
-    path::PathBuf, 
+    path::PathBuf
 };
 use syn::{
     parse::{self, Parse, ParseStream},
     punctuated::Punctuated,
-    AttrStyle, Attribute, Expr, Lit, Token,
+    AttrStyle, Attribute, Expr, Lit, Token, Meta,
 };
 pub use target::Target;
 
@@ -171,6 +171,10 @@ impl Context {
                 attr.path().get_ident(),
             ) {
                 if ident == ATTR_ALIAS {
+                    if matches!(attr.meta, Meta::Path(_)) {
+                        // No attributes
+                        continue;
+                    }
                     return attr
                         .parse_args_with(Context::parse)
                         .map_err(|e| E::PasringContext(e.to_string()));
