@@ -108,9 +108,9 @@ impl RustTypeName for Composite {
                     )
                 }
             }
-            _ => Err(E::Parsing(format!(
-                "Cannot get rust name of given composite type"
-            )))?,
+            _ => Err(E::Parsing(
+                "Cannot get rust name of given composite type".to_string(),
+            ))?,
         })
     }
 }

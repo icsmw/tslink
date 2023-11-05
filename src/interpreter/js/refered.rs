@@ -22,8 +22,8 @@ fn fn_body(call_exp: String, exception_suppression: bool) -> String {
             if (typeof e === 'string') {{
                 return new Error(e);
             }} else {{
-                const err = new Error(`Function/method returns error; property [error] = ${{typeof e === 'object' && e !== null ? JSON.stringify(e) : e}}`);
-                err.error = e;
+                const err = new Error(`Function/method returns error; property [err] = ${{typeof e === 'object' && e !== null ? JSON.stringify(e) : e}}`);
+                err.err = e;
                 return err;
             }}
         }}"
@@ -136,7 +136,7 @@ impl Interpreter for Refered {
                     // Render methods
                     for field in fields.iter() {
                         if let Nature::Refered(Refered::Field(name, context, nature, _)) = field {
-                            if let Nature::Composite(Composite::Func(args, out, _, constructor)) =
+                            if let Nature::Composite(Composite::Func(args, _, _, constructor)) =
                                 nature.deref()
                             {
                                 if *constructor {

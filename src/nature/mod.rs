@@ -96,13 +96,6 @@ impl Nature {
             Err(E::Parsing("Fail to find arguments of function".to_string()))
         }
     }
-    pub fn get_fn_out(&self) -> Result<Option<Nature>, E> {
-        if let Nature::Composite(Composite::Func(_, out, _, _)) = self {
-            Ok(out.as_deref().cloned())
-        } else {
-            Err(E::Parsing("Fail to find output of function".to_string()))
-        }
-    }
     pub fn bind(&mut self, nature: Nature) -> Result<(), E> {
         match self {
             Self::Primitive(_) => Err(E::Parsing(String::from("Primitive type cannot be bound"))),
@@ -386,6 +379,30 @@ impl Extract<Type> for Nature {
     }
 }
 
+fn get_fn_return(output: &ReturnType, context: &Context) -> Result<Option<Box<Nature>>, E> {
+    Ok(match output {
+        ReturnType::Default => Some(Box::new(Nature::Composite(Composite::Result(
+            None,
+            None,
+            context.exception_suppression()?,
+        )))),
+        ReturnType::Type(_, ty) => {
+            let return_ty = Nature::extract(*ty.clone(), context.clone())?;
+            Some(
+                if matches!(return_ty, Nature::Composite(Composite::Result(_, _, _))) {
+                    Box::new(return_ty)
+                } else {
+                    Box::new(Nature::Composite(Composite::Result(
+                        Some(Box::new(return_ty)),
+                        None,
+                        context.exception_suppression()?,
+                    )))
+                },
+            )
+        }
+    })
+}
+
 impl Extract<&ImplItemFn> for Nature {
     fn extract(fn_item: &ImplItemFn, context: Context) -> Result<Nature, E> {
         let mut args = vec![];
@@ -404,10 +421,7 @@ impl Extract<&ImplItemFn> for Nature {
                 )));
             }
         }
-        let out = match &fn_item.sig.output {
-            ReturnType::Default => None,
-            ReturnType::Type(_, ty) => Some(Box::new(Self::extract(*ty.clone(), context.clone())?)),
-        };
+        let out = get_fn_return(&fn_item.sig.output, &context)?;
         let constructor = if let Some(Nature::Refered(Refered::Ref(re))) = out.as_deref() {
             re == "Self"
         } else {
@@ -440,10 +454,7 @@ impl Extract<&ItemFn> for Nature {
                 )));
             }
         }
-        let out = match &fn_item.sig.output {
-            ReturnType::Default => None,
-            ReturnType::Type(_, ty) => Some(Box::new(Self::extract(*ty.clone(), context.clone())?)),
-        };
+        let out = get_fn_return(&fn_item.sig.output, &context)?;
         let constructor = if let Some(Nature::Refered(Refered::Ref(re))) = out.as_deref() {
             re == "Self"
         } else {

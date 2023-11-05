@@ -77,7 +77,7 @@ impl RustTypeName for Refered {
                 Ok(ref_name.to_owned())
             },
             _ => {
-                Err(E::Parsing(format!("Only reference to entity (struct / enum) can be convert String")))
+                Err(E::Parsing("Only reference to entity (struct / enum) can be convert String".to_string()))
             }
         }
     }

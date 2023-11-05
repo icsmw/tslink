@@ -2,7 +2,7 @@ use super::Interpreter;
 use crate::{
     error::E,
     interpreter::Offset,
-    nature::{Composite, Nature, Natures, Refered},
+    nature::{Composite, Nature, Natures, Refered, RustTypeName},
 };
 use std::{
     fs::File,
@@ -93,15 +93,20 @@ impl Interpreter for Composite {
                     )));
                 }
             }
-            Self::Result(res, _err, exception_suppression) => {
+            Self::Result(res, err, exception_suppression) => {
                 if let Some(res) = res {
                     res.reference(natures, buf, offset.clone())?;
                 }
+                let err_ext = if let Some(err) = err {
+                    format!("(Error & {{ err?: {}}})", err.rust_type_name()?)
+                } else {
+                    "Error".to_owned()
+                };
                 if res.is_some() && *exception_suppression {
-                    buf.write_all(" | Error".as_bytes())?;
+                    buf.write_all(format!(" | {}", err_ext).as_bytes())?;
                 }
                 if res.is_none() && *exception_suppression {
-                    buf.write_all("Error | void".as_bytes())?;
+                    buf.write_all(format!("{} | void", err_ext).as_bytes())?;
                 }
             }
             Self::Undefined => {

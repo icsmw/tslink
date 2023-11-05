@@ -121,15 +121,15 @@ fn test2(arg: u8, arg2: u64) -> Result<(), u8> {
     res.map_err(|e: String| 6)
 }
 
-// #[tslink(data = "Data", result = "json", snake_case_naming)]
-// #[node_bindgen]
-// fn get_data_func(data: String, a: i32, b: i32) -> Result<Data, MyCustomError> {
-//     Ok(Data {
-//         a: data.a + a,
-//         b: data.b + b,
-//         s: format!("{}{}", data.s, data.s),
-//     })
-// }
+#[tslink(data = "Data", result = "json", error = "json", snake_case_naming)]
+#[node_bindgen]
+fn get_data_func(data: String, a: i32, b: i32) -> Result<Data, MyCustomError> {
+    Ok(Data {
+        a: data.a + a,
+        b: data.b + b,
+        s: format!("{}{}", data.s, data.s),
+    })
+}
 
 // #[derive(Serialize, Deserialize)]
 // struct CustomError {

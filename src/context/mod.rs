@@ -1,13 +1,13 @@
 mod input;
 mod target;
 
-use crate::{config, error::E, nature::{Nature, Refered, Composite}};
+use crate::{config, error::E};
 use convert_case::{Case, Casing};
 use input::Input;
 use proc_macro_error::abort;
 use std::{
     convert::{From, TryFrom},
-    path::PathBuf, ops::Deref,
+    path::PathBuf, 
 };
 use syn::{
     parse::{self, Parse, ParseStream},
