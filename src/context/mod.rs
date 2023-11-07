@@ -1,7 +1,7 @@
 mod input;
 mod target;
 
-use crate::{config, error::E};
+use crate::{config, error::E, nature::Nature};
 use convert_case::{Case, Casing};
 use input::Input;
 use proc_macro_error::abort;
@@ -23,6 +23,7 @@ pub struct Context {
     pub inputs: Vec<Input>,
     pub targets: Vec<(Target, PathBuf)>,
     pub parent: Option<Box<Context>>,
+    pub generics: Vec<Nature>,
 }
 
 impl Context {
@@ -38,7 +39,12 @@ impl Context {
             inputs,
             targets,
             parent: None,
+            generics: vec![],
         }
+    }
+
+    pub fn add_generics(&mut self, generics: Vec<Nature>) {
+        self.generics.extend(generics.iter().cloned());
     }
 
     pub fn set_parent(&mut self, parent: Context) {

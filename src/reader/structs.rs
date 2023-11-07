@@ -2,9 +2,9 @@ use crate::{
     context::Context,
     error::E,
     modificator,
-    nature::{Extract, ExtractGeneric, Nature, Refered},
+    nature::{Extract, ExtractGenerics, Nature, Refered},
 };
-use syn::{Fields, GenericParam, ImplItem, ItemFn, WherePredicate};
+use syn::{Fields, ImplItem, ItemFn};
 
 pub fn is_method(item_fn: &ItemFn) -> bool {
     item_fn
@@ -43,31 +43,9 @@ pub fn read_impl(
 ) -> Result<(), E> {
     for item in items.iter_mut() {
         if let ImplItem::Fn(fn_item) = item {
-            for generic in fn_item.sig.generics.params.iter() {
-                match &generic {
-                    GenericParam::Const(_) => {}
-                    GenericParam::Type(ty) => {
-                        let generic = Nature::extract_generic(ty, struct_context.clone(), None)?;
-                        todo!("Save generic")
-                    }
-                    GenericParam::Lifetime(_) => {}
-                }
-            }
-            if let Some(where_clause) = fn_item.sig.generics.where_clause.as_ref() {
-                for generic in where_clause.predicates.iter() {
-                    match generic {
-                        WherePredicate::Type(ty) => {
-                            let generic =
-                                Nature::extract_generic(ty, struct_context.clone(), None)?;
-                            todo!("Save generic")
-                        }
-                        WherePredicate::Lifetime(_) => {}
-                        _ => {}
-                    }
-                }
-            }
             let mut context = Context::try_from_or_default(&fn_item.attrs)?;
             context.set_parent(struct_context.clone());
+            context.add_generics(Nature::extract_generics(&fn_item.sig.generics)?);
             if context.ignore_self() {
                 continue;
             }

@@ -67,6 +67,14 @@ fn testB(a: Testing, b: u8) -> u8 {
 }
 
 #[tslink]
+fn test_generic_fn<G: Fn(i32, i32, bool) -> i32 + Send + 'static>(
+    callback: G,
+) -> Result<(), String> {
+    callback(666, 666, true);
+    Ok(())
+}
+
+#[tslink]
 impl Testing {
     pub fn method_a(&self, abs: u8) -> u8 {
         0
@@ -103,6 +111,12 @@ impl Testing {
         Ok(())
     }
 }
+
+#[tslink(class)]
+struct GenericTest<T: Fn(i32)> {
+    pub cb: T,
+}
+
 #[tslink(
     target = "./dist/interfaces/interfaces.ts; ./dist/interfaces/interfaces.d.ts",
     ignore = "_p8;_p16;_p32"

@@ -5,14 +5,14 @@ use crate::{
     context::Context,
     error::E,
     interpreter, modificator,
-    nature::{Composite, Extract, Nature, Natures, Refered},
+    nature::{Composite, Extract, ExtractGenerics, Nature, Natures, Refered},
     package,
 };
 use proc_macro_error::abort;
 use std::ops::Deref;
 use syn::{Item, ItemEnum, ItemStruct};
 
-pub fn read(item: &mut Item, natures: &mut Natures, context: Context) -> Result<(), E> {
+pub fn read(item: &mut Item, natures: &mut Natures, mut context: Context) -> Result<(), E> {
     let item_ref = item.clone();
     match item {
         Item::Struct(item_struct) => {
@@ -21,6 +21,7 @@ pub fn read(item: &mut Item, natures: &mut Natures, context: Context) -> Result<
             if natures.contains(&name) {
                 Err(E::EntityExist(name))
             } else {
+                context.add_generics(Nature::extract_generics(&item_struct.generics)?);
                 let mut nature =
                     Nature::Refered(Refered::Struct(name.clone(), context.clone(), vec![]));
                 structs::read_fields(fields, &mut nature, context.clone())?;
@@ -45,6 +46,7 @@ pub fn read(item: &mut Item, natures: &mut Natures, context: Context) -> Result<
             if structs::is_method(item_fn) {
                 return Ok(());
             }
+            context.add_generics(Nature::extract_generics(&item_fn.sig.generics)?);
             if let Nature::Composite(Composite::Func(_, _, _, constructor)) =
                 Nature::extract(&*item_fn, context.clone())?
             {

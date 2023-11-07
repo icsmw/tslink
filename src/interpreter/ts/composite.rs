@@ -86,7 +86,7 @@ impl Interpreter for Composite {
             Self::Option(ty) => {
                 if let Some(ty) = ty {
                     ty.reference(natures, buf, offset)?;
-                    buf.write_all(" | undefined".as_bytes())?;
+                    buf.write_all(" | void".as_bytes())?;
                 } else {
                     return Err(E::Parsing(String::from(
                         "Type Option doesn't include reference to type",
@@ -110,7 +110,7 @@ impl Interpreter for Composite {
                 }
             }
             Self::Undefined => {
-                buf.write_all("undefined".as_bytes())?;
+                buf.write_all("void".as_bytes())?;
             }
         }
         Ok(())

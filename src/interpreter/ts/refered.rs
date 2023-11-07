@@ -38,7 +38,7 @@ impl Interpreter for Refered {
                     if *flat {
                         buf.write_all(format!("{offset}{name}").as_bytes())?;
                     } else {
-                        buf.write_all(format!("{offset}{name}: null | undefined").as_bytes())?;
+                        buf.write_all(format!("{offset}{name}: null | void").as_bytes())?;
                     }
                 } else if fields.len() == 1 {
                     buf.write_all(format!("{offset}{name}: ").as_bytes())?;
@@ -48,7 +48,7 @@ impl Interpreter for Refered {
                             "Expecting single field for Variant",
                         )))?
                         .reference(natures, buf, offset.inc())?;
-                    buf.write_all(" | undefined".as_bytes())?;
+                    buf.write_all(" | void".as_bytes())?;
                 } else {
                     buf.write_all(format!("{offset}{name}: [").as_bytes())?;
                     for (i, field) in fields.iter().enumerate() {
@@ -57,7 +57,7 @@ impl Interpreter for Refered {
                             buf.write_all(", ".as_bytes())?;
                         }
                     }
-                    buf.write_all("] | undefined".as_bytes())?;
+                    buf.write_all("] | void".as_bytes())?;
                 }
             }
             Refered::Field(name, context, _, _) => {
@@ -134,7 +134,7 @@ impl Interpreter for Refered {
             Refered::Ref(ref_name) => {
                 return Err(E::Parsing(format!("Reference {ref_name} can be declared")));
             }
-            Refered::Generic(alias, context, nature) => {
+            Refered::Generic(alias, nature) => {
                 todo!("Refered::Generic")
             }
         }
@@ -187,7 +187,7 @@ impl Interpreter for Refered {
             }
             Refered::Struct(name, _, _) => buf.write_all(name.as_bytes())?,
             Refered::Ref(ref_name) => buf.write_all(ref_name.as_bytes())?,
-            Refered::Generic(alias, context, nature) => {
+            Refered::Generic(alias, nature) => {
                 todo!("Refered::Generic")
             }
         }

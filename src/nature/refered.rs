@@ -22,8 +22,8 @@ pub enum Refered {
     FuncArg(String, Context, Box<Nature>, Option<String>),
     // Name
     Ref(String),
-    // Alias, Context, Nature
-    Generic(String, Context, Box<Nature>)
+    // Alias, Nature
+    Generic(String, Box<Nature>)
 }
 
 impl Refered {
