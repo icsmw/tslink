@@ -75,8 +75,8 @@ impl Struct {
 
     #[tslink]
     #[node_bindgen]
-    fn init<F: Fn(i64) + Send + 'static>(&mut self, callback: F) -> Result<(), String> {
-        callback(666);
+    fn init<F: Fn(i32, i32) + Send + 'static>(&mut self, callback: F) -> Result<(), String> {
+        callback(666, 666);
         Ok(())
     }
     // #[tslink(snake_case_naming)]

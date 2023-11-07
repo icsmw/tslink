@@ -84,6 +84,24 @@ impl Testing {
     pub fn method_c(&self) {
         println!(">>>>>>>>>>");
     }
+
+    #[tslink]
+    fn test_generic_a<F: Fn(i32, i32, bool) -> i32 + Send + 'static>(
+        &mut self,
+        callback: F,
+    ) -> Result<(), String> {
+        callback(666, 666, true);
+        Ok(())
+    }
+
+    #[tslink]
+    fn test_generic_b<F>(&mut self, callback: F) -> Result<(), String>
+    where
+        F: Fn(i32, i32, bool) -> String + Send + 'static,
+    {
+        callback(666, 666, true);
+        Ok(())
+    }
 }
 #[tslink(
     target = "./dist/interfaces/interfaces.ts; ./dist/interfaces/interfaces.d.ts",

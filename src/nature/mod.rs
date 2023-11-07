@@ -14,8 +14,8 @@ use std::{
 use syn::{
     punctuated::Punctuated,
     token::{Comma, PathSep},
-    FnArg, GenericArgument, Ident, ImplItemFn, ItemFn, Pat, PathArguments, PathSegment, ReturnType,
-    Type,
+    FnArg, GenericArgument, Ident, ImplItemFn, ItemFn, Pat, PathArguments, PathSegment,
+    PredicateType, ReturnType, TraitBound, Type, TypeParam, TypeParamBound,
 };
 
 pub struct Natures(HashMap<String, Nature>);
@@ -237,8 +237,126 @@ impl Nature {
                 Refered::FuncArg(_, context, _, _) => context,
                 Refered::Struct(_, context, _) => context,
                 Refered::Ref(_) => Err(E::Parsing(String::from("Reference do not have context")))?,
+                Refered::Generic(_, context, _) => context,
             },
         })
+    }
+}
+
+pub trait ExtractGeneric<T> {
+    fn extract_generic(
+        t: T,
+        context: Context,
+        generic_ref: Option<String>,
+    ) -> Result<Option<Nature>, E>;
+}
+
+impl ExtractGeneric<&TraitBound> for Nature {
+    fn extract_generic(
+        tr: &TraitBound,
+        context: Context,
+        generic_ref: Option<String>,
+    ) -> Result<Option<Nature>, E> {
+        let generic_ref = if let Some(generic_ref) = generic_ref {
+            generic_ref
+        } else {
+            return Err(E::Parsing(
+                "Parsing generic from TraitBound isn't possible without generic reference (alias)"
+                    .to_string(),
+            ));
+        };
+        for tr in tr.path.segments.iter() {
+            match tr.ident.to_string().as_str() {
+                "Fn" => {
+                    let (fn_args, output): (Vec<Nature>, Option<Box<Nature>>) = match &tr.arguments
+                    {
+                        PathArguments::AngleBracketed(_) => Err(E::Parsing(
+                            "Unexpected PathArguments::AngleBracketed".to_string(),
+                        ))?,
+                        PathArguments::None => {
+                            Err(E::Parsing("Unexpected PathArguments::None".to_string()))?
+                        }
+                        PathArguments::Parenthesized(arg) => {
+                            let mut fn_args: Vec<Nature> = vec![];
+                            for input in arg.inputs.iter() {
+                                fn_args.push(Nature::extract(input, context.clone())?);
+                            }
+                            (fn_args, get_fn_return(&arg.output, &context)?)
+                        }
+                    };
+                    return Ok(Some(Nature::Refered(Refered::Generic(
+                        String::new(),
+                        context,
+                        Box::new(Nature::Composite(Composite::Func(
+                            fn_args, output, false, false,
+                        ))),
+                    ))));
+                }
+                _ => {}
+            }
+        }
+        Ok(None)
+    }
+}
+impl ExtractGeneric<&TypeParam> for Nature {
+    fn extract_generic(
+        type_param: &TypeParam,
+        context: Context,
+        _generic_ref: Option<String>,
+    ) -> Result<Option<Nature>, E> {
+        let generic_ref = type_param.ident.to_string();
+        for bound in type_param.bounds.iter() {
+            match bound {
+                TypeParamBound::Lifetime(_) => {
+                    // Ignore
+                }
+                TypeParamBound::Verbatim(_) => {
+                    // Ignore
+                }
+                TypeParamBound::Trait(tr) => {
+                    return Nature::extract_generic(tr, context, Some(generic_ref));
+                }
+                _ => {
+                    // Ignore
+                }
+            }
+        }
+        Ok(None)
+    }
+}
+
+impl ExtractGeneric<&PredicateType> for Nature {
+    fn extract_generic(
+        pre_type: &PredicateType,
+        context: Context,
+        _generic_ref: Option<String>,
+    ) -> Result<Option<Nature>, E> {
+        let generic_ref = if let Nature::Refered(Refered::Ref(name)) =
+            Nature::extract(&pre_type.bounded_ty, context.clone())?
+        {
+            name
+        } else {
+            return Err(E::Parsing(
+                "Cannot detect name/alias of generic parameter in where section".to_string(),
+            ));
+        };
+        for bound in pre_type.bounds.iter() {
+            match bound {
+                TypeParamBound::Lifetime(_) => {
+                    // Ignore
+                }
+                TypeParamBound::Verbatim(_) => {
+                    // Ignore
+                }
+                TypeParamBound::Trait(tr) => {
+                    return Nature::extract_generic(tr, context, Some(generic_ref));
+                }
+                _ => {
+                    // Ignore
+                }
+            }
+        }
+        Ok(None)
     }
 }
 

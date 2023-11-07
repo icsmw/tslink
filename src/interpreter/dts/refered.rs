@@ -129,6 +129,9 @@ impl Interpreter for Refered {
             Refered::Ref(ref_name) => {
                 return Err(E::Parsing(format!("Reference {ref_name} can be declared")));
             }
+            Refered::Generic(alias, context, nature) => {
+                todo!("Refered::Generic")
+            }
         }
         Ok(())
     }
@@ -167,6 +170,9 @@ impl Interpreter for Refered {
             }
             Refered::Struct(name, _, _) => buf.write_all(name.as_bytes())?,
             Refered::Ref(ref_name) => buf.write_all(ref_name.as_bytes())?,
+            Refered::Generic(alias, context, nature) => {
+                todo!("Refered::Generic")
+            }
         }
         Ok(())
     }
