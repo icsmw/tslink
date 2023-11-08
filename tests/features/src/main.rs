@@ -121,12 +121,13 @@ struct GenericTest<T: Fn(i32)> {
     target = "./dist/interfaces/interfaces.ts; ./dist/interfaces/interfaces.d.ts",
     ignore = "_p8;_p16;_p32"
 )]
-struct TestingA {
+struct TestingA<T: Fn(i32)> {
     pub _p8: u8,
     pub _p16: u16,
     pub _p32: u32,
     pub _p64: u64,
     pub _a64: u64,
+    pub cb: T,
 }
 fn main() {
     // let a = Testing {

@@ -114,6 +114,9 @@ impl Interpreter for Composite {
                 if res.is_none() && *exception_suppression {
                     buf.write_all(format!("{} | void", err_ext).as_bytes())?;
                 }
+                if res.is_none() && !*exception_suppression {
+                    buf.write_all("void".as_bytes())?;
+                }
             }
             Self::Undefined => {
                 buf.write_all("void".as_bytes())?;
