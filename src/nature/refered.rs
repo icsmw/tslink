@@ -21,7 +21,7 @@ pub enum Refered {
     // Name, Context, Nature, Binding
     FuncArg(String, Context, Box<Nature>, Option<String>),
     // Name
-    Ref(String),
+    Ref(String, Option<Context>),
     // Alias, Nature
     Generic(String, Box<Nature>)
 }
@@ -53,7 +53,7 @@ impl VariableTokenStream for Refered {
     fn variable_token_stream(&self, var_name: &str, err: Option<&Nature>) -> Result<TokenStream, E> {
         let var_name = format_ident!("{}", var_name);
         match self {   
-            Self::Ref(_) => {
+            Self::Ref(_, _) => {
                 Ok(if let Some(nature) = err {
                     let err_type_ref = format_ident!("{}", nature.rust_type_name()?);
                     quote! {
@@ -75,7 +75,7 @@ impl VariableTokenStream for Refered {
 impl RustTypeName for Refered {
     fn rust_type_name(&self) -> Result<String, E> {
         match self {   
-            Self::Ref(ref_name) => {
+            Self::Ref(ref_name, _) => {
                 Ok(ref_name.to_owned())
             },
             _ => {

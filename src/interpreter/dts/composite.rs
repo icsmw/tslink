@@ -42,6 +42,7 @@ impl Interpreter for Composite {
             }
             Self::Func(args, out, asyncness, constructor) => {
                 buf.write_all("(".as_bytes())?;
+                let mut generic = false;
                 for (i, nature) in args.iter().enumerate() {
                     if let Nature::Refered(Refered::FuncArg(name, _context, nature, binding)) =
                         nature
@@ -52,20 +53,25 @@ impl Interpreter for Composite {
                         } else {
                             nature.reference(natures, buf, offset.clone())?;
                         }
-                        if i < args.len() - 1 {
-                            buf.write_all(", ".as_bytes())?;
-                        }
                     } else {
-                        return Err(E::Parsing(String::from(
-                            "Only Refered::FuncArg can be used as function's arguments",
-                        )));
+                        generic = true;
+                        buf.write_all(format!("arg{i}: ").as_bytes())?;
+                        nature.reference(natures, buf, offset.clone())?;
                     }
+                    if i < args.len() - 1 {
+                        buf.write_all(", ".as_bytes())?;
+                    }
+                }
+                if *constructor && generic {
+                    return Err(E::Parsing(String::from(
+                        "Constructor with generic types aren't supported",
+                    )));
                 }
                 if *constructor {
                     buf.write_all(")".as_bytes())?;
                     return Ok(());
                 }
-                buf.write_all("): ".as_bytes())?;
+                buf.write_all(format!("){} ", if generic { " =>" } else { ":" }).as_bytes())?;
                 if *asyncness {
                     buf.write_all("Promise<".as_bytes())?;
                 }

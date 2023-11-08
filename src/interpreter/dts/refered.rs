@@ -126,11 +126,13 @@ impl Interpreter for Refered {
                 }
                 buf.write_all(format!("{offset}}}\n",).as_bytes())?;
             }
-            Refered::Ref(ref_name) => {
+            Refered::Ref(ref_name, _) => {
                 return Err(E::Parsing(format!("Reference {ref_name} can be declared")));
             }
-            Refered::Generic(alias, nature) => {
-                todo!("Refered::Generic")
+            Refered::Generic(alias, _) => {
+                return Err(E::Parsing(format!(
+                    "Generic type cannot be rendered out of context; type alias = {alias}"
+                )))
             }
         }
         Ok(())
@@ -159,6 +161,12 @@ impl Interpreter for Refered {
                     nature.reference(natures, buf, offset)?;
                 } else {
                     buf.write_all(format!("{offset}{}: ", context.rename_field(name)?).as_bytes())?;
+                    if let Nature::Refered(Refered::Ref(ref_name, _)) = nature.deref() {
+                        if let Some(generic) = context.get_generic(ref_name) {
+                            generic.reference(natures, buf, offset)?;
+                            return Ok(());
+                        }
+                    }
                     nature.reference(natures, buf, offset)?;
                 }
             }
@@ -169,9 +177,19 @@ impl Interpreter for Refered {
                 )));
             }
             Refered::Struct(name, _, _) => buf.write_all(name.as_bytes())?,
-            Refered::Ref(ref_name) => buf.write_all(ref_name.as_bytes())?,
-            Refered::Generic(alias, nature) => {
-                todo!("Refered::Generic")
+            Refered::Ref(ref_name, context) => {
+                if let Some(context) = context {
+                    if let Some(nature) = context.get_generic(ref_name) {
+                        nature.reference(natures, buf, offset)?;
+                        return Ok(());
+                    }
+                }
+                buf.write_all(ref_name.as_bytes())?;
+            }
+            Refered::Generic(alias, _) => {
+                return Err(E::Parsing(format!(
+                    "Generic type cannot be rendered out of context; type alias = {alias}"
+                )))
             }
         }
         Ok(())

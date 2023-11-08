@@ -1,13 +1,13 @@
 mod input;
 mod target;
 
-use crate::{config, error::E, nature::Nature};
+use crate::{config, error::E, nature::{Nature, Refered}};
 use convert_case::{Case, Casing};
 use input::Input;
 use proc_macro_error::abort;
 use std::{
     convert::{From, TryFrom},
-    path::PathBuf
+    path::PathBuf, collections::HashMap, ops::Deref
 };
 use syn::{
     parse::{self, Parse, ParseStream},
@@ -23,7 +23,7 @@ pub struct Context {
     pub inputs: Vec<Input>,
     pub targets: Vec<(Target, PathBuf)>,
     pub parent: Option<Box<Context>>,
-    pub generics: Vec<Nature>,
+    pub generics: HashMap<String, Nature>,
 }
 
 impl Context {
@@ -39,12 +39,26 @@ impl Context {
             inputs,
             targets,
             parent: None,
-            generics: vec![],
+            generics: HashMap::new(),
         }
     }
 
     pub fn add_generics(&mut self, generics: Vec<Nature>) {
-        self.generics.extend(generics.iter().cloned());
+        generics.iter().for_each(|n| {
+            if let Nature::Refered(Refered::Generic(k, n)) = n {
+                self.generics.insert(k.clone(), n.deref().clone());
+            }
+        });
+    }
+
+    pub fn get_generic(&self, key: &str) -> Option<&Nature> {
+        self.generics.get(key).or_else(||{
+            if let Some(context) = self.parent.as_ref() {
+                context.get_generic(key)
+            } else {
+                None
+            }
+        })
     }
 
     pub fn set_parent(&mut self, parent: Context) {

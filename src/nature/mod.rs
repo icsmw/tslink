@@ -15,7 +15,7 @@ use syn::{
     punctuated::Punctuated,
     token::{Comma, PathSep},
     FnArg, GenericArgument, GenericParam, Generics, Ident, ImplItemFn, ItemFn, Pat, PathArguments,
-    PathSegment, PredicateType, ReturnType, Signature, TraitBound, Type, TypeParam, TypeParamBound,
+    PathSegment, PredicateType, ReturnType, TraitBound, Type, TypeParam, TypeParamBound,
     WherePredicate,
 };
 
@@ -237,7 +237,9 @@ impl Nature {
                 Refered::Func(_, context, _) => context,
                 Refered::FuncArg(_, context, _, _) => context,
                 Refered::Struct(_, context, _) => context,
-                Refered::Ref(_) => Err(E::Parsing(String::from("Reference do not have context")))?,
+                Refered::Ref(_, _) => {
+                    Err(E::Parsing(String::from("Reference do not have context")))?
+                }
                 Refered::Generic(_, _) => {
                     Err(E::Parsing(String::from("Generic do not have context")))?
                 }
@@ -320,7 +322,7 @@ impl ExtractGeneric<&PredicateType> for Nature {
         pre_type: &PredicateType,
         _generic_ref: Option<String>,
     ) -> Result<Option<Nature>, E> {
-        let generic_ref = if let Nature::Refered(Refered::Ref(name)) =
+        let generic_ref = if let Nature::Refered(Refered::Ref(name, _)) =
             Nature::extract(&pre_type.bounded_ty, Context::default())?
         {
             name
@@ -430,7 +432,7 @@ impl Extract<&GenericArgument> for Nature {
 }
 
 impl Extract<&Ident> for Nature {
-    fn extract(ident: &Ident, _context: Context) -> Result<Nature, E> {
+    fn extract(ident: &Ident, context: Context) -> Result<Nature, E> {
         let origin = ident.to_string();
         Ok(match origin.as_str() {
             "u8" | "u16" | "u32" | "i8" | "i16" | "i32" | "usize" => {
@@ -439,7 +441,7 @@ impl Extract<&Ident> for Nature {
             "u64" | "i64" => Nature::Primitive(Primitive::BigInt(origin.clone())),
             "bool" => Nature::Primitive(Primitive::Boolean),
             "String" => Nature::Primitive(Primitive::String),
-            a => Nature::Refered(Refered::Ref(a.to_string())),
+            a => Nature::Refered(Refered::Ref(a.to_string(), Some(context.clone()))),
         })
     }
 }
@@ -563,7 +565,7 @@ impl Extract<&ImplItemFn> for Nature {
             }
         }
         let out = get_fn_return(&fn_item.sig.output, &context)?;
-        let constructor = if let Some(Nature::Refered(Refered::Ref(re))) = out.as_deref() {
+        let constructor = if let Some(Nature::Refered(Refered::Ref(re, _))) = out.as_deref() {
             re == "Self"
         } else {
             false
@@ -596,7 +598,7 @@ impl Extract<&ItemFn> for Nature {
             }
         }
         let out = get_fn_return(&fn_item.sig.output, &context)?;
-        let constructor = if let Some(Nature::Refered(Refered::Ref(re))) = out.as_deref() {
+        let constructor = if let Some(Nature::Refered(Refered::Ref(re, _))) = out.as_deref() {
             re == "Self"
         } else {
             false
