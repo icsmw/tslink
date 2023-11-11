@@ -1,4 +1,6 @@
-import { Struct, Data, getDataFunc, testError } from "binding";
+import { assert } from "./common";
+
+import { Struct, Data, getDataFunc } from "binding";
 
 {
     // Test 001
@@ -10,19 +12,22 @@ import { Struct, Data, getDataFunc, testError } from "binding";
         b: 2,
         s: "test",
     };
-    console.assert(struct.getA() === A, "method get_a() gives invalid output");
-    console.assert(struct.getB() === B, "method get_b() gives invalid output");
+    assert(struct.getA() === A)
+        .msg("method get_a() gives invalid output")
+        .beTrue();
+    assert(struct.getB() === B)
+        .msg("method get_b() gives invalid output")
+        .beTrue();
     const recieved = struct.getData(data);
-    console.assert(
-        typeof recieved !== "string",
-        "method getData() gives invalid output"
-    );
-    if (typeof recieved === "string") {
-        throw new Error("method getData() gives invalid output");
+    assert(recieved)
+        .msg("method getData() gives invalid output")
+        .typeNot("string");
+    if (recieved instanceof Error) {
+        throw new Error(`method getData() returns error: ${recieved.message}`);
     }
-    console.assert(recieved.a === 2, "Value of struct.a invalid");
-    console.assert(recieved.b === 3, "Value of struct.b invalid");
-    console.assert(recieved.s === "testtest", "Value of struct.s invalid");
+    assert(recieved.a).msg("Value of struct.a invalid").equal(2);
+    assert(recieved.b).msg("Value of struct.b invalid").equal(3);
+    assert(recieved.s).msg("Value of struct.s invalid").equal("testtest");
 }
 {
     // Test 002
@@ -32,22 +37,17 @@ import { Struct, Data, getDataFunc, testError } from "binding";
         s: "test",
     };
     const recieved = getDataFunc(data, 10, 10);
-    console.assert(
-        typeof recieved !== "string",
-        "method getDataFunc() gives invalid output"
-    );
-    if (typeof recieved === "string") {
-        throw new Error("method getDataFunc() gives invalid output");
+    assert(recieved)
+        .msg("method getDataFunc() gives invalid output")
+        .typeNot("string");
+    if (recieved instanceof Error) {
+        throw new Error(
+            `method getDataFunc() returns error: ${recieved.message}`
+        );
     }
-    console.assert(recieved.a === 11, "Value of struct.a invalid");
-    console.assert(recieved.b === 12, "Value of struct.b invalid");
-    console.assert(recieved.s === "testtest", "Value of struct.s invalid");
-}
-try {
-    testError();
-} catch (e) {
-    console.log(e);
-    console.log(typeof e);
+    assert(recieved.a).msg("Value of struct.a invalid").equal(11);
+    assert(recieved.b).msg("Value of struct.b invalid").equal(12);
+    assert(recieved.s).msg("Value of struct.s invalid").equal("testtest");
 }
 
 // {
