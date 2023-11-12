@@ -10,21 +10,69 @@ use std::{
     ops::Deref,
 };
 
-fn fn_body(call_exp: String, exception_suppression: bool) -> String {
+fn fn_body(call_exp: String, exception_suppression: bool, error_as_json: bool) -> String {
     if exception_suppression {
+        if error_as_json {
+            format!(
+                "try {{
+                return {call_exp};
+            }} catch(e) {{
+                if (e instanceof Error) {{
+                    return e;
+                }}
+                if (typeof e === 'string') {{
+                    try {{
+                        const err = new Error(`Function/method returns error;`);
+                        err.err = JSON.parse(e);
+                        return err;
+                    }} catch(err_parsing) {{
+                        return new Error(`Function/method returns error; fail to parse error; origin error: ${{e}}; error: ${{err_parsing}}`);
+                    }}
+                }} else {{
+                    const err = new Error(`Function/method returns error; property [err] = ${{typeof e === 'object' && e !== null ? JSON.stringify(e) : e}}`);
+                    err.err = e;
+                    return err;
+                }}
+            }}"
+            )
+        } else {
+            format!(
+                "try {{
+                return {call_exp};
+            }} catch(e) {{
+                if (e instanceof Error) {{
+                    return e;
+                }}
+                if (typeof e === 'string') {{
+                    return new Error(e);
+                }} else {{
+                    const err = new Error(`Function/method returns error; property [err] = ${{typeof e === 'object' && e !== null ? JSON.stringify(e) : e}}`);
+                    err.err = e;
+                    return err;
+                }}
+            }}"
+            )
+        }
+    } else if error_as_json {
         format!(
             "try {{
             return {call_exp};
         }} catch(e) {{
             if (e instanceof Error) {{
-                return e;
+                throw e;
             }}
             if (typeof e === 'string') {{
-                return new Error(e);
+                const err = new Error(`Function/method returns error;`);
+                try {{
+                    err.err = JSON.parse(e);
+                }} catch(err_parsing) {{
+                    throw new Error(`Function/method returns error; fail to parse error; origin error: ${{e}}; error: ${{err_parsing}}`);
+                }}
+                throw err;
             }} else {{
                 const err = new Error(`Function/method returns error; property [err] = ${{typeof e === 'object' && e !== null ? JSON.stringify(e) : e}}`);
                 err.err = e;
-                return err;
+                throw err;
             }}
         }}"
         )
@@ -174,7 +222,11 @@ impl Interpreter for Refered {
         {}      
     }}",
                                         args.join(", "),
-                                        fn_body(call_exp, context.exception_suppression()?)
+                                        fn_body(
+                                            call_exp,
+                                            context.exception_suppression()?,
+                                            context.error_as_json()?
+                                        )
                                     )
                                     .as_bytes(),
                                 )?;
@@ -241,7 +293,11 @@ function {alias}({}) {{
     {}
 }}",
                         args.join(", "),
-                        fn_body(call_exp, context.exception_suppression()?)
+                        fn_body(
+                            call_exp,
+                            context.exception_suppression()?,
+                            context.error_as_json()?
+                        )
                     )
                     .as_bytes(),
                 )?;

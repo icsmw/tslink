@@ -29,11 +29,11 @@ impl Interpreter for Composite {
             }
             Self::HashMap(key, ty) => {
                 if let (Some(key), Some(ty)) = (key, ty) {
-                    buf.write_all("Map<".as_bytes())?;
+                    buf.write_all("{ [key: ".as_bytes())?;
                     key.reference(natures, buf, offset.clone())?;
-                    buf.write_all(", ".as_bytes())?;
+                    buf.write_all("]: ".as_bytes())?;
                     ty.reference(natures, buf, offset)?;
-                    buf.write_all(">".as_bytes())?;
+                    buf.write_all(" }".as_bytes())?;
                 } else {
                     return Err(E::Parsing(String::from(
                         "Type HashMap doesn't include reference to type or key",

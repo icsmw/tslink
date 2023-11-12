@@ -282,7 +282,8 @@ impl Parse for Context {
                                 Input::Ignore(_) => Input::IgnoreSelf,
                                 Input::SnakeCaseNaming
                                 | Input::Class
-                                | Input::Interface
+                                | Input::Interface 
+                                | Input::ExceptionSuppression
                                 | Input::Constructor => input,
                                 _ => abort!(
                                     p,

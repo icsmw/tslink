@@ -1,6 +1,34 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.assert = void 0;
+exports.assert = exports.Test = exports.Group = void 0;
+class Group {
+    group;
+    constructor(group) {
+        this.group = group;
+        console.log(`Starting tests for: ${group}`);
+    }
+    test(name) {
+        return new Test(name);
+    }
+}
+exports.Group = Group;
+class Test {
+    name;
+    started = Date.now();
+    constructor(name) {
+        this.name = name;
+    }
+    fail(msg) {
+        fail(`[FAIL] ${this.name}: ${msg}`);
+    }
+    success() {
+        console.log(`[OK in ${Date.now() - this.started}ms] ${this.name}`);
+    }
+    assert(smth) {
+        return assert(smth, this);
+    }
+}
+exports.Test = Test;
 function fail(msg) {
     console.error(msg);
     try {
@@ -11,16 +39,17 @@ function fail(msg) {
     }
     process.exit(1);
 }
-function assert(smth) {
+function assert(smth, test) {
     let errorMessage;
+    const failCB = test !== undefined ? test.fail.bind(test) : fail;
     const out = {
         equal: (value) => {
             if (value !== smth) {
                 if (errorMessage === undefined) {
-                    fail(`No error message. Value: ${smth} (type: ${typeof smth}) not equal to: ${value} (type: ${typeof value})`);
+                    failCB(`No error message. Value: ${smth} (type: ${typeof smth}) not equal to: ${value} (type: ${typeof value})`);
                 }
                 else {
-                    fail(`${errorMessage}. Value: ${smth} (type: ${typeof smth}) not equal to: ${value} (type: ${typeof value})`);
+                    failCB(`${errorMessage}. Value: ${smth} (type: ${typeof smth}) not equal to: ${value} (type: ${typeof value})`);
                 }
             }
             return out;
@@ -28,10 +57,10 @@ function assert(smth) {
         beTrue: () => {
             if (smth !== true) {
                 if (errorMessage === undefined) {
-                    fail(`No error message. Condition isn't true`);
+                    failCB(`No error message. Condition isn't true`);
                 }
                 else {
-                    fail(`${errorMessage}. Condition isn't true`);
+                    failCB(`${errorMessage}. Condition isn't true`);
                 }
             }
             return out;
@@ -39,10 +68,10 @@ function assert(smth) {
         type: (typeName) => {
             if (typeof smth !== typeName) {
                 if (errorMessage === undefined) {
-                    fail(`No error message. Value: ${smth} (type: ${typeof smth}) has different type to: ${typeName})`);
+                    failCB(`No error message. Value: ${smth} (type: ${typeof smth}) has different type to: ${typeName})`);
                 }
                 else {
-                    fail(`${errorMessage}. Value: ${smth} (type: ${typeof smth}) has different type to: ${typeName})`);
+                    failCB(`${errorMessage}. Value: ${smth} (type: ${typeof smth}) has different type to: ${typeName})`);
                 }
             }
             return out;
@@ -50,10 +79,10 @@ function assert(smth) {
         typeNot: (typeName) => {
             if (typeof smth === typeName) {
                 if (errorMessage === undefined) {
-                    fail(`No error message. Value: ${smth} (type: ${typeof smth}) has prohibited type: ${typeName})`);
+                    failCB(`No error message. Value: ${smth} (type: ${typeof smth}) has prohibited type: ${typeName})`);
                 }
                 else {
-                    fail(`${errorMessage}. Value: ${smth} (type: ${typeof smth}) has prohibited type: ${typeName})`);
+                    failCB(`${errorMessage}. Value: ${smth} (type: ${typeof smth}) has prohibited type: ${typeName})`);
                 }
             }
             return out;

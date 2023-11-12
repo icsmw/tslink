@@ -97,6 +97,7 @@ impl Nature {
             Err(E::Parsing("Fail to find arguments of function".to_string()))
         }
     }
+
     pub fn bind(&mut self, nature: Nature) -> Result<(), E> {
         match self {
             Self::Primitive(_) => Err(E::Parsing(String::from("Primitive type cannot be bound"))),

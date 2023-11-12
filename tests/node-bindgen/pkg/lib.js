@@ -1,6 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const common_1 = require("./common");
+require("./custom_data");
+require("./error_handeling");
 const binding_1 = require("binding");
 {
     // Test 001
@@ -43,7 +45,7 @@ const binding_1 = require("binding");
     if (recieved instanceof Error) {
         throw new Error(`method getDataFunc() returns error: ${recieved.message}`);
     }
-    (0, common_1.assert)(recieved.a).msg("Value of struct.a invalid").equal(111);
+    (0, common_1.assert)(recieved.a).msg("Value of struct.a invalid").equal(11);
     (0, common_1.assert)(recieved.b).msg("Value of struct.b invalid").equal(12);
     (0, common_1.assert)(recieved.s).msg("Value of struct.s invalid").equal("testtest");
 }
