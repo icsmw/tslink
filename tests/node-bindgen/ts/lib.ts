@@ -1,6 +1,8 @@
 import { assert } from "./common";
 import "./custom_data";
 import "./error_handeling";
+import "./callbacks";
+import "./consturctors";
 
 import { Struct, Data, getDataFunc } from "binding";
 

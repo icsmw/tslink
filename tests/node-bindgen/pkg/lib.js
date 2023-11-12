@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const common_1 = require("./common");
 require("./custom_data");
 require("./error_handeling");
+require("./callbacks");
+require("./consturctors");
 const binding_1 = require("binding");
 {
     // Test 001

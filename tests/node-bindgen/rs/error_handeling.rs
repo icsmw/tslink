@@ -1,6 +1,5 @@
 use node_bindgen::derive::node_bindgen;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use tslink::tslink;
 
 #[tslink]

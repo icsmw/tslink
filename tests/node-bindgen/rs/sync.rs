@@ -23,10 +23,6 @@ impl From<serde_json::Error> for MyCustomError {
     }
 }
 
-fn test(data: Data) -> Result<String, MyCustomError> {
-    serde_json::to_string(&data).map_err(|e| Into::<MyCustomError>::into(e))
-}
-
 #[tslink]
 struct MyCustomErrorWrapped(MyCustomError);
 
