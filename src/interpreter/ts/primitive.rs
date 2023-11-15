@@ -19,7 +19,6 @@ impl Interpreter for Primitive {
         Ok(buf.write_all(
             match self {
                 Self::Number(_) => "number",
-                Self::BigInt(_) => "BigInt",
                 Self::String => "string",
                 Self::Boolean => "boolean",
             }

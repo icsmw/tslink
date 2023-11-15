@@ -1,17 +1,16 @@
-import { Group } from "./common";
-import { StructCustomData } from "binding";
-
-const tests = new Group("Custom Data Tests");
-const struct = new StructCustomData();
-
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const common_1 = require("./common");
+const binding_1 = require("binding");
+const tests = new common_1.Group("Custom Data Tests");
+const struct = new binding_1.StructCustomData();
 {
     const test = tests.test("getData");
     const result = struct.getData({ a: 1, b: 2, c: "test" });
     if (result instanceof Error) {
-        test.fail(
-            `Function getData() of StructCustomData returns error: ${result.message}`
-        );
-    } else {
+        test.fail(`Function getData() of StructCustomData returns error: ${result.message}`);
+    }
+    else {
         test.assert(result.a).msg("Value of result.a invalid").equal(2);
         test.assert(result.b).msg("Value of result.b invalid").equal(3);
         test.assert(result.c)
@@ -20,15 +19,13 @@ const struct = new StructCustomData();
         test.success();
     }
 }
-
 {
     const test = tests.test("getDataA");
     const result = struct.getDataA({ a: 1, b: 2, c: "test" });
     if (result instanceof Error) {
-        test.fail(
-            `Function getDataA() of StructCustomData returns error: ${result.message}`
-        );
-    } else {
+        test.fail(`Function getDataA() of StructCustomData returns error: ${result.message}`);
+    }
+    else {
         test.assert(result.a.a).msg("Value of result.a.a invalid").equal(2);
         test.assert(result.a.b).msg("Value of result.a.b invalid").equal(3);
         test.assert(result.a.c)
@@ -81,11 +78,9 @@ const struct = new StructCustomData();
         test.assert(result.c["second"].c)
             .msg("Value of result.b[1].c invalid")
             .equal("testtest");
-        test.assert(result.d).msg("Value of result.d invalid").equal("test");
         test.success();
     }
 }
-
 {
     const test = tests.test("testOfErrorSupportOk");
     const result = struct.testOfErrorSupportOk();
@@ -93,7 +88,6 @@ const struct = new StructCustomData();
     test.assert(result).msg("Value of result invalid").equal(666);
     test.success();
 }
-
 {
     const test = tests.test("testOfErrorSupportErr");
     const result = struct.testOfErrorSupportErr();
@@ -113,8 +107,10 @@ const struct = new StructCustomData();
         test.assert(result.err?.err.msg)
             .msg("Value of result.err?.err.code invalid")
             .equal("Error");
-    } else {
+    }
+    else {
         test.fail("Value of result invalid");
     }
     test.success();
 }
+//# sourceMappingURL=custom_data.js.map

@@ -9,7 +9,6 @@ pub mod cfg;
 #[derive(Debug, Clone, Default)]
 pub struct Config {
     inited: bool,
-    path_buf: Option<PathBuf>,
     cargo: Option<Table>,
     pub node_mod_filename: Option<String>,
     pub node_mod_dist: Option<PathBuf>,
@@ -20,7 +19,6 @@ pub struct Config {
 impl Config {
     pub fn overwrite(&mut self, cfg: Cfg, cargo: Table) {
         self.inited = true;
-        self.path_buf = cfg.path.map(PathBuf::from);
         self.node_mod_dist = cfg
             .node
             .clone()

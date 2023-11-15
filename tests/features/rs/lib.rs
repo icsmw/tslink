@@ -1,4 +1,6 @@
 extern crate tslink;
+mod callbacks;
+
 use std::collections::HashMap;
 
 use tslink::tslink;

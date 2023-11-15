@@ -126,6 +126,9 @@ fn bind(item: &mut FnItem, name: &str, context: &Context, fn_nature: &Nature) ->
             fn_res.ok_or(E::Parsing("Fail to get Ok option of Result. If result defined as JSON, function/method should return Result<T,E>".to_string()))?,
             fn_err.ok_or(E::Parsing("Fail to get Err option of Result. If result defined as JSON, function/method should return Result<T,E>".to_string()))?,
         );
+        let res_rust_type = fn_res.rust_type_name()?;
+        let err_rust_type = fn_err.rust_type_name()?;
+
         let res_rust_type = format_ident!("{}", fn_res.rust_type_name()?);
         let err_rust_type = format_ident!("{}", fn_err.rust_type_name()?);
         if result_as_json && error_as_json {

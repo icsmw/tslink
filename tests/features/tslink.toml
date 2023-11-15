@@ -1,3 +1,2 @@
-path = "./dist/tslink"
 node = "./dist/index.node"
 snake_case_naming = "methods"

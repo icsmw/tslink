@@ -78,6 +78,7 @@ const struct = new binding_1.StructCustomData();
         test.assert(result.c["second"].c)
             .msg("Value of result.b[1].c invalid")
             .equal("testtest");
+        test.assert(result.d).msg("Value of result.d invalid").equal("test");
         test.success();
     }
 }

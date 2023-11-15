@@ -54,6 +54,7 @@ struct DataB {
     pub a: DataA,
     pub b: Vec<DataA>,
     pub c: HashMap<String, DataA>,
+    pub d: Option<String>,
 }
 
 struct StructCustomData {}
@@ -128,6 +129,7 @@ impl StructCustomData {
                 },
             ],
             c,
+            d: Some("test".to_string()),
         })
     }
 
