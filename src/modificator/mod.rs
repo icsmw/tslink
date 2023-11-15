@@ -5,7 +5,7 @@ use crate::{
     error::E,
     nature::{Composite, Nature, Refered, RustTypeName, VariableTokenStream},
 };
-use proc_macro2::TokenStream;
+use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
 use syn::{parse_quote, ReturnType};
 use syn::{Block, ImplItemFn, ItemFn};
@@ -128,9 +128,18 @@ fn bind(item: &mut FnItem, name: &str, context: &Context, fn_nature: &Nature) ->
         );
         let res_rust_type = fn_res.rust_type_name()?;
         let err_rust_type = fn_err.rust_type_name()?;
-
-        let res_rust_type = format_ident!("{}", fn_res.rust_type_name()?);
-        let err_rust_type = format_ident!("{}", fn_err.rust_type_name()?);
+        let res_rust_type = if &res_rust_type == "()" {
+            quote!(())
+        } else {
+            let ident = format_ident!("{}", fn_res.rust_type_name()?);
+            quote! { #ident }
+        };
+        let err_rust_type = if &err_rust_type == "()" {
+            quote!(())
+        } else {
+            let ident = format_ident!("{}", fn_err.rust_type_name()?);
+            quote! { #ident }
+        };
         if result_as_json && error_as_json {
             let res_token = fn_res.variable_token_stream("res", None)?;
             let err_token = fn_err.variable_token_stream("err", None)?;

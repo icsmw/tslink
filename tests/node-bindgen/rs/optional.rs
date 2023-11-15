@@ -38,11 +38,11 @@ impl StructWithOptions {
         Self {}
     }
 
-    // #[tslink(error = "json", snake_case_naming, exception_suppression)]
-    // #[node_bindgen]
-    // fn get_err_with_option_some(&self) -> Result<(), String> {
-    //     Err(String::from(""))
-    // }
+    #[tslink(error = "json", snake_case_naming, exception_suppression)]
+    #[node_bindgen]
+    fn get_err_with_option_some(&self) -> Result<(), String> {
+        Err(String::from(""))
+    }
     // #[tslink(error = "json", snake_case_naming, exception_suppression)]
     // #[node_bindgen]
     // fn get_err_with_option_some(&self) -> Result<(), ErrorWithOption> {
