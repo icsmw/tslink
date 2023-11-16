@@ -5,7 +5,7 @@ use crate::{
     error::E,
     nature::{Composite, Nature, Refered, RustTypeName, VariableTokenStream},
 };
-use proc_macro2::{Ident, Span, TokenStream};
+use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::{parse_quote, ReturnType};
 use syn::{Block, ImplItemFn, ItemFn};

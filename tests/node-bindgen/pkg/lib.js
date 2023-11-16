@@ -5,4 +5,5 @@ require("./error_handeling");
 require("./callbacks");
 require("./consturctors");
 require("./types");
+require("./optional");
 //# sourceMappingURL=lib.js.map
