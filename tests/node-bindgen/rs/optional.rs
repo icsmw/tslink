@@ -62,4 +62,36 @@ impl StructWithOptions {
     fn get_err_with_option_none(&self) -> Result<(), ErrorWithOption> {
         Err(ErrorWithOption { msg: None, code: 1 })
     }
+
+    #[tslink(snake_case_naming)]
+    #[node_bindgen]
+    fn optional_a(&self, a: Option<i64>, b: Option<i64>) -> i64 {
+        if let (Some(a), Some(b)) = (a, b) {
+            a + b
+        } else {
+            a.unwrap_or(b.unwrap_or(1))
+        }
+    }
+
+    #[tslink(snake_case_naming)]
+    #[node_bindgen]
+    fn optional_b(&self, a: Option<i64>, b: Option<i64>) -> (Option<i64>, Option<i64>) {
+        (a, b)
+    }
+}
+
+#[tslink(snake_case_naming)]
+#[node_bindgen]
+fn optional_test_a(a: Option<i64>, b: Option<i64>) -> i64 {
+    if let (Some(a), Some(b)) = (a, b) {
+        a + b
+    } else {
+        a.unwrap_or(b.unwrap_or(1))
+    }
+}
+
+#[tslink(snake_case_naming)]
+#[node_bindgen]
+fn optional_test_b(a: Option<i64>, b: Option<i64>) -> (Option<i64>, Option<i64>) {
+    (a, b)
 }
