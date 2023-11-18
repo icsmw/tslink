@@ -6,4 +6,5 @@ require("./callbacks");
 require("./consturctors");
 require("./types");
 require("./optional");
+require("./async_methods");
 //# sourceMappingURL=lib.js.map

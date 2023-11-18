@@ -9,6 +9,7 @@ const struct = new binding_1.StructAsyncMethods();
     const timeout = setTimeout(() => {
         test.fail(`Function getData() didn't call callback`);
     }, 50);
+    let res = struct.getData({ a: 1, b: 2, c: "test" });
     struct
         .getData({ a: 1, b: 2, c: "test" })
         .then((result) => {

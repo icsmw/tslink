@@ -14,7 +14,7 @@ pub enum Composite {
     // Ok, Err, exception_suppression, asyncness
     Result(Option<Box<Nature>>, Option<Box<Nature>>, bool, bool),
     Undefined,
-    // (Vec(Args), Output, async, constructor)
+    // (Vec(Args), Output, asyncness, constructor)
     Func(Vec<Nature>, Option<Box<Nature>>, bool, bool),
 }
 

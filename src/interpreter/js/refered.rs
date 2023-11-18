@@ -10,74 +10,141 @@ use std::{
     ops::Deref,
 };
 
-fn fn_body(call_exp: String, exception_suppression: bool, error_as_json: bool) -> String {
-    if exception_suppression {
+fn wrap_output(call_exp: String, result_as_json: bool) -> String {
+    format!(
+        "{}{call_exp}{}",
+        if result_as_json { "JSON.parse(" } else { "" },
+        if result_as_json { ")" } else { "" }
+    )
+}
+fn fn_body(
+    call_exp: String,
+    exception_suppression: bool,
+    result_as_json: bool,
+    error_as_json: bool,
+    asyncness: bool,
+) -> String {
+    if asyncness {
+        if error_as_json {
+            format!(
+                "return {call_exp}.then((result) => {{
+            try {{
+                return Promise.resolve({});
+            }} catch (e) {{
+                return Promise.reject(e);
+            }}
+        }}).catch((e) => {{
+            if (e instanceof Error) {{
+                return Promise.reject(e);
+            }}
+            if (typeof e === 'string') {{
+                try {{
+                    const err = new Error(`Function/method returns error;`);
+                    err.err = JSON.parse(e);
+                    return Promise.reject(err);
+                }} catch(err_parsing) {{
+                    return Promise.reject(new Error(`Function/method returns error; fail to parse error; origin error: ${{e}}; error: ${{err_parsing}}`));
+                }}
+            }} else {{
+                const err = new Error(`Function/method returns error; property [err] = ${{typeof e === 'object' && e !== null ? JSON.stringify(e) : e}}`);
+                err.err = e;
+                return Promise.reject(err);
+            }}
+        }});",
+                wrap_output("result".to_string(), result_as_json)
+            )
+        } else {
+            format!(
+                "return {call_exp}.then((result) => {{
+                    try {{
+                        return Promise.resolve({});
+                    }} catch (e) {{
+                        return Promise.reject(e);
+                    }}
+                }}).catch((e) => {{
+                    if (e instanceof Error) {{
+                        return Promise.reject(e);
+                    }}
+                    if (typeof e === 'string') {{
+                        return Promise.reject(new Error(e));
+                    }} else {{
+                        const err = new Error(`Function/method returns error; property [err] = ${{typeof e === 'object' && e !== null ? JSON.stringify(e) : e}}`);
+                        err.err = e;
+                        return Promise.reject(err);
+                    }}
+                }});",
+                wrap_output("result".to_string(), result_as_json)
+            )
+        }
+    } else if exception_suppression {
         if error_as_json {
             format!(
                 "try {{
-                return {call_exp};
-            }} catch(e) {{
-                if (e instanceof Error) {{
-                    return e;
-                }}
-                if (typeof e === 'string') {{
-                    try {{
-                        const err = new Error(`Function/method returns error;`);
-                        err.err = JSON.parse(e);
-                        return err;
-                    }} catch(err_parsing) {{
-                        return new Error(`Function/method returns error; fail to parse error; origin error: ${{e}}; error: ${{err_parsing}}`);
-                    }}
-                }} else {{
-                    const err = new Error(`Function/method returns error; property [err] = ${{typeof e === 'object' && e !== null ? JSON.stringify(e) : e}}`);
-                    err.err = e;
+            return {};
+        }} catch(e) {{
+            if (e instanceof Error) {{
+                return e;
+            }}
+            if (typeof e === 'string') {{
+                try {{
+                    const err = new Error(`Function/method returns error;`);
+                    err.err = JSON.parse(e);
                     return err;
+                }} catch(err_parsing) {{
+                    return new Error(`Function/method returns error; fail to parse error; origin error: ${{e}}; error: ${{err_parsing}}`);
                 }}
-            }}"
+            }} else {{
+                const err = new Error(`Function/method returns error; property [err] = ${{typeof e === 'object' && e !== null ? JSON.stringify(e) : e}}`);
+                err.err = e;
+                return err;
+            }}
+        }}",
+        wrap_output(call_exp, result_as_json)
             )
         } else {
             format!(
                 "try {{
-                return {call_exp};
-            }} catch(e) {{
-                if (e instanceof Error) {{
-                    return e;
-                }}
-                if (typeof e === 'string') {{
-                    return new Error(e);
-                }} else {{
-                    const err = new Error(`Function/method returns error; property [err] = ${{typeof e === 'object' && e !== null ? JSON.stringify(e) : e}}`);
-                    err.err = e;
-                    return err;
-                }}
-            }}"
+            return {};
+        }} catch(e) {{
+            if (e instanceof Error) {{
+                return e;
+            }}
+            if (typeof e === 'string') {{
+                return new Error(e);
+            }} else {{
+                const err = new Error(`Function/method returns error; property [err] = ${{typeof e === 'object' && e !== null ? JSON.stringify(e) : e}}`);
+                err.err = e;
+                return err;
+            }}
+        }}",
+        wrap_output(call_exp, result_as_json)
             )
         }
     } else if error_as_json {
         format!(
             "try {{
-            return {call_exp};
-        }} catch(e) {{
-            if (e instanceof Error) {{
-                throw e;
+        return {};
+    }} catch(e) {{
+        if (e instanceof Error) {{
+            throw e;
+        }}
+        if (typeof e === 'string') {{
+            const err = new Error(`Function/method returns error;`);
+            try {{
+                err.err = JSON.parse(e);
+            }} catch(err_parsing) {{
+                throw new Error(`Function/method returns error; fail to parse error; origin error: ${{e}}; error: ${{err_parsing}}`);
             }}
-            if (typeof e === 'string') {{
-                const err = new Error(`Function/method returns error;`);
-                try {{
-                    err.err = JSON.parse(e);
-                }} catch(err_parsing) {{
-                    throw new Error(`Function/method returns error; fail to parse error; origin error: ${{e}}; error: ${{err_parsing}}`);
-                }}
-                throw err;
-            }} else {{
-                const err = new Error(`Function/method returns error; property [err] = ${{typeof e === 'object' && e !== null ? JSON.stringify(e) : e}}`);
-                err.err = e;
-                throw err;
-            }}
-        }}"
+            throw err;
+        }} else {{
+            const err = new Error(`Function/method returns error; property [err] = ${{typeof e === 'object' && e !== null ? JSON.stringify(e) : e}}`);
+            err.err = e;
+            throw err;
+        }}
+    }}", wrap_output(call_exp, result_as_json)
         )
     } else {
-        format!("return {call_exp};")
+        format!("return {};", wrap_output(call_exp, result_as_json))
     }
 }
 
@@ -184,8 +251,12 @@ impl Interpreter for Refered {
                     // Render methods
                     for field in fields.iter() {
                         if let Nature::Refered(Refered::Field(name, context, nature, _)) = field {
-                            if let Nature::Composite(Composite::Func(args, _, _, constructor)) =
-                                nature.deref()
+                            if let Nature::Composite(Composite::Func(
+                                args,
+                                _,
+                                asyncness,
+                                constructor,
+                            )) = nature.deref()
                             {
                                 if *constructor {
                                     continue;
@@ -210,11 +281,6 @@ impl Interpreter for Refered {
                                             .join(", ")
                                     )
                                 };
-                                let call_exp = if !context.result_as_json()? {
-                                    call_exp
-                                } else {
-                                    format!("JSON.parse({call_exp})")
-                                };
                                 buf.write_all(
                                     format!(
                                         "
@@ -225,7 +291,9 @@ impl Interpreter for Refered {
                                         fn_body(
                                             call_exp,
                                             context.exception_suppression()?,
-                                            context.error_as_json()?
+                                            context.result_as_json()?,
+                                            context.error_as_json()?,
+                                            *asyncness
                                         )
                                     )
                                     .as_bytes(),
@@ -296,7 +364,9 @@ function {alias}({}) {{
                         fn_body(
                             call_exp,
                             context.exception_suppression()?,
-                            context.error_as_json()?
+                            context.result_as_json()?,
+                            context.error_as_json()?,
+                            nature.is_fn_async()?,
                         )
                     )
                     .as_bytes(),

@@ -4,3 +4,4 @@ import "./callbacks";
 import "./consturctors";
 import "./types";
 import "./optional";
+import "./async_methods";
