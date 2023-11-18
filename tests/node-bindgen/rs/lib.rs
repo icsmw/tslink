@@ -1,3 +1,4 @@
+mod async_methods;
 mod callbacks;
 mod constructors;
 mod custom_data;

@@ -146,7 +146,7 @@ impl Nature {
                         Ok(())
                     }
                 }
-                composite::Composite::Result(r, e, _) => {
+                composite::Composite::Result(r, e, _, _) => {
                     if r.is_some() && e.is_some() {
                         Err(E::Parsing(String::from(
                             "Result entity already has been bound",
@@ -277,7 +277,10 @@ impl ExtractGeneric<&TraitBound> for Nature {
                         for input in arg.inputs.iter() {
                             fn_args.push(Nature::extract(input, Context::default())?);
                         }
-                        (fn_args, get_fn_return(&arg.output, &Context::default())?)
+                        (
+                            fn_args,
+                            get_fn_return(&arg.output, &Context::default(), false)?,
+                        )
                     }
                 };
                 return Ok(Some(Nature::Refered(Refered::Generic(
@@ -462,6 +465,7 @@ impl Extract<&Punctuated<PathSegment, PathSep>> for Nature {
                     None,
                     None,
                     context.exception_suppression()?,
+                    false,
                 )),
                 _ => {
                     return Err(E::Parsing(String::from(
@@ -522,23 +526,29 @@ impl Extract<Type> for Nature {
     }
 }
 
-fn get_fn_return(output: &ReturnType, context: &Context) -> Result<Option<Box<Nature>>, E> {
+fn get_fn_return(
+    output: &ReturnType,
+    context: &Context,
+    asyncness: bool,
+) -> Result<Option<Box<Nature>>, E> {
     Ok(match output {
         ReturnType::Default => Some(Box::new(Nature::Composite(Composite::Result(
             None,
             None,
             context.exception_suppression()?,
+            asyncness,
         )))),
         ReturnType::Type(_, ty) => {
             let return_ty = Nature::extract(*ty.clone(), context.clone())?;
             Some(
-                if matches!(return_ty, Nature::Composite(Composite::Result(_, _, _))) {
-                    Box::new(return_ty)
+                if let Nature::Composite(Composite::Result(a, b, c, _)) = return_ty {
+                    Box::new(Nature::Composite(Composite::Result(a, b, c, asyncness)))
                 } else {
                     Box::new(Nature::Composite(Composite::Result(
                         Some(Box::new(return_ty)),
                         None,
                         context.exception_suppression()?,
+                        asyncness,
                     )))
                 },
             )
@@ -564,7 +574,11 @@ impl Extract<&ImplItemFn> for Nature {
                 )));
             }
         }
-        let out = get_fn_return(&fn_item.sig.output, &context)?;
+        let out = get_fn_return(
+            &fn_item.sig.output,
+            &context,
+            fn_item.sig.asyncness.is_some(),
+        )?;
         let constructor = if let Some(Nature::Refered(Refered::Ref(re, _))) = out.as_deref() {
             re == "Self"
         } else {
@@ -597,7 +611,11 @@ impl Extract<&ItemFn> for Nature {
                 )));
             }
         }
-        let out = get_fn_return(&fn_item.sig.output, &context)?;
+        let out = get_fn_return(
+            &fn_item.sig.output,
+            &context,
+            fn_item.sig.asyncness.is_some(),
+        )?;
         let constructor = if let Some(Nature::Refered(Refered::Ref(re, _))) = out.as_deref() {
             re == "Self"
         } else {

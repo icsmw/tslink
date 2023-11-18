@@ -17,4 +17,28 @@ impl StructCallback {
     fn test_a<F: Fn(i32, i32) + Send + 'static>(&mut self, callback: F) {
         callback(666, 666);
     }
+
+    #[tslink(snake_case_naming)]
+    #[node_bindgen]
+    fn test_b<F: Fn(Option<i32>, Option<i32>) + Send + 'static>(&mut self, callback: F) {
+        callback(Some(666), Some(666));
+    }
+
+    #[tslink(snake_case_naming)]
+    #[node_bindgen]
+    fn test_c<F: Fn(Option<i32>, Option<i32>) + Send + 'static>(&mut self, callback: F) {
+        callback(None, Some(666));
+    }
+
+    #[tslink(snake_case_naming)]
+    #[node_bindgen]
+    fn test_d<F: Fn(Option<i32>, Option<i32>) + Send + 'static>(&mut self, callback: F) {
+        callback(Some(666), None);
+    }
+
+    #[tslink(snake_case_naming)]
+    #[node_bindgen]
+    fn test_e<F: Fn(Option<i32>, Option<i32>) + Send + 'static>(&mut self, callback: F) {
+        callback(None, None);
+    }
 }

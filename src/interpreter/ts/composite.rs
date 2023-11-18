@@ -99,9 +99,12 @@ impl Interpreter for Composite {
                     )));
                 }
             }
-            Self::Result(res, err, exception_suppression) => {
+            Self::Result(res, err, exception_suppression, asyncness) => {
                 if let Some(res) = res {
                     res.reference(natures, buf, offset.clone())?;
+                }
+                if *asyncness {
+                    return Ok(());
                 }
                 let err_ext = if let Some(err) = err {
                     format!("(Error & {{ err?: {}}})", err.rust_type_name()?)
