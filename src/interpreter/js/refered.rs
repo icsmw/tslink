@@ -17,6 +17,56 @@ fn wrap_output(call_exp: String, result_as_json: bool) -> String {
         if result_as_json { ")" } else { "" }
     )
 }
+
+fn wrap_err(error_as_json: bool, asyncness: bool, exception_suppression: bool) -> String {
+    let open = if asyncness { "Promise.reject(" } else { "" };
+    let close = if asyncness { ")" } else { "" };
+    let returning = if exception_suppression || asyncness {
+        "return"
+    } else {
+        "throw"
+    };
+    let parsing_err_block = if exception_suppression || asyncness {
+        format!("try {{
+                    const err = new Error(`Function/method returns error;`);
+                    err.err = JSON.parse(e);
+                    return {open}err{close};
+                }} catch(err_parsing) {{
+                    return {open}new Error(`Function/method returns error; fail to parse error; origin error: ${{e}}; error: ${{err_parsing}}`){close};
+                }}")
+    } else {
+        "const err = new Error(`Function/method returns error;`);
+                try {{
+                    err.err = JSON.parse(e);
+                }} catch(err_parsing) {{
+                    throw new Error(`Function/method returns error; fail to parse error; origin error: ${{e}}; error: ${{err_parsing}}`);
+                }}
+                throw err;".to_string()
+    };
+    if error_as_json {
+        format!("if (e instanceof Error) {{
+                {returning} {open}e{close};
+            }}
+            if (typeof e === 'string') {{
+                {parsing_err_block}
+            }} else {{
+                const err = new Error(`Function/method returns error; property [err] = ${{typeof e === 'object' && e !== null ? JSON.stringify(e) : e}}`);
+                err.err = e;
+                {returning} {open}err{close};
+            }}")
+    } else {
+        format!("if (e instanceof Error) {{
+                {returning} {open}e{close};
+            }}
+            if (typeof e === 'string') {{
+                {returning} {open}new Error(e){close};
+            }} else {{
+                const err = new Error(`Function/method returns error; property [err] = ${{typeof e === 'object' && e !== null ? JSON.stringify(e) : e}}`);
+                err.err = e;
+                {returning} {open}err{close};
+            }}")
+    }
+}
 fn fn_body(
     call_exp: String,
     exception_suppression: bool,
@@ -24,124 +74,28 @@ fn fn_body(
     error_as_json: bool,
     asyncness: bool,
 ) -> String {
+    let error_handeling_block = wrap_err(error_as_json, asyncness, exception_suppression);
     if asyncness {
-        if error_as_json {
-            format!(
-                "return {call_exp}.then((result) => {{
-            try {{
-                return Promise.resolve({});
-            }} catch (e) {{
-                return Promise.reject(e);
-            }}
-        }}).catch((e) => {{
-            if (e instanceof Error) {{
-                return Promise.reject(e);
-            }}
-            if (typeof e === 'string') {{
+        format!(
+            "return {call_exp}.then((result) => {{
                 try {{
-                    const err = new Error(`Function/method returns error;`);
-                    err.err = JSON.parse(e);
-                    return Promise.reject(err);
-                }} catch(err_parsing) {{
-                    return Promise.reject(new Error(`Function/method returns error; fail to parse error; origin error: ${{e}}; error: ${{err_parsing}}`));
+                    return Promise.resolve({});
+                }} catch (e) {{
+                    return Promise.reject(e);
                 }}
-            }} else {{
-                const err = new Error(`Function/method returns error; property [err] = ${{typeof e === 'object' && e !== null ? JSON.stringify(e) : e}}`);
-                err.err = e;
-                return Promise.reject(err);
-            }}
-        }});",
-                wrap_output("result".to_string(), result_as_json)
-            )
-        } else {
-            format!(
-                "return {call_exp}.then((result) => {{
-                    try {{
-                        return Promise.resolve({});
-                    }} catch (e) {{
-                        return Promise.reject(e);
-                    }}
-                }}).catch((e) => {{
-                    if (e instanceof Error) {{
-                        return Promise.reject(e);
-                    }}
-                    if (typeof e === 'string') {{
-                        return Promise.reject(new Error(e));
-                    }} else {{
-                        const err = new Error(`Function/method returns error; property [err] = ${{typeof e === 'object' && e !== null ? JSON.stringify(e) : e}}`);
-                        err.err = e;
-                        return Promise.reject(err);
-                    }}
-                }});",
-                wrap_output("result".to_string(), result_as_json)
-            )
-        }
-    } else if exception_suppression {
-        if error_as_json {
-            format!(
-                "try {{
-            return {};
-        }} catch(e) {{
-            if (e instanceof Error) {{
-                return e;
-            }}
-            if (typeof e === 'string') {{
-                try {{
-                    const err = new Error(`Function/method returns error;`);
-                    err.err = JSON.parse(e);
-                    return err;
-                }} catch(err_parsing) {{
-                    return new Error(`Function/method returns error; fail to parse error; origin error: ${{e}}; error: ${{err_parsing}}`);
-                }}
-            }} else {{
-                const err = new Error(`Function/method returns error; property [err] = ${{typeof e === 'object' && e !== null ? JSON.stringify(e) : e}}`);
-                err.err = e;
-                return err;
-            }}
-        }}",
-        wrap_output(call_exp, result_as_json)
-            )
-        } else {
-            format!(
-                "try {{
-            return {};
-        }} catch(e) {{
-            if (e instanceof Error) {{
-                return e;
-            }}
-            if (typeof e === 'string') {{
-                return new Error(e);
-            }} else {{
-                const err = new Error(`Function/method returns error; property [err] = ${{typeof e === 'object' && e !== null ? JSON.stringify(e) : e}}`);
-                err.err = e;
-                return err;
-            }}
-        }}",
-        wrap_output(call_exp, result_as_json)
-            )
-        }
-    } else if error_as_json {
+            }}).catch((e) => {{
+                {error_handeling_block}
+            }});",
+            wrap_output("result".to_string(), result_as_json)
+        )
+    } else if exception_suppression || error_as_json {
         format!(
             "try {{
-        return {};
-    }} catch(e) {{
-        if (e instanceof Error) {{
-            throw e;
-        }}
-        if (typeof e === 'string') {{
-            const err = new Error(`Function/method returns error;`);
-            try {{
-                err.err = JSON.parse(e);
-            }} catch(err_parsing) {{
-                throw new Error(`Function/method returns error; fail to parse error; origin error: ${{e}}; error: ${{err_parsing}}`);
-            }}
-            throw err;
-        }} else {{
-            const err = new Error(`Function/method returns error; property [err] = ${{typeof e === 'object' && e !== null ? JSON.stringify(e) : e}}`);
-            err.err = e;
-            throw err;
-        }}
-    }}", wrap_output(call_exp, result_as_json)
+            return {};
+        }} catch(e) {{
+            {error_handeling_block}
+        }}",
+            wrap_output(call_exp, result_as_json)
         )
     } else {
         format!("return {};", wrap_output(call_exp, result_as_json))
