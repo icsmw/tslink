@@ -17,34 +17,45 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn overwrite(&mut self, cfg: Cfg, cargo: Table) {
+    pub fn overwrite(&mut self, cfg: Option<Cfg>, cargo: Table) {
         self.inited = true;
-        self.node_mod_dist = cfg
-            .node
-            .clone()
-            .map(|s| PathBuf::from(s).parent().map(|p| p.to_path_buf()))
-            .unwrap_or(None);
-        self.node_mod_filename = cfg
-            .node
-            .map(|s| {
-                PathBuf::from(s)
-                    .file_name()
-                    .map(|f| f.to_string_lossy().to_string())
-            })
-            .unwrap_or(None);
-        if let Some(snake_case_naming) = cfg.snake_case_naming {
-            snake_case_naming.split(',').for_each(|v| {
-                let condition = SnakeCaseNaming::from_str(v).unwrap();
-                if self.snake_case_naming.get(&condition).is_none() {
-                    self.snake_case_naming.insert(condition);
-                }
-            });
-        }
-        self.exception_suppression = if let Some(v) = cfg.exception_suppression {
-            v
+        if let Some(cfg) = cfg {
+            self.node_mod_dist = cfg
+                .node
+                .clone()
+                .map(|s| PathBuf::from(s).parent().map(|p| p.to_path_buf()))
+                .unwrap_or(None);
+            self.node_mod_filename = cfg
+                .node
+                .map(|s| {
+                    PathBuf::from(s)
+                        .file_name()
+                        .map(|f| f.to_string_lossy().to_string())
+                })
+                .unwrap_or(None);
+            if let Some(snake_case_naming) = cfg.snake_case_naming {
+                snake_case_naming.split(',').for_each(|v| {
+                    let condition = SnakeCaseNaming::from_str(v).unwrap();
+                    if self.snake_case_naming.get(&condition).is_none() {
+                        self.snake_case_naming.insert(condition);
+                    }
+                });
+            }
+            self.exception_suppression = if let Some(v) = cfg.exception_suppression {
+                v
+            } else {
+                false
+            };
         } else {
-            false
-        };
+            self.node_mod_dist = Some(PathBuf::from("./dist"));
+            self.node_mod_filename = Some("index.node".to_string());
+            //             println!(
+            //                 "[tslink] Warting
+            // [tslink] file tslink.toml isn't found; will be used default path to node module: ./dist/index.node.
+            // [tslink] To configure correct path to node module file please create configuration file tslink.toml
+            // [tslink] in root folder of project and set field: node = \"./path/to/module/index.node\""
+            //             );
+        }
         self.cargo = Some(cargo);
     }
 
@@ -94,17 +105,15 @@ pub fn setup() -> Result<(), E> {
             root.to_string_lossy()
         )));
     }
-    if !config.exists() {
-        return Err(E::FileNotFound(format!(
-            "tslink.toml isn't found in {}",
-            root.to_string_lossy()
-        )));
-    }
     CONFIG
         .write()
         .map_err(|e| E::AccessError(e.to_string()))?
         .overwrite(
-            toml::from_str(&fs::read_to_string(config)?)?,
+            if config.exists() {
+                Some(toml::from_str(&fs::read_to_string(config)?)?)
+            } else {
+                None
+            },
             toml::from_str(&fs::read_to_string(cargo)?)?,
         );
     Ok(())

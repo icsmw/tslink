@@ -41,7 +41,7 @@ enum FlatEnum {
     Nine,
 }
 #[tslink(class)]
-struct Testing {
+struct StructureA {
     pub _p8: u8,
     pub _p16: u16,
     pub _p32: u32,
@@ -54,8 +54,22 @@ struct Testing {
     pub _y: Nested,
     pub _z: Option<Nested>,
     pub _t: SomeEnum,
-    // pub _y: &'a str,
-    // pub _e: SomeEnum,
+}
+
+#[tslink(class)]
+struct StructureB {
+    pub _p8: u8,
+    pub _p16: u16,
+    pub _p32: u32,
+    pub _p64: u64,
+    pub _a: (u32, u64),
+    pub _b: Vec<u64>,
+    pub _c: HashMap<String, u64>,
+    pub _s: String,
+    pub _k: Option<String>,
+    pub _y: Nested,
+    pub _z: Option<Nested>,
+    pub _t: SomeEnum,
 }
 
 #[tslink]
@@ -64,7 +78,7 @@ pub fn testA(a: u8) {
 }
 
 #[tslink]
-fn testB(a: Testing, b: u8) -> u8 {
+fn testB(a: StructureA, b: u8) -> u8 {
     0
 }
 
@@ -77,7 +91,7 @@ fn test_generic_fn<G: Fn(i32, i32, bool) -> i32 + Send + 'static>(
 }
 
 #[tslink]
-impl Testing {
+impl StructureA {
     pub fn method_a(&self, abs: u8) -> u8 {
         0
     }
@@ -132,7 +146,7 @@ struct TestingA<T: Fn(i32)> {
     pub cb: T,
 }
 fn main() {
-    // let a = Testing {
+    // let a = StructureA {
     //     _p8: 0,
     //     _p16: 0,
     //     _p32: 0,

@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 mod config;
 mod context;
 mod error;
@@ -20,7 +22,9 @@ use std::sync::RwLock;
 use syn::{parse_macro_input, Item};
 
 lazy_static! {
+    #[doc(hidden)]
     static ref CONFIG: RwLock<Config> = RwLock::new(Config::default());
+    #[doc(hidden)]
     static ref NATURES: RwLock<Natures> = RwLock::new(Natures::new());
 }
 

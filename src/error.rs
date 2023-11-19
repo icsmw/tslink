@@ -8,8 +8,8 @@ pub enum E {
     InvalidConfiguration(String),
     #[error("Toml error")]
     PasringToml(#[from] toml::de::Error),
-    #[error("Configuration error")]
-    Configuration(#[from] std::io::Error),
+    #[error("IO error")]
+    IO(#[from] std::io::Error),
     #[error("Not supported. Try to ignore it with #[tslink(ignore)]")]
     NotSupported,
     #[error("Fail to identify name of entity")]

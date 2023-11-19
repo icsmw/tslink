@@ -3,6 +3,13 @@ name = "tslink"
 version = "0.1.0"
 edition = "2021"
 authors = ["d.astafyev@outlook.com"]
+description = "Creates typescript definitions based on rust code"
+license = "Apache-2.0"
+keywords = ["typescript", "node", "node-bindgen", "javascript"]
+categories = ["node"]
+repository = "https://github.com/esrlabs/envvars.git"
+homepage = "https://github.com/esrlabs/envvars"
+readme = "README.md"
 
 [lib]
 name = "tslink"
