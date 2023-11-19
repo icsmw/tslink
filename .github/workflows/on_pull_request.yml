@@ -1,0 +1,38 @@
+name: Checks
+
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+
+jobs:
+  rust_lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Linting
+        run: cargo +nightly clippy --all --all-features -- -D warnings
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Features compilation test
+        working-directory: ./tests/features
+        run: yarn run test
+      - name: NodeBindgen tests
+        working-directory: ./tests/node-bindgen
+        run: yarn run test
+
