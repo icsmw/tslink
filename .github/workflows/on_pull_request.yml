@@ -18,6 +18,8 @@ jobs:
         with:
           toolchain: stable
           override: true
+      - name: Install nightly
+        run: rustup install nightly
       - name: Linting
         run: cargo +nightly clippy --all --all-features -- -D warnings
   tests:
@@ -32,7 +34,8 @@ jobs:
       - name: Features compilation test
         working-directory: ./tests/features
         run: yarn run test
+      - name: Install nj-cli
+        run: cargo install nj-cli
       - name: NodeBindgen tests
         working-directory: ./tests/node-bindgen
         run: yarn run test
-
