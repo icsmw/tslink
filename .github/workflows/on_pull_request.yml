@@ -17,7 +17,7 @@ jobs:
       - name: Install node manager
         run: yarn global add n 
       - name: Install latest node
-        run: n stable
+        run: sudo n stable
       - name: Update rust
         run: rustup update
       - name: Install nightly
@@ -34,7 +34,7 @@ jobs:
       - name: Install node manager
         run: yarn global add n 
       - name: Install latest node
-        run: n stable
+        run: sudo n stable
       - name: Update rust
         run: rustup update
       - name: Features compilation test
