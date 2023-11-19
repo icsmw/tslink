@@ -9,7 +9,7 @@ on:
     - master
 
 jobs:
-  rust_lint:
+  linting:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
