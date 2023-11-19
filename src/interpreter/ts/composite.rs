@@ -104,6 +104,9 @@ impl Interpreter for Composite {
                     res.reference(natures, buf, offset.clone())?;
                 }
                 if *asyncness {
+                    if res.is_none() {
+                        buf.write_all("void".as_bytes())?;
+                    }
                     return Ok(());
                 }
                 let err_ext = if let Some(err) = err {

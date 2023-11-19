@@ -99,7 +99,7 @@ impl Nature {
     }
 
     pub fn is_fn_async(&self) -> Result<bool, E> {
-        if let Nature::Composite(Composite::Func(args, _, asyncness, _)) = self {
+        if let Nature::Composite(Composite::Func(_, _, asyncness, _)) = self {
             Ok(*asyncness)
         } else {
             Err(E::Parsing("Fail to find function".to_string()))
