@@ -15,7 +15,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Install rust
-        run: curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh
+        run: curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -ysSf | sh
       - name: Install nightly
         run: rustup install nightly
       - name: Add nightly toolchain
@@ -28,7 +28,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Install rust
-        run: curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh
+        run: curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -ysSf | sh
       - name: Features compilation test
         working-directory: ./tests/features
         run: yarn run test
