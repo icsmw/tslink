@@ -49,8 +49,8 @@ impl CallbacksStruct {
     }
 
     #[tslink]
-    fn callback_generic_b_mut<F: Fn(i32, i32, bool) -> i32>(&mut self, callback: F) {
-        callback(666, 666, true);
+    fn callback_generic_b_mut<F: Fn(i32, Option<i32>, bool) -> i32>(&mut self, callback: F) {
+        callback(666, Some(666), true);
     }
 
     #[tslink]
@@ -91,12 +91,15 @@ impl CallbacksStruct {
     }
 
     #[tslink]
-    fn callback_generic_b<F: Fn(i32, i32, bool) -> i32>(&self, callback: F) {
+    fn callback_generic_b<F: Fn(i32, i32, bool) -> Option<i32>>(&self, callback: F) {
         callback(666, 666, true);
     }
 
     #[tslink]
-    fn callback_generic_c<F: Fn(i32, i32, bool) -> i32 + Send + 'static>(&self, callback: F) {
+    fn callback_generic_c<F: Fn(i32, i32, bool) -> Option<i32> + Send + 'static>(
+        &self,
+        callback: F,
+    ) {
         callback(666, 666, true);
     }
 

@@ -37,8 +37,13 @@ jobs:
         run: sudo n stable
       - name: Update rust
         run: rustup update
-      - name: Features compilation test
-        working-directory: ./tests/features
+      - name: Doc tests
+        run: cargo test -- --nocapture
+      - name: Callbacks compilation test
+        working-directory: ./tests/callbacks
+        run: yarn run test
+      - name: Renaming compilation test
+        working-directory: ./tests/renaming
         run: yarn run test
       - name: Install nj-cli
         run: cargo install nj-cli

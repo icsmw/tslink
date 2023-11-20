@@ -52,9 +52,11 @@ struct.callbackGenericF((a: number, b: number, c: boolean) => {
 
 struct.callbackGenericAMut((a: number, b: number, c: boolean) => {});
 
-struct.callbackGenericBMut((a: number, b: number, c: boolean): number => {
-    return 0;
-});
+struct.callbackGenericBMut(
+    (a: number, b: number | null, c: boolean): number => {
+        return 0;
+    }
+);
 
 struct.callbackGenericCMut((a: number, b: number, c: boolean) => {
     return 0;
