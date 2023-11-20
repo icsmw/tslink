@@ -1,7 +1,7 @@
 use crate::{
     context::Context,
     error::E,
-    nature::{Nature, VariableTokenStream, RustTypeName},
+    nature::{Nature, VariableTokenStream, RustTypeName, TypeTokenStream},
 };
 use proc_macro2::TokenStream;
 use quote::{quote, format_ident};
@@ -46,6 +46,22 @@ impl Refered {
         } else {
             Err(E::Parsing(String::from("Given Nature isn't enum")))
         }
+    }
+}
+
+impl TypeTokenStream for Refered {
+    fn type_token_stream(&self) -> Result<TokenStream, E> {
+        let ident = match self {
+            Self::Struct(name, _, _) => Ok(format_ident!("{}", name)),
+            Self::Enum(name, _, _) => Ok(format_ident!("{}", name)),
+            Self::Ref(name, _) => Ok(format_ident!("{}", name)),
+            Self::EnumVariant(_, _, _, _) |
+            Self::Func(_, _, _) |
+            Self::Field(_, _, _, _) |
+            Self::FuncArg(_, _, _, _) |
+            Self::Generic(_, _) => Err(E::Other("EnumVariant, Func, Field, FuncArg, Generic of Refered doesn't support TypeTokenStream".to_string()))
+        }?;
+        Ok(quote! { #ident })
     }
 }
 

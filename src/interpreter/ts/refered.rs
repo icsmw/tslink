@@ -64,7 +64,7 @@ impl Interpreter for Refered {
                 buf.write_all(format!("{}: ", context.rename_field(name)?).as_bytes())?
             }
             Refered::Func(name, context, func) => {
-                if let Nature::Composite(Composite::Func(args, out, asyncness, constructor)) =
+                if let Nature::Composite(Composite::Func(_, args, out, asyncness, constructor)) =
                     func.deref()
                 {
                     if *constructor {
@@ -155,7 +155,8 @@ impl Interpreter for Refered {
                 buf.write_all(format!("{offset}{name}").as_bytes())?
             }
             Refered::Field(name, context, nature, _) => {
-                if let Nature::Composite(Composite::Func(_, _, _, constructor)) = nature.deref() {
+                if let Nature::Composite(Composite::Func(_, _, _, _, constructor)) = nature.deref()
+                {
                     if *constructor {
                         if context.as_class() {
                             return Ok(());

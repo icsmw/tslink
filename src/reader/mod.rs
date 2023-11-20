@@ -47,7 +47,7 @@ pub fn read(item: &mut Item, natures: &mut Natures, mut context: Context) -> Res
                 return Ok(());
             }
             context.add_generics(Nature::extract_generics(&item_fn.sig.generics)?);
-            if let Nature::Composite(Composite::Func(_, _, _, constructor)) =
+            if let Nature::Composite(Composite::Func(_, _, _, _, constructor)) =
                 Nature::extract(&*item_fn, context.clone())?
             {
                 if constructor {

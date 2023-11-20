@@ -83,6 +83,18 @@ const struct = new binding_1.StructCustomData();
     }
 }
 {
+    const test = tests.test("getMultipleData");
+    const result = struct.getMultipleData({ a: 1, b: 2, c: "test" }, { a: 2, b: 3 });
+    if (result instanceof Error) {
+        test.fail(`Function getMultipleData() of StructCustomData returns error: ${result.message}`);
+    }
+    else {
+        test.assert(result[0]).msg("Value of result.a invalid").equal(3);
+        test.assert(result[1]).msg("Value of result.b invalid").equal(5);
+        test.success();
+    }
+}
+{
     const test = tests.test("testOfErrorSupportOk");
     const result = struct.testOfErrorSupportOk();
     test.assert(result).msg("Value of result invalid").type("number");

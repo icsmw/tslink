@@ -130,7 +130,7 @@ impl Interpreter for Refered {
                         if let Nature::Refered(Refered::Field(name, _, nature, _)) = field {
                             if !matches!(
                                 nature.deref(),
-                                Nature::Composite(Composite::Func(_, _, _, _))
+                                Nature::Composite(Composite::Func(_, _, _, _, _))
                             ) {
                                 buf.write_all(
                                     format!(
@@ -150,7 +150,8 @@ impl Interpreter for Refered {
                     let mut constuctor_rendered = false;
                     for field in fields.iter() {
                         if let Nature::Refered(Refered::Field(_, context, nature, _)) = field {
-                            if let Nature::Composite(Composite::Func(args, _, _, true)) = &**nature
+                            if let Nature::Composite(Composite::Func(_, args, _, _, true)) =
+                                &**nature
                             {
                                 let bound = context.get_bound_args();
                                 if bound.is_empty() {
@@ -206,6 +207,7 @@ impl Interpreter for Refered {
                     for field in fields.iter() {
                         if let Nature::Refered(Refered::Field(name, context, nature, _)) = field {
                             if let Nature::Composite(Composite::Func(
+                                _,
                                 args,
                                 _,
                                 asyncness,

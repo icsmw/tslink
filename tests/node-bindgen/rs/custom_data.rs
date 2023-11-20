@@ -57,6 +57,13 @@ struct DataB {
     pub d: Option<String>,
 }
 
+#[tslink]
+#[derive(Serialize, Deserialize)]
+struct DataC {
+    pub a: u32,
+    pub b: u32,
+}
+
 struct StructCustomData {}
 
 #[tslink(class)]
@@ -131,6 +138,18 @@ impl StructCustomData {
             c,
             d: Some("test".to_string()),
         })
+    }
+
+    #[tslink(
+        data_a = "DataA",
+        data_c = "DataC",
+        error = "json",
+        snake_case_naming,
+        exception_suppression
+    )]
+    #[node_bindgen]
+    fn get_multiple_data(&self, data_a: String, data_c: String) -> Result<(i32, i32), ErrorA> {
+        Ok((data_a.a + data_c.a as i32, data_a.b + data_c.b as i32))
     }
 
     #[tslink(error = "json", snake_case_naming, exception_suppression)]

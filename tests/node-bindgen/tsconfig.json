@@ -26,8 +26,8 @@
     },
     "types": ["node"]
   },
-  "include": [
-    "./ts/**/*"
+  "files": [
+    "./ts/lib.ts"
   ],
   "exclude": [
     "node_modules"

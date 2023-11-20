@@ -17,7 +17,7 @@ impl Interpreter for Composite {
         offset: Offset,
     ) -> Result<(), E> {
         match self {
-            Self::Vec(ty) => {
+            Self::Vec(_, ty) => {
                 if let Some(ty) = ty {
                     ty.reference(natures, buf, offset)?;
                     buf.write_all("[]".as_bytes())?;
@@ -27,7 +27,7 @@ impl Interpreter for Composite {
                     )));
                 }
             }
-            Self::HashMap(key, ty) => {
+            Self::HashMap(_, key, ty) => {
                 if let (Some(key), Some(ty)) = (key, ty) {
                     buf.write_all("{ [key: ".as_bytes())?;
                     key.reference(natures, buf, offset.clone())?;
@@ -40,7 +40,7 @@ impl Interpreter for Composite {
                     )));
                 }
             }
-            Self::Func(args, out, asyncness, constructor) => {
+            Self::Func(_, args, out, asyncness, constructor) => {
                 buf.write_all("(".as_bytes())?;
                 let mut generic = false;
                 for (i, nature) in args.iter().enumerate() {
@@ -84,7 +84,7 @@ impl Interpreter for Composite {
                     buf.write_all(">".as_bytes())?;
                 }
             }
-            Self::Tuple(tys) => {
+            Self::Tuple(_, tys) => {
                 buf.write_all("[".as_bytes())?;
                 let last = tys.len() - 1;
                 for (i, ty) in tys.iter().enumerate() {
@@ -95,7 +95,7 @@ impl Interpreter for Composite {
                 }
                 buf.write_all("]".as_bytes())?;
             }
-            Self::Option(ty) => {
+            Self::Option(_, ty) => {
                 if let Some(ty) = ty {
                     ty.reference(natures, buf, offset)?;
                     buf.write_all(" | null".as_bytes())?;
@@ -105,7 +105,7 @@ impl Interpreter for Composite {
                     )));
                 }
             }
-            Self::Result(res, err, exception_suppression, asyncness) => {
+            Self::Result(_, res, err, exception_suppression, asyncness) => {
                 if let Some(res) = res {
                     res.reference(natures, buf, offset.clone())?;
                 }
@@ -130,7 +130,7 @@ impl Interpreter for Composite {
                     buf.write_all("void".as_bytes())?;
                 }
             }
-            Self::Undefined => {
+            Self::Undefined(_) => {
                 buf.write_all("void".as_bytes())?;
             }
         }

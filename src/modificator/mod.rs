@@ -3,7 +3,7 @@ use std::ops::Deref;
 use crate::{
     context::Context,
     error::E,
-    nature::{Composite, Nature, Refered, RustTypeName, VariableTokenStream},
+    nature::{Composite, Nature, Refered, RustTypeName, TypeTokenStream, VariableTokenStream},
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -48,7 +48,7 @@ impl<'a> FnItem<'a> {
 
 fn split_fn_out(out: &Option<Box<Nature>>) -> (Option<Nature>, Option<Nature>) {
     if let Some(out) = out {
-        if let Nature::Composite(Composite::Result(res, err, _, _)) = out.deref() {
+        if let Nature::Composite(Composite::Result(_, res, err, _, _)) = out.deref() {
             (
                 res.as_ref().map(|n| n.deref().clone()),
                 err.as_ref().map(|n| n.deref().clone()),
@@ -60,8 +60,9 @@ fn split_fn_out(out: &Option<Box<Nature>>) -> (Option<Nature>, Option<Nature>) {
         (None, None)
     }
 }
+
 fn bind(item: &mut FnItem, name: &str, context: &Context, fn_nature: &Nature) -> Result<(), E> {
-    let (args, out) = if let Nature::Composite(Composite::Func(args, out, _, _)) = fn_nature {
+    let (args, out) = if let Nature::Composite(Composite::Func(_, args, out, _, _)) = fn_nature {
         (args, out)
     } else {
         return Err(E::Parsing(format!("Fail to parse fn/method \"{name}\"")));
@@ -100,12 +101,12 @@ fn bind(item: &mut FnItem, name: &str, context: &Context, fn_nature: &Nature) ->
             if let Some(fn_err_type_ref) = fn_err_type_ref.as_ref() {
                 quote! {
                     #[allow(unused_mut)]
-                    let mut #varname: #refname = serde_json::from_str(&#varname).map_err(|e| Into::<#fn_err_type_ref>::into(e))?
+                    let mut #varname: #refname = serde_json::from_str(&#varname).map_err(|e| Into::<#fn_err_type_ref>::into(e))?;
                 }
             } else {
                 quote! {
                     #[allow(unused_mut)]
-                    let mut #varname: #refname = serde_json::from_str(&#varname).expect("Parsing from JSON string")?
+                    let mut #varname: #refname = serde_json::from_str(&#varname).expect("Parsing from JSON string")?;
                 }
             }
         })
@@ -126,20 +127,8 @@ fn bind(item: &mut FnItem, name: &str, context: &Context, fn_nature: &Nature) ->
             fn_res.ok_or(E::Parsing("Fail to get Ok option of Result. If result defined as JSON, function/method should return Result<T,E>".to_string()))?,
             fn_err.ok_or(E::Parsing("Fail to get Err option of Result. If result defined as JSON, function/method should return Result<T,E>".to_string()))?,
         );
-        let res_rust_type = fn_res.rust_type_name()?;
-        let err_rust_type = fn_err.rust_type_name()?;
-        let res_rust_type = if &res_rust_type == "()" {
-            quote!(())
-        } else {
-            let ident = format_ident!("{}", fn_res.rust_type_name()?);
-            quote! { #ident }
-        };
-        let err_rust_type = if &err_rust_type == "()" {
-            quote!(())
-        } else {
-            let ident = format_ident!("{}", fn_err.rust_type_name()?);
-            quote! { #ident }
-        };
+        let res_rust_type = fn_res.type_token_stream()?;
+        let err_rust_type = fn_err.type_token_stream()?;
         if result_as_json && error_as_json {
             let res_token = fn_res.variable_token_stream("res", None)?;
             let err_token = fn_err.variable_token_stream("err", None)?;

@@ -18,9 +18,9 @@ impl Interpreter for Primitive {
     ) -> Result<(), E> {
         Ok(buf.write_all(
             match self {
-                Self::Number(_) => "number",
-                Self::String => "string",
-                Self::Boolean => "boolean",
+                Self::Number(_, _) => "number",
+                Self::String(_) => "string",
+                Self::Boolean(_) => "boolean",
             }
             .as_bytes(),
         )?)
