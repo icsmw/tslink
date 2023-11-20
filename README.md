@@ -1,3 +1,5 @@
+![checks](https://github.com/DmitryAstafyev/tslink/actions/workflows/on_pull_request.yml/badge.svg)
+
 # tslink
 
 `tslink` represents Rust types as `TypeScript` types. It helps to create
