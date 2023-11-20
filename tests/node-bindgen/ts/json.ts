@@ -105,7 +105,6 @@ const struct = new StructCustomData();
 
 {
     const test = tests.test("getEnumA");
-    console.log(EnumA.One);
     const one = struct.getEnumA(EnumA.One);
     const two = struct.getEnumA(EnumA.Two);
     const three = struct.getEnumA(EnumA.Three);

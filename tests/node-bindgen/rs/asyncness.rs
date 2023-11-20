@@ -36,6 +36,7 @@ struct AsyncDataB {
     pub d: Option<String>,
 }
 
+#[derive(Debug, Clone)]
 struct StructAsyncMethods {}
 
 #[tslink(class)]

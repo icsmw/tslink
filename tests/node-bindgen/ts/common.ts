@@ -12,20 +12,22 @@ export class Group {
     }
 
     public test(name: string): Test {
-        return new Test(name);
+        return new Test(this.group, name);
     }
 }
 export class Test {
     protected started: number = Date.now();
 
-    constructor(protected name: string) {}
+    constructor(protected group: string, protected name: string) {}
 
     public fail(msg: string) {
-        fail(`[FAIL] ${this.name}: ${msg}`);
+        fail(`[FAIL][${this.group}] ${this.name}: ${msg}`);
     }
 
     public success() {
-        console.log(`[OK in ${Date.now() - this.started}ms] ${this.name}`);
+        console.log(
+            `[OK in ${Date.now() - this.started}ms][${this.group}] ${this.name}`
+        );
     }
 
     public assert(smth: any): Out {
