@@ -68,3 +68,29 @@ const struct = new StructCallback();
         test.success();
     });
 }
+
+{
+    const test = tests.test("testF");
+    const timeout = setTimeout(() => {
+        test.fail(`Function testF() didn't call callback`);
+    }, 50);
+    const results = { a: false, b: false };
+    const finish = () => {
+        if (results.a && results.b) {
+            test.success();
+        }
+    };
+    struct.testF(
+        (a: number) => {
+            clearTimeout(timeout);
+            test.assert(a).msg("Value of a invalid").equal(666);
+            results.a = true;
+            finish();
+        },
+        (b: string) => {
+            test.assert(b).msg("Value of a invalid").equal("test");
+            results.b = true;
+            finish();
+        }
+    );
+}
