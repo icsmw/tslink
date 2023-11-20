@@ -266,8 +266,11 @@ impl Interpreter for Refered {
                 for (i, variant) in variants.iter().enumerate() {
                     if let Nature::Refered(Refered::EnumVariant(name, _, _, _)) = variant {
                         buf.write_all(
-                            format!("{}{name}: {i}, \"{i}\": \"{name}\",\n", offset.inc())
-                                .as_bytes(),
+                            format!(
+                                "{}{name}: \"{name}\", {i}: \"{name}\", \"{i}\": \"{name}\",\n",
+                                offset.inc()
+                            )
+                            .as_bytes(),
                         )?;
                     } else {
                         return Err(E::Parsing(String::from(

@@ -1,5 +1,5 @@
 import { Group } from "./common";
-import { StructCustomData } from "binding";
+import { StructCustomData, EnumA } from "binding";
 
 const tests = new Group("Custom Data Tests");
 const struct = new StructCustomData();
@@ -99,6 +99,81 @@ const struct = new StructCustomData();
     } else {
         test.assert(result[0]).msg("Value of result.a invalid").equal(3);
         test.assert(result[1]).msg("Value of result.b invalid").equal(5);
+        test.success();
+    }
+}
+
+{
+    const test = tests.test("getEnumA");
+    console.log(EnumA.One);
+    const one = struct.getEnumA(EnumA.One);
+    const two = struct.getEnumA(EnumA.Two);
+    const three = struct.getEnumA(EnumA.Three);
+    if (
+        one instanceof Error ||
+        two instanceof Error ||
+        three instanceof Error
+    ) {
+        test.fail(`Function getEnumA() of StructCustomData returns error`);
+    } else {
+        test.assert(one).msg("Value of one invalid").equal(EnumA.One);
+        test.assert(two).msg("Value of two invalid").equal(EnumA.Two);
+        test.assert(three).msg("Value of three invalid").equal(EnumA.Three);
+        test.success();
+    }
+}
+
+{
+    const test = tests.test("getEnumB");
+    const one = struct.getEnumB({
+        One: "test",
+    });
+    const two = struct.getEnumB({
+        Two: [1, 2],
+    });
+    const three = struct.getEnumB({
+        Three: 1,
+    });
+    const fourSome = struct.getEnumB({
+        Four: 1,
+    });
+    const fourNone = struct.getEnumB({
+        Four: null,
+    });
+    if (
+        one instanceof Error ||
+        two instanceof Error ||
+        three instanceof Error ||
+        fourSome instanceof Error ||
+        fourNone instanceof Error
+    ) {
+        test.fail(`Function getEnumB() of StructCustomData returns error`);
+    } else {
+        test.assert(one.One).msg("Value of one invalid").equal("test");
+        test.assert(Object.keys(one).length)
+            .msg("Value of one invalid")
+            .equal(1);
+        test.assert((two.Two as any)[0])
+            .msg("Value of two invalid")
+            .equal(1);
+        test.assert((two.Two as any)[1])
+            .msg("Value of two invalid")
+            .equal(2);
+        test.assert(Object.keys(two).length)
+            .msg("Value of one invalid")
+            .equal(1);
+        test.assert(three.Three).msg("Value of three invalid").equal(1);
+        test.assert(Object.keys(three).length)
+            .msg("Value of three invalid")
+            .equal(1);
+        test.assert(fourSome.Four).msg("Value of fourSome invalid").equal(1);
+        test.assert(Object.keys(fourSome).length)
+            .msg("Value of fourSome invalid")
+            .equal(1);
+        test.assert(fourNone.Four).msg("Value of fourNone invalid").equal(null);
+        test.assert(Object.keys(fourNone).length)
+            .msg("Value of fourNone invalid")
+            .equal(1);
         test.success();
     }
 }

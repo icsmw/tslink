@@ -64,6 +64,23 @@ struct DataC {
     pub b: u32,
 }
 
+#[tslink]
+#[derive(Serialize, Deserialize)]
+enum EnumA {
+    One,
+    Two,
+    Three,
+}
+
+#[tslink]
+#[derive(Serialize, Deserialize)]
+enum EnumB {
+    One(String),
+    Two(i32, i32),
+    Three(i32),
+    Four(Option<u8>),
+}
+
 struct StructCustomData {}
 
 #[tslink(class)]
@@ -150,6 +167,30 @@ impl StructCustomData {
     #[node_bindgen]
     fn get_multiple_data(&self, data_a: String, data_c: String) -> Result<(i32, i32), ErrorA> {
         Ok((data_a.a + data_c.a as i32, data_a.b + data_c.b as i32))
+    }
+
+    #[tslink(
+        enum_a = "EnumA",
+        result = "json",
+        error = "json",
+        snake_case_naming,
+        exception_suppression
+    )]
+    #[node_bindgen]
+    fn get_enum_a(&self, enum_a: String) -> Result<EnumA, ErrorA> {
+        Ok(enum_a)
+    }
+
+    #[tslink(
+        enum_b = "EnumB",
+        result = "json",
+        error = "json",
+        snake_case_naming,
+        exception_suppression
+    )]
+    #[node_bindgen]
+    fn get_enum_b(&self, enum_b: String) -> Result<EnumB, ErrorA> {
+        Ok(enum_b)
     }
 
     #[tslink(error = "json", snake_case_naming, exception_suppression)]

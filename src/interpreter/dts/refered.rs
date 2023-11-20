@@ -38,26 +38,25 @@ impl Interpreter for Refered {
                     if *flat {
                         buf.write_all(format!("{offset}{name}").as_bytes())?;
                     } else {
-                        buf.write_all(format!("{offset}{name}: null | void").as_bytes())?;
+                        buf.write_all(format!("{offset}{name}?: null").as_bytes())?;
                     }
                 } else if fields.len() == 1 {
-                    buf.write_all(format!("{offset}{name}: ").as_bytes())?;
+                    buf.write_all(format!("{offset}{name}?: ").as_bytes())?;
                     fields
                         .first()
                         .ok_or(E::Parsing(String::from(
                             "Expecting single field for Variant",
                         )))?
                         .reference(natures, buf, offset.inc())?;
-                    buf.write_all(" | void".as_bytes())?;
                 } else {
-                    buf.write_all(format!("{offset}{name}: [").as_bytes())?;
+                    buf.write_all(format!("{offset}{name}?: [").as_bytes())?;
                     for (i, field) in fields.iter().enumerate() {
                         field.reference(natures, buf, offset.inc())?;
                         if i < fields.len() - 1 {
                             buf.write_all(", ".as_bytes())?;
                         }
                     }
-                    buf.write_all("] | void".as_bytes())?;
+                    buf.write_all("]".as_bytes())?;
                 }
             }
             Refered::Field(name, context, _, _) => {
