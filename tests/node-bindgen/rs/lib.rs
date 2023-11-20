@@ -1,7 +1,7 @@
-mod async_methods;
+mod asyncness;
 mod callbacks;
 mod constructors;
-mod custom_data;
-mod error_handeling;
+mod errors;
+mod json;
 mod optional;
 mod types;

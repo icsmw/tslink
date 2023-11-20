@@ -1,7 +1,7 @@
-import "./custom_data";
-import "./error_handeling";
+import "./json";
+import "./errors";
 import "./callbacks";
 import "./consturctors";
 import "./types";
 import "./optional";
-import "./async_methods";
+import "./asyncness";
