@@ -1,4 +1,7 @@
 ![checks](https://github.com/DmitryAstafyev/tslink/actions/workflows/on_pull_request.yml/badge.svg)
+[![LICENSE](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE.txt)
+[![](https://github.com/DmitryAstafyev/tslink/actions/workflows/on_pull_request.yml/badge.svg)](https://github.com/DmitryAstafyev/tslink/actions/workflows/on_pull_request.yml)
+[![](https://github.com/DmitryAstafyev/tslink/actions/workflows/on_pull_request.yml/badge.svg)](https://github.com/DmitryAstafyev/tslink/actions/workflows/on_pull_request.yml)
 
 # tslink
 
