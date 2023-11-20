@@ -2,7 +2,7 @@ use super::Interpreter;
 use crate::{
     error::E,
     interpreter::Offset,
-    nature::{Composite, Nature, Natures, Refered, RustTypeName},
+    nature::{Composite, Nature, Natures, Refered, TypeAsString},
 };
 use std::{
     fs::File,
@@ -116,7 +116,7 @@ impl Interpreter for Composite {
                     return Ok(());
                 }
                 let err_ext = if let Some(err) = err {
-                    format!("(Error & {{ err?: {}}})", err.rust_type_name()?)
+                    format!("(Error & {{ err?: {}}})", err.type_as_string()?)
                 } else {
                     "Error".to_owned()
                 };

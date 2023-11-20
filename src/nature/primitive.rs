@@ -1,6 +1,6 @@
 use crate::{
     error::E,
-    nature::{Nature, OriginType, RustTypeName, TypeTokenStream, VariableTokenStream},
+    nature::{Nature, OriginType, TypeAsString, TypeTokenStream, VariableTokenStream},
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -23,6 +23,17 @@ impl TypeTokenStream for Primitive {
     }
 }
 
+impl TypeAsString for Primitive {
+    fn type_as_string(&self) -> Result<String, E> {
+        match self {
+            Self::Number(ty, _) => ty,
+            Self::String(ty) => ty,
+            Self::Boolean(ty) => ty,
+        }
+        .type_as_string()
+    }
+}
+
 impl VariableTokenStream for Primitive {
     fn variable_token_stream(
         &self,
@@ -32,16 +43,6 @@ impl VariableTokenStream for Primitive {
         let var_name = format_ident!("{}", var_name);
         Ok(quote! {
             #var_name
-        })
-    }
-}
-
-impl RustTypeName for Primitive {
-    fn rust_type_name(&self) -> Result<String, E> {
-        Ok(match self {
-            Self::Number(_, origin) => origin.to_owned(),
-            Self::Boolean(_) => "bool".to_owned(),
-            Self::String(_) => "String".to_owned(),
         })
     }
 }

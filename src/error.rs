@@ -10,6 +10,8 @@ pub enum E {
     PasringToml(#[from] toml::de::Error),
     #[error("IO error")]
     IO(#[from] std::io::Error),
+    #[error("LexError error")]
+    LexError(#[from] proc_macro2::LexError),
     #[error("Not supported. Try to ignore it with #[tslink(ignore)]")]
     NotSupported,
     #[error("Fail to identify name of entity")]

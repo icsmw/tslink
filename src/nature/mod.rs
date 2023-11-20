@@ -1,16 +1,17 @@
 mod composite;
+mod origin;
 mod primitive;
 mod refered;
 
 use crate::{context::Context, error::E};
 pub use composite::Composite;
+pub use origin::OriginType;
 pub use primitive::Primitive;
+
 use proc_macro2::TokenStream;
-use quote::quote;
 pub use refered::Refered;
 use std::{
     collections::{hash_map::Iter, HashMap},
-    fmt,
     ops::Deref,
 };
 use syn::{
@@ -294,7 +295,7 @@ impl ExtractGeneric<&TraitBound> for Nature {
                 return Ok(Some(Nature::Refered(Refered::Generic(
                     generic_ref,
                     Box::new(Nature::Composite(Composite::Func(
-                        OriginType::PathSegment(tr.clone()),
+                        OriginType::from(tr.clone()),
                         fn_args,
                         output,
                         false,
@@ -410,48 +411,6 @@ pub trait VariableTokenStream {
         -> Result<TokenStream, E>;
 }
 
-#[derive(Clone)]
-pub enum OriginType {
-    Ident(Ident),
-    Tuple(TypeTuple),
-    PathSegment(PathSegment),
-    ReturnType(ReturnType),
-    Type(Type),
-    ImplItemFn(ImplItemFn),
-    ItemFn(ItemFn),
-}
-
-unsafe impl Send for OriginType {}
-unsafe impl Sync for OriginType {}
-
-impl fmt::Debug for OriginType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Ident(_) => f.debug_struct("Ident").finish(),
-            Self::Tuple(_) => f.debug_struct("Tuple").finish(),
-            Self::PathSegment(_) => f.debug_struct("PathSegment").finish(),
-            Self::ReturnType(_) => f.debug_struct("ReturnType").finish(),
-            Self::Type(_) => f.debug_struct("Type").finish(),
-            Self::ImplItemFn(_) => f.debug_struct("ImplItemFn").finish(),
-            Self::ItemFn(_) => f.debug_struct("ItemFn").finish(),
-        }
-    }
-}
-
-impl TypeTokenStream for OriginType {
-    fn type_token_stream(&self) -> Result<TokenStream, E> {
-        Ok(match self {
-            Self::Ident(ty) => quote! { #ty },
-            Self::Tuple(ty) => quote! { #ty },
-            Self::PathSegment(ty) => quote! { #ty },
-            Self::ReturnType(ty) => quote! { #ty },
-            Self::Type(ty) => quote! { #ty },
-            Self::ImplItemFn(ty) => quote! { #ty },
-            Self::ItemFn(ty) => quote! { #ty },
-        })
-    }
-}
-
 pub trait TypeTokenStream {
     fn type_token_stream(&self) -> Result<TokenStream, E>;
 }
@@ -466,8 +425,18 @@ impl TypeTokenStream for Nature {
     }
 }
 
-pub trait RustTypeName {
-    fn rust_type_name(&self) -> Result<String, E>;
+pub trait TypeAsString {
+    fn type_as_string(&self) -> Result<String, E>;
+}
+
+impl TypeAsString for Nature {
+    fn type_as_string(&self) -> Result<String, E> {
+        match self {
+            Nature::Composite(ty) => ty.type_as_string(),
+            Nature::Primitive(ty) => ty.type_as_string(),
+            Nature::Refered(ty) => ty.type_as_string(),
+        }
+    }
 }
 
 impl VariableTokenStream for Nature {
@@ -480,16 +449,6 @@ impl VariableTokenStream for Nature {
             Nature::Composite(v) => v.variable_token_stream(var_name, err),
             Nature::Primitive(v) => v.variable_token_stream(var_name, err),
             Nature::Refered(v) => v.variable_token_stream(var_name, err),
-        }
-    }
-}
-
-impl RustTypeName for Nature {
-    fn rust_type_name(&self) -> Result<String, E> {
-        match self {
-            Nature::Composite(v) => v.rust_type_name(),
-            Nature::Primitive(v) => v.rust_type_name(),
-            Nature::Refered(v) => v.rust_type_name(),
         }
     }
 }
@@ -509,12 +468,12 @@ impl Extract<&Ident> for Nature {
         Ok(match origin.as_str() {
             "u8" | "u16" | "u32" | "i8" | "i16" | "i32" | "u64" | "i64" | "usize" => {
                 Nature::Primitive(Primitive::Number(
-                    OriginType::Ident(ident.clone()),
+                    OriginType::from(ident.clone()),
                     origin.clone(),
                 ))
             }
-            "bool" => Nature::Primitive(Primitive::Boolean(OriginType::Ident(ident.clone()))),
-            "String" => Nature::Primitive(Primitive::String(OriginType::Ident(ident.clone()))),
+            "bool" => Nature::Primitive(Primitive::Boolean(OriginType::from(ident.clone()))),
+            "String" => Nature::Primitive(Primitive::String(OriginType::from(ident.clone()))),
             a => Nature::Refered(Refered::Ref(a.to_string(), Some(context.clone()))),
         })
     }
@@ -530,20 +489,20 @@ impl Extract<&Punctuated<PathSegment, PathSep>> for Nature {
         if let Some(segment) = segments.first() {
             let mut ty = match segment.ident.to_string().as_str() {
                 "Vec" => Nature::Composite(composite::Composite::Vec(
-                    OriginType::PathSegment(segment.clone()),
+                    OriginType::from(segment.clone()),
                     None,
                 )),
                 "HashMap" => Nature::Composite(composite::Composite::HashMap(
-                    OriginType::PathSegment(segment.clone()),
+                    OriginType::from(segment.clone()),
                     None,
                     None,
                 )),
                 "Option" => Nature::Composite(composite::Composite::Option(
-                    OriginType::PathSegment(segment.clone()),
+                    OriginType::from(segment.clone()),
                     None,
                 )),
                 "Result" => Nature::Composite(composite::Composite::Result(
-                    OriginType::PathSegment(segment.clone()),
+                    OriginType::from(segment.clone()),
                     None,
                     None,
                     context.exception_suppression()?,
@@ -575,12 +534,12 @@ impl Extract<&Punctuated<PathSegment, PathSep>> for Nature {
 impl Extract<&TypeTuple> for Nature {
     fn extract(ty: &TypeTuple, context: Context) -> Result<Nature, E> {
         if ty.elems.is_empty() {
-            Ok(Nature::Composite(Composite::Undefined(OriginType::Tuple(
+            Ok(Nature::Composite(Composite::Undefined(OriginType::from(
                 ty.clone(),
             ))))
         } else {
             let mut nature = Nature::Composite(composite::Composite::Tuple(
-                OriginType::Tuple(ty.clone()),
+                OriginType::from(ty.clone()),
                 vec![],
             ));
             for element in ty.elems.iter() {
@@ -620,7 +579,7 @@ fn get_fn_return(
 ) -> Result<Option<Box<Nature>>, E> {
     Ok(match output {
         ReturnType::Default => Some(Box::new(Nature::Composite(Composite::Result(
-            OriginType::ReturnType(output.clone()),
+            OriginType::from(output.clone()),
             None,
             None,
             context.exception_suppression()?,
@@ -633,7 +592,7 @@ fn get_fn_return(
                     Box::new(Nature::Composite(Composite::Result(a, b, c, d, asyncness)))
                 } else {
                     Box::new(Nature::Composite(Composite::Result(
-                        OriginType::Type(*ty.clone()),
+                        OriginType::from(*ty.clone()),
                         Some(Box::new(return_ty)),
                         None,
                         context.exception_suppression()?,
@@ -674,7 +633,7 @@ impl Extract<&ImplItemFn> for Nature {
             false
         } || context.as_constructor();
         Ok(Self::Composite(Composite::Func(
-            OriginType::ImplItemFn(fn_item.clone()),
+            OriginType::from(fn_item.clone()),
             args,
             out,
             fn_item.sig.asyncness.is_some(),
@@ -712,7 +671,7 @@ impl Extract<&ItemFn> for Nature {
             false
         } || context.as_constructor();
         Ok(Self::Composite(Composite::Func(
-            OriginType::ItemFn(fn_item.clone()),
+            OriginType::from(fn_item.clone()),
             args,
             out,
             fn_item.sig.asyncness.is_some(),

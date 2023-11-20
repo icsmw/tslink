@@ -3,7 +3,7 @@ use std::ops::Deref;
 use crate::{
     context::Context,
     error::E,
-    nature::{Composite, Nature, Refered, RustTypeName, TypeTokenStream, VariableTokenStream},
+    nature::{Composite, Nature, Refered, TypeTokenStream, VariableTokenStream},
 };
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -89,7 +89,7 @@ fn bind(item: &mut FnItem, name: &str, context: &Context, fn_nature: &Nature) ->
     }
     let (fn_res, fn_err) = split_fn_out(out);
     let fn_err_type_ref = if let Some(fn_err) = fn_err.as_ref() {
-        Some(format_ident!("{}", fn_err.rust_type_name()?))
+        Some(fn_err.type_token_stream()?)
     } else {
         None
     };
