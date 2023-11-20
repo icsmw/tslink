@@ -21,8 +21,6 @@ use syn::{
 };
 pub use target::Target;
 
-const ATTR_ALIAS: &str = "tslink";
-
 #[derive(Clone, Debug, Default)]
 pub struct Context {
     pub inputs: Vec<Input>,
@@ -215,19 +213,14 @@ impl Context {
 
     pub fn try_from_or_default(attrs: &[Attribute]) -> Result<Self, E> {
         for attr in attrs.iter() {
-            if let (true, Some(ident)) = (
-                matches!(attr.style, AttrStyle::Outer),
-                attr.path().get_ident(),
-            ) {
-                if ident == ATTR_ALIAS {
-                    if matches!(attr.meta, Meta::Path(_)) {
-                        // No attributes
-                        continue;
-                    }
-                    return attr
-                        .parse_args_with(Context::parse)
-                        .map_err(|e| E::PasringContext(e.to_string()));
+            if matches!(attr.style, AttrStyle::Outer) {
+                if matches!(attr.meta, Meta::Path(_)) {
+                    // No attributes
+                    continue;
                 }
+                return attr
+                    .parse_args_with(Context::parse)
+                    .map_err(|e| E::PasringContext(e.to_string()));
             }
         }
         Ok(Self::default())
