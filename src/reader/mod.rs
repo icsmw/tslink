@@ -8,7 +8,6 @@ use crate::{
     nature::{Composite, Extract, ExtractGenerics, Nature, Natures, Refered},
     package,
 };
-use proc_macro_error::abort;
 use std::ops::Deref;
 use syn::{Item, ItemEnum, ItemStruct};
 
@@ -105,17 +104,13 @@ pub fn read(item: &mut Item, natures: &mut Natures, mut context: Context) -> Res
         }
         _ => Ok(()),
     }?;
-    if let Err(err) = package::create() {
-        abort!(item_ref, err.to_string());
-    }
-    if let Err(err) = interpreter::ts(natures) {
-        abort!(item_ref, err.to_string());
-    }
-    if let Err(err) = interpreter::dts(natures) {
-        abort!(item_ref, err.to_string());
-    }
-    if let Err(err) = interpreter::js(natures) {
-        abort!(item_ref, err.to_string());
-    }
+    package::create()
+        .map_err(|e| E::Compiler(syn::Error::new_spanned(item_ref.clone(), e.to_string())))?;
+    interpreter::ts(natures)
+        .map_err(|e| E::Compiler(syn::Error::new_spanned(item_ref.clone(), e.to_string())))?;
+    interpreter::dts(natures)
+        .map_err(|e| E::Compiler(syn::Error::new_spanned(item_ref.clone(), e.to_string())))?;
+    interpreter::js(natures)
+        .map_err(|e| E::Compiler(syn::Error::new_spanned(item_ref.clone(), e.to_string())))?;
     Ok(())
 }

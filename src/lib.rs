@@ -16,9 +16,8 @@ use config::Config;
 use context::Context;
 use nature::Natures;
 use proc_macro::TokenStream;
-use proc_macro_error::{abort, proc_macro_error};
 use quote::ToTokens;
-use std::sync::RwLock;
+use std::{convert::TryInto, sync::RwLock};
 use syn::{parse_macro_input, Item};
 
 lazy_static! {
@@ -29,11 +28,13 @@ lazy_static! {
 }
 
 #[proc_macro_attribute]
-#[proc_macro_error]
 pub fn tslink(args: TokenStream, item: TokenStream) -> TokenStream {
     if let Err(err) = config::setup() {
-        panic!("{err}");
+        return syn::Error::new_spanned(item.to_string(), err.to_string())
+            .into_compile_error()
+            .into();
     }
+    let item_ref = item.clone();
     let context: Context = parse_macro_input!(args as Context);
     if context.ignore_self() {
         item
@@ -41,7 +42,11 @@ pub fn tslink(args: TokenStream, item: TokenStream) -> TokenStream {
         let mut natures = NATURES.write().expect("Get access to list of entities");
         let mut item = parse_macro_input!(item as Item);
         if let Err(err) = reader::read(&mut item, &mut natures, context) {
-            abort!(item, err.to_string());
+            let str_err = err.to_string();
+            return TryInto::<syn::Error>::try_into(err)
+                .unwrap_or(syn::Error::new_spanned(item_ref.to_string(), str_err))
+                .into_compile_error()
+                .into();
         }
         proc_macro::TokenStream::from(item.to_token_stream())
     }

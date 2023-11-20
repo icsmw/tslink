@@ -1,3 +1,4 @@
+use std::convert::TryInto;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -26,6 +27,20 @@ pub enum E {
     EntityExist(String),
     #[error("File not found: {0}")]
     FileNotFound(String),
+    #[error("Compiler error")]
+    Compiler(syn::Error),
     #[error("{0}")]
     Other(String),
+}
+
+impl TryInto<syn::Error> for E {
+    type Error = String;
+
+    fn try_into(self) -> Result<syn::Error, String> {
+        if let Self::Compiler(err) = self {
+            Ok(err)
+        } else {
+            Err(self.to_string())
+        }
+    }
 }

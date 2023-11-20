@@ -1,18 +1,23 @@
 mod input;
 mod target;
 
-use crate::{config, error::E, nature::{Nature, Refered}};
+use crate::{
+    config,
+    error::E,
+    nature::{Nature, Refered},
+};
 use convert_case::{Case, Casing};
 use input::Input;
-use proc_macro_error::abort;
 use std::{
+    collections::HashMap,
     convert::{From, TryFrom},
-    path::PathBuf, collections::HashMap, ops::Deref
+    ops::Deref,
+    path::PathBuf,
 };
 use syn::{
     parse::{self, Parse, ParseStream},
     punctuated::Punctuated,
-    AttrStyle, Attribute, Expr, Lit, Token, Meta,
+    AttrStyle, Attribute, Expr, Lit, Meta, Token,
 };
 pub use target::Target;
 
@@ -52,7 +57,7 @@ impl Context {
     }
 
     pub fn get_generic(&self, key: &str) -> Option<&Nature> {
-        self.generics.get(key).or_else(||{
+        self.generics.get(key).or_else(|| {
             if let Some(context) = self.parent.as_ref() {
                 context.get_generic(key)
             } else {
@@ -112,11 +117,17 @@ impl Context {
 
     pub fn exception_suppression(&self) -> Result<bool, E> {
         let config = config::get()?;
-        Ok(config.exception_suppression || self.inputs.iter().any(|i| matches!(i, Input::ExceptionSuppression)))    
-    } 
+        Ok(config.exception_suppression
+            || self
+                .inputs
+                .iter()
+                .any(|i| matches!(i, Input::ExceptionSuppression)))
+    }
 
     fn rename(&self, origin: &str) -> Option<String> {
-        if let Some(Input::Rename(name)) = self.inputs.iter().find(|i| matches!(i, Input::Rename(_))) {
+        if let Some(Input::Rename(name)) =
+            self.inputs.iter().find(|i| matches!(i, Input::Rename(_)))
+        {
             return Some(name.to_owned());
         }
         if self
@@ -145,21 +156,37 @@ impl Context {
     }
 
     pub fn get_bound_args(&self) -> Vec<(String, String)> {
-        if let Some(Input::Binding(arguments)) = self.inputs.iter().find(|i| matches!(i, Input::Binding(_))) {
-            return arguments.iter().filter(|(n, _)| n != "result" && n != "error").cloned().collect();
+        if let Some(Input::Binding(arguments)) =
+            self.inputs.iter().find(|i| matches!(i, Input::Binding(_)))
+        {
+            return arguments
+                .iter()
+                .filter(|(n, _)| n != "result" && n != "error")
+                .cloned()
+                .collect();
         }
         vec![]
     }
 
     pub fn get_bound(&self, name: &str) -> Option<String> {
-        if let Some(Input::Binding(arguments)) = self.inputs.iter().find(|i| matches!(i, Input::Binding(_))) {
-            return arguments.iter().find_map(|(n, ref_name)| if n == name { Some(ref_name.to_owned())} else { None});
+        if let Some(Input::Binding(arguments)) =
+            self.inputs.iter().find(|i| matches!(i, Input::Binding(_)))
+        {
+            return arguments.iter().find_map(|(n, ref_name)| {
+                if n == name {
+                    Some(ref_name.to_owned())
+                } else {
+                    None
+                }
+            });
         }
         None
     }
 
     pub fn result_as_json(&self) -> Result<bool, E> {
-        if let Some(Input::Binding(arguments)) = self.inputs.iter().find(|i| matches!(i, Input::Binding(_))) {
+        if let Some(Input::Binding(arguments)) =
+            self.inputs.iter().find(|i| matches!(i, Input::Binding(_)))
+        {
             if let Some((_, result_fmt)) = arguments.iter().find(|(n, _)| n == "result") {
                 return if result_fmt.trim() == "json" {
                     Ok(true)
@@ -172,7 +199,9 @@ impl Context {
     }
 
     pub fn error_as_json(&self) -> Result<bool, E> {
-        if let Some(Input::Binding(arguments)) = self.inputs.iter().find(|i| matches!(i, Input::Binding(_))) {
+        if let Some(Input::Binding(arguments)) =
+            self.inputs.iter().find(|i| matches!(i, Input::Binding(_)))
+        {
             if let Some((_, result_fmt)) = arguments.iter().find(|(n, _)| n == "error") {
                 return if result_fmt.trim() == "json" {
                     Ok(true)
@@ -209,9 +238,8 @@ impl Parse for Context {
     fn parse(input: ParseStream) -> parse::Result<Self> {
         let mut inputs: Vec<Input> = vec![];
         let mut bindings: Vec<(String, String)> = vec![];
-        Punctuated::<Expr, Token![,]>::parse_terminated(input)?
-            .into_iter()
-            .for_each(|expr| match expr {
+        for expr in Punctuated::<Expr, Token![,]>::parse_terminated(input)?.into_iter() {
+            match expr {
                 Expr::Assign(a) => {
                     let link = a.clone();
                     if let (Expr::Path(left), Expr::Lit(right)) = (*a.left, *a.right) {
@@ -221,31 +249,30 @@ impl Parse for Context {
                                 Ok(input) => match input {
                                     Input::Rename(_) => Some(Input::Rename(value)),
                                     Input::Target(_) => {
-                                        Some(Input::Target(
-                                            value
-                                                .split(';')
-                                                .map(|s| {
-                                                    let path = PathBuf::from(s.trim());
-                                                    if let Some(ext) = path.extension() {
-                                                        match Target::try_from(ext.to_string_lossy().to_string().as_str()) {
-                                                            Ok(t) => (t, path),
-                                                            Err(e) => {
-                                                                abort!(
-                                                                    left,
-                                                                    format!("Unknown target: {s} ({e})")
-                                                                )
-                                                            }
-                                                        }
-                                                    } else {
-                                                        abort!(
-                                                            left,
-                                                            format!("Cannot get extension of file: {s}; expecting .ts; .d.ts; .js")
-                                                        )
+                                        let mut targets: Vec<(Target, PathBuf)> = vec![];
+                                        for s in value.split(';') {
+                                            let path = PathBuf::from(s.trim());
+                                            if let Some(ext) = path.extension() {
+                                                match Target::try_from(
+                                                    ext.to_string_lossy().to_string().as_str(),
+                                                ) {
+                                                    Ok(t) => targets.push((t, path)),
+                                                    Err(e) => {
+                                                        return Err(syn::Error::new(
+                                                            left.span(),
+                                                            format!("Unknown target: {s} ({e})"),
+                                                        ));
                                                     }
-                                                    
-                                                })
-                                                .collect::<Vec<(Target, PathBuf)>>()),
-                                    )},
+                                                }
+                                            } else {
+                                                return Err(syn::Error::new(
+                                                    left.span(),
+                                                    format!("Cannot get extension of file: {s}; expecting .ts; .d.ts; .js"),
+                                                ));
+                                            }
+                                        }
+                                        Some(Input::Target(targets))
+                                    }
                                     Input::Ignore(_) => Some(Input::Ignore(
                                         value
                                             .split(';')
@@ -253,58 +280,72 @@ impl Parse for Context {
                                             .collect::<Vec<String>>(),
                                     )),
                                     _ => {
-                                        abort!(
-                                            left,
-                                            "Attribute \"{}\" cannot be applied on this level",
-                                            left
-                                        )
-                                    },
+                                        return Err(syn::Error::new(
+                                            left.span(),
+                                            format!("Attribute \"{left}\" cannot be applied on this level"),
+                                        ));
+                                    }
                                 },
                                 Err(_e) => {
                                     bindings.push((left.to_string(), value));
                                     None
-                                },
+                                }
                             };
                             if let Some(input) = input.take() {
                                 inputs.push(input);
                             }
                         } else {
-                            abort!(link, "Expecting expr like key = \"value as String\"");
+                            return Err(syn::Error::new(
+                                link.eq_token.span,
+                                "Expecting expr like key = \"value as String\"",
+                            ));
                         }
                     } else {
-                        abort!(link, "Expecting expr like key = \"value as String\"");
+                        return Err(syn::Error::new(
+                            link.eq_token.span,
+                            "Expecting expr like key = \"value as String\"",
+                        ));
                     }
                 }
                 Expr::Path(p) => {
                     if let Some(ident) = p.path.get_ident() {
                         let input = match Input::try_from(ident.to_string().as_ref()) {
-                            Ok(input) => match input {
-                                Input::Ignore(_) => Input::IgnoreSelf,
-                                Input::SnakeCaseNaming
-                                | Input::Class
-                                | Input::Interface 
-                                | Input::ExceptionSuppression
-                                | Input::Constructor => input,
-                                _ => abort!(
-                                    p,
-                                    "Attribute \"{}\" cannot be applied on this level",
-                                    ident
-                                ),
-                            },
-                            Err(e) => abort!(p, "Unknown attribute: {} ({})", ident, e),
+                            Ok(input) => {
+                                match input {
+                                    Input::Ignore(_) => Input::IgnoreSelf,
+                                    Input::SnakeCaseNaming
+                                    | Input::Class
+                                    | Input::Interface
+                                    | Input::ExceptionSuppression
+                                    | Input::Constructor => input,
+                                    _ => {
+                                        return Err(syn::Error::new(
+                                            ident.span(),
+                                            format!("Attribute \"{ident}\" cannot be applied on this level"),
+                                        ));
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                return Err(syn::Error::new(
+                                    ident.span(),
+                                    format!("Unknown attribute: {ident} ({e})"),
+                                ));
+                            }
                         };
                         inputs.push(input);
                     } else {
-                        abort!(p, "Cannot extract identification");
+                        return Err(syn::Error::new_spanned(p, "Cannot extract identification"));
                     }
                 }
                 _ => {
-                    abort!(
+                    return Err(syn::Error::new_spanned(
                         expr,
-                        "Expecting expr like [key = \"value as String\"] or [key]"
-                    );
+                        "Expecting expr like [key = \"value as String\"] or [key]",
+                    ));
                 }
-            });
+            }
+        }
         if !bindings.is_empty() {
             inputs.push(Input::Binding(bindings));
         }
