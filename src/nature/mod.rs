@@ -1,23 +1,21 @@
-mod composite;
+mod defs;
+mod fabric;
+mod generic;
 mod origin;
-mod primitive;
-mod refered;
+mod types;
+
+pub use defs::Composite;
+pub use defs::Primitive;
+pub use defs::Refered;
+pub use fabric::{TypeAsString, TypeTokenStream, VariableTokenStream};
+pub use generic::ExtractGenerics;
+pub use origin::OriginType;
+pub use types::Extract;
 
 use crate::{context::Context, error::E};
-pub use composite::Composite;
-pub use origin::OriginType;
-pub use primitive::Primitive;
-
-use proc_macro2::TokenStream;
-pub use refered::Refered;
 use std::{
     collections::{hash_map::Iter, HashMap},
     ops::Deref,
-};
-use syn::{
-    punctuated::Punctuated, token::PathSep, FnArg, GenericArgument, GenericParam, Generics, Ident,
-    ImplItemFn, ItemFn, Pat, PathArguments, PathSegment, PredicateType, ReturnType, TraitBound,
-    Type, TypeParam, TypeParamBound, TypeTuple, WherePredicate,
 };
 
 pub struct Natures(HashMap<String, Nature>);
@@ -126,7 +124,7 @@ impl Nature {
                 _ => Err(E::NotSupported),
             },
             Self::Composite(othr) => match othr {
-                composite::Composite::HashMap(_, k, v) => {
+                Composite::HashMap(_, k, v) => {
                     if k.is_none() {
                         if let Self::Primitive(p) = nature {
                             let _ = k.insert(p);
@@ -145,7 +143,7 @@ impl Nature {
                         )))
                     }
                 }
-                composite::Composite::Option(_, o) => {
+                Composite::Option(_, o) => {
                     if o.is_some() {
                         Err(E::Parsing(String::from(
                             "Option entity already has been bound",
@@ -155,7 +153,7 @@ impl Nature {
                         Ok(())
                     }
                 }
-                composite::Composite::Result(_, r, e, _, _) => {
+                Composite::Result(_, r, e, _, _) => {
                     if r.is_some() && e.is_some() {
                         Err(E::Parsing(String::from(
                             "Result entity already has been bound",
@@ -169,11 +167,11 @@ impl Nature {
                         Ok(())
                     }
                 }
-                composite::Composite::Tuple(_, tys) => {
+                Composite::Tuple(_, tys) => {
                     tys.push(nature);
                     Ok(())
                 }
-                composite::Composite::Vec(_, v) => {
+                Composite::Vec(_, v) => {
                     if v.is_some() {
                         Err(E::Parsing(String::from(
                             "Vec entity already has been bound",
@@ -255,427 +253,5 @@ impl Nature {
                 }
             },
         })
-    }
-}
-
-pub trait ExtractGeneric<T> {
-    fn extract_generic(t: T, generic_ref: Option<String>) -> Result<Option<Nature>, E>;
-}
-
-impl ExtractGeneric<&TraitBound> for Nature {
-    fn extract_generic(tr: &TraitBound, generic_ref: Option<String>) -> Result<Option<Nature>, E> {
-        let generic_ref = if let Some(generic_ref) = generic_ref {
-            generic_ref
-        } else {
-            return Err(E::Parsing(
-                "Parsing generic from TraitBound isn't possible without generic reference (alias)"
-                    .to_string(),
-            ));
-        };
-        for tr in tr.path.segments.iter() {
-            if let "Fn" = tr.ident.to_string().as_str() {
-                let (fn_args, output): (Vec<Nature>, Option<Box<Nature>>) = match &tr.arguments {
-                    PathArguments::AngleBracketed(_) => Err(E::Parsing(
-                        "Unexpected PathArguments::AngleBracketed".to_string(),
-                    ))?,
-                    PathArguments::None => {
-                        Err(E::Parsing("Unexpected PathArguments::None".to_string()))?
-                    }
-                    PathArguments::Parenthesized(arg) => {
-                        let mut fn_args: Vec<Nature> = vec![];
-                        for input in arg.inputs.iter() {
-                            fn_args.push(Nature::extract(input, Context::default())?);
-                        }
-                        (
-                            fn_args,
-                            get_fn_return(&arg.output, &Context::default(), false)?,
-                        )
-                    }
-                };
-                return Ok(Some(Nature::Refered(Refered::Generic(
-                    generic_ref,
-                    Box::new(Nature::Composite(Composite::Func(
-                        OriginType::from(tr.clone()),
-                        fn_args,
-                        output,
-                        false,
-                        false,
-                    ))),
-                ))));
-            }
-        }
-        Ok(None)
-    }
-}
-
-impl ExtractGeneric<&TypeParam> for Nature {
-    fn extract_generic(
-        type_param: &TypeParam,
-        _generic_ref: Option<String>,
-    ) -> Result<Option<Nature>, E> {
-        let generic_ref = type_param.ident.to_string();
-        for bound in type_param.bounds.iter() {
-            match bound {
-                TypeParamBound::Lifetime(_) => {
-                    // Ignore
-                }
-                TypeParamBound::Verbatim(_) => {
-                    // Ignore
-                }
-                TypeParamBound::Trait(tr) => {
-                    return Nature::extract_generic(tr, Some(generic_ref));
-                }
-                _ => {
-                    // Ignore
-                }
-            }
-        }
-        Ok(None)
-    }
-}
-
-impl ExtractGeneric<&PredicateType> for Nature {
-    fn extract_generic(
-        pre_type: &PredicateType,
-        _generic_ref: Option<String>,
-    ) -> Result<Option<Nature>, E> {
-        let generic_ref = if let Nature::Refered(Refered::Ref(name, _)) =
-            Nature::extract(&pre_type.bounded_ty, Context::default())?
-        {
-            name
-        } else {
-            return Err(E::Parsing(
-                "Cannot detect name/alias of generic parameter in where section".to_string(),
-            ));
-        };
-        for bound in pre_type.bounds.iter() {
-            match bound {
-                TypeParamBound::Lifetime(_) => {
-                    // Ignore
-                }
-                TypeParamBound::Verbatim(_) => {
-                    // Ignore
-                }
-                TypeParamBound::Trait(tr) => {
-                    return Nature::extract_generic(tr, Some(generic_ref));
-                }
-                _ => {
-                    // Ignore
-                }
-            }
-        }
-        Ok(None)
-    }
-}
-
-pub trait ExtractGenerics<T> {
-    fn extract_generics(t: T) -> Result<Vec<Nature>, E>;
-}
-
-impl ExtractGenerics<&Generics> for Nature {
-    fn extract_generics(generics: &Generics) -> Result<Vec<Nature>, E> {
-        let mut natures = vec![];
-        for generic in generics.params.iter() {
-            match &generic {
-                GenericParam::Const(_) => {}
-                GenericParam::Type(ty) => {
-                    if let Some(generic) = Nature::extract_generic(ty, None)? {
-                        natures.push(generic);
-                    }
-                }
-                GenericParam::Lifetime(_) => {}
-            }
-        }
-        if let Some(where_clause) = generics.where_clause.as_ref() {
-            for generic in where_clause.predicates.iter() {
-                match generic {
-                    WherePredicate::Type(ty) => {
-                        if let Some(generic) = Nature::extract_generic(ty, None)? {
-                            natures.push(generic);
-                        }
-                    }
-                    WherePredicate::Lifetime(_) => {}
-                    _ => {}
-                }
-            }
-        }
-        Ok(natures)
-    }
-}
-pub trait Extract<T> {
-    fn extract(t: T, context: Context) -> Result<Nature, E>;
-}
-
-pub trait VariableTokenStream {
-    fn variable_token_stream(&self, var_name: &str, err: Option<&Nature>)
-        -> Result<TokenStream, E>;
-}
-
-pub trait TypeTokenStream {
-    fn type_token_stream(&self) -> Result<TokenStream, E>;
-}
-
-impl TypeTokenStream for Nature {
-    fn type_token_stream(&self) -> Result<TokenStream, E> {
-        match self {
-            Nature::Composite(ty) => ty.type_token_stream(),
-            Nature::Primitive(ty) => ty.type_token_stream(),
-            Nature::Refered(ty) => ty.type_token_stream(),
-        }
-    }
-}
-
-pub trait TypeAsString {
-    fn type_as_string(&self) -> Result<String, E>;
-}
-
-impl TypeAsString for Nature {
-    fn type_as_string(&self) -> Result<String, E> {
-        match self {
-            Nature::Composite(ty) => ty.type_as_string(),
-            Nature::Primitive(ty) => ty.type_as_string(),
-            Nature::Refered(ty) => ty.type_as_string(),
-        }
-    }
-}
-
-impl VariableTokenStream for Nature {
-    fn variable_token_stream(
-        &self,
-        var_name: &str,
-        err: Option<&Nature>,
-    ) -> Result<TokenStream, E> {
-        match self {
-            Nature::Composite(v) => v.variable_token_stream(var_name, err),
-            Nature::Primitive(v) => v.variable_token_stream(var_name, err),
-            Nature::Refered(v) => v.variable_token_stream(var_name, err),
-        }
-    }
-}
-
-impl Extract<&GenericArgument> for Nature {
-    fn extract(arg: &GenericArgument, context: Context) -> Result<Nature, E> {
-        match arg {
-            GenericArgument::Type(ty) => Nature::extract(ty, context),
-            _ => Err(E::NotSupported),
-        }
-    }
-}
-
-impl Extract<&Ident> for Nature {
-    fn extract(ident: &Ident, context: Context) -> Result<Nature, E> {
-        let origin = ident.to_string();
-        Ok(match origin.as_str() {
-            "u8" | "u16" | "u32" | "i8" | "i16" | "i32" | "u64" | "i64" | "usize" => {
-                Nature::Primitive(Primitive::Number(
-                    OriginType::from(ident.clone()),
-                    origin.clone(),
-                ))
-            }
-            "bool" => Nature::Primitive(Primitive::Boolean(OriginType::from(ident.clone()))),
-            "String" => Nature::Primitive(Primitive::String(OriginType::from(ident.clone()))),
-            a => Nature::Refered(Refered::Ref(a.to_string(), Some(context.clone()))),
-        })
-    }
-}
-
-impl Extract<&Punctuated<PathSegment, PathSep>> for Nature {
-    fn extract(segments: &Punctuated<PathSegment, PathSep>, context: Context) -> Result<Nature, E> {
-        if segments.len() > 1 {
-            return Err(E::Parsing(String::from(
-                "Not supported Other Type for more than 1 PathSegment",
-            )));
-        }
-        if let Some(segment) = segments.first() {
-            let mut ty = match segment.ident.to_string().as_str() {
-                "Vec" => Nature::Composite(composite::Composite::Vec(
-                    OriginType::from(segment.clone()),
-                    None,
-                )),
-                "HashMap" => Nature::Composite(composite::Composite::HashMap(
-                    OriginType::from(segment.clone()),
-                    None,
-                    None,
-                )),
-                "Option" => Nature::Composite(composite::Composite::Option(
-                    OriginType::from(segment.clone()),
-                    None,
-                )),
-                "Result" => Nature::Composite(composite::Composite::Result(
-                    OriginType::from(segment.clone()),
-                    None,
-                    None,
-                    context.exception_suppression()?,
-                    false,
-                )),
-                _ => {
-                    return Err(E::Parsing(String::from(
-                        "Only Vec, HashMap, Option and Result are supported",
-                    )))
-                }
-            };
-            match &segment.arguments {
-                PathArguments::AngleBracketed(args) => {
-                    for arg in args.args.iter() {
-                        ty.bind(Nature::extract(arg, context.clone())?)?;
-                    }
-                }
-                _ => return Err(E::NotSupported),
-            }
-            Ok(ty)
-        } else {
-            Err(E::Parsing(String::from(
-                "For not primitive types expected at least one segment",
-            )))
-        }
-    }
-}
-
-impl Extract<&TypeTuple> for Nature {
-    fn extract(ty: &TypeTuple, context: Context) -> Result<Nature, E> {
-        if ty.elems.is_empty() {
-            Ok(Nature::Composite(Composite::Undefined(OriginType::from(
-                ty.clone(),
-            ))))
-        } else {
-            let mut nature = Nature::Composite(composite::Composite::Tuple(
-                OriginType::from(ty.clone()),
-                vec![],
-            ));
-            for element in ty.elems.iter() {
-                nature.bind(Nature::extract(element, context.clone())?)?;
-            }
-            Ok(nature)
-        }
-    }
-}
-
-impl Extract<&Type> for Nature {
-    fn extract(ty: &Type, context: Context) -> Result<Nature, E> {
-        match ty {
-            Type::Path(type_path) => {
-                if let Some(ident) = type_path.path.get_ident() {
-                    Nature::extract(ident, context)
-                } else {
-                    Nature::extract(&type_path.path.segments, context)
-                }
-            }
-            Type::Tuple(type_tuple) => Nature::extract(type_tuple, context),
-            _ => Err(E::NotSupported),
-        }
-    }
-}
-
-impl Extract<Type> for Nature {
-    fn extract(ty: Type, context: Context) -> Result<Nature, E> {
-        Self::extract(&ty, context)
-    }
-}
-
-fn get_fn_return(
-    output: &ReturnType,
-    context: &Context,
-    asyncness: bool,
-) -> Result<Option<Box<Nature>>, E> {
-    Ok(match output {
-        ReturnType::Default => Some(Box::new(Nature::Composite(Composite::Result(
-            OriginType::from(output.clone()),
-            None,
-            None,
-            context.exception_suppression()?,
-            asyncness,
-        )))),
-        ReturnType::Type(_, ty) => {
-            let return_ty = Nature::extract(*ty.clone(), context.clone())?;
-            Some(
-                if let Nature::Composite(Composite::Result(a, b, c, d, _)) = return_ty {
-                    Box::new(Nature::Composite(Composite::Result(a, b, c, d, asyncness)))
-                } else {
-                    Box::new(Nature::Composite(Composite::Result(
-                        OriginType::from(*ty.clone()),
-                        Some(Box::new(return_ty)),
-                        None,
-                        context.exception_suppression()?,
-                        asyncness,
-                    )))
-                },
-            )
-        }
-    })
-}
-
-impl Extract<&ImplItemFn> for Nature {
-    fn extract(fn_item: &ImplItemFn, context: Context) -> Result<Nature, E> {
-        let mut args = vec![];
-        for fn_arg in fn_item.sig.inputs.iter() {
-            if let FnArg::Typed(ty) = fn_arg {
-                let arg_name = if let Pat::Ident(id) = *ty.pat.clone() {
-                    id.ident.to_string()
-                } else {
-                    return Err(E::Parsing(String::from("Cannot find ident for FnArg")));
-                };
-                args.push(Nature::Refered(Refered::FuncArg(
-                    arg_name.clone(),
-                    context.clone(),
-                    Box::new(Nature::extract(*ty.ty.clone(), context.clone())?),
-                    context.get_bound(&arg_name),
-                )));
-            }
-        }
-        let out = get_fn_return(
-            &fn_item.sig.output,
-            &context,
-            fn_item.sig.asyncness.is_some(),
-        )?;
-        let constructor = if let Some(Nature::Refered(Refered::Ref(re, _))) = out.as_deref() {
-            re == "Self"
-        } else {
-            false
-        } || context.as_constructor();
-        Ok(Self::Composite(Composite::Func(
-            OriginType::from(fn_item.clone()),
-            args,
-            out,
-            fn_item.sig.asyncness.is_some(),
-            constructor,
-        )))
-    }
-}
-
-impl Extract<&ItemFn> for Nature {
-    fn extract(fn_item: &ItemFn, context: Context) -> Result<Nature, E> {
-        let mut args = vec![];
-        for fn_arg in fn_item.sig.inputs.iter() {
-            if let FnArg::Typed(ty) = fn_arg {
-                let arg_name = if let Pat::Ident(id) = *ty.pat.clone() {
-                    id.ident.to_string()
-                } else {
-                    return Err(E::Parsing(String::from("Cannot find ident for FnArg")));
-                };
-                args.push(Nature::Refered(Refered::FuncArg(
-                    arg_name.clone(),
-                    context.clone(),
-                    Box::new(Nature::extract(*ty.ty.clone(), context.clone())?),
-                    context.get_bound(&arg_name),
-                )));
-            }
-        }
-        let out = get_fn_return(
-            &fn_item.sig.output,
-            &context,
-            fn_item.sig.asyncness.is_some(),
-        )?;
-        let constructor = if let Some(Nature::Refered(Refered::Ref(re, _))) = out.as_deref() {
-            re == "Self"
-        } else {
-            false
-        } || context.as_constructor();
-        Ok(Self::Composite(Composite::Func(
-            OriginType::from(fn_item.clone()),
-            args,
-            out,
-            fn_item.sig.asyncness.is_some(),
-            constructor,
-        )))
     }
 }
