@@ -1517,6 +1517,7 @@ dependencies = [
  "syn 2.0.39",
  "thiserror",
  "toml",
+ "uuid",
 ]
 
 [[package]]

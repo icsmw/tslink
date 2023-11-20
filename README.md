@@ -44,7 +44,7 @@ it should be defined separately.
 ```
 # #[macro_use] extern crate tslink;
 # use tslink::tslink;
-#[tslink(target = "./dist/interfaces/interfaces.ts")]
+#[tslink(target = "./target/selftests/interfaces/interfaces.ts")]
 struct TestingA {
     pub p8: u8,
     pub p16: u16,
@@ -54,7 +54,7 @@ struct TestingA {
 }
 ```
 
-Will generate `./dist/interfaces/interfaces.ts` with:
+Will generate `./target/selftests/interfaces/interfaces.ts` with:
 
 ```ignore
 export interface TestingA {
@@ -193,7 +193,7 @@ export interface SomeEnum {
 | `ignore` | `#[tslink(ignore)]` | Ignore current struct's field or method | struct fields and method |
 | `ignore = "list"` | `#[tslink(ignore = "field_a; field_b; method_a")]` | List of fields/methods, which should be ignored. Can be defined only on struct declaration. | struct |
 | `snake_case_naming` | `#[tslink(snake_case_naming)]` | Renames struct's field or method into snake case naming (`my_field_a` became `myFieldA`) | struct fields and method, functions |
-| `rename = "name"` | `#[tslink(rename = "newNameOfFieldOrMethod")]` | Renames struct's field or method into given name | struct fields and method, functions |
+| `rename = "name"` | `#[tslink(rename = "newNameOfFieldOrMethod")]` | Renames struct's methods or functions into given name | struct method and functions |
 | `constructor` | `#[tslink(constructor)]` | Marks current methods as constructor. Indeed can be defined only for method, which returns `Self`. | struct method returns `Self` |
 | `target = "path"` | `#[tslink(target = "./path_to/file.ts")]` | Tells tslink save TypeScript definitions `*.ts` / `*.d.ts` into given file | struct, enum |
 | `exception_suppression` | `#[tslink(exception_suppression)]` | By default in case of error method/function throws a JavaScript exception. If "exception_suppression" is used, method/function returns an JavaScript Error instead throwing exceptions | struct methods, functions |
@@ -210,7 +210,7 @@ Multiple attributes can be defined
 # use tslink::tslink;
 #[tslink(
     class,
-    target = "./dist/interfaces/interfaces.ts; ./dist/interfaces/interfaces.d.ts",
+    target = "./target/selftests/interfaces/interfaces.ts; ./target/selftests/interfaces/interfaces.d.ts",
     ignore = "_p8;_p16;_p32"
 )]
 struct MyStruct {
@@ -272,7 +272,7 @@ struct MyStruct { }
 impl MyStruct {
     #[tslink(constructor)]
     fn new() -> Self {
-        Self { field_a: 0 }
+        Self { }
     }
 }
 ```
@@ -377,15 +377,19 @@ The easiest way would be using `#[tslink(snake_case_naming)]` on a level of meth
 # #[macro_use] extern crate tslink;
 # use tslink::tslink;
 
-#[tslink(class)]
+#[tslink(class, snake_case_naming)]
 struct MyStruct {
-    #[tslink(rename = "thisIsFieldA")]
     field_a: i32,
 }
 
+#[tslink(class)]
 impl MyStruct {
     #[tslink(snake_case_naming)]
-    fn my_method(&self) -> i32 {
+    fn my_method_a(&self) -> i32 {
+        0
+    }
+    #[tslink(rename = "newNameOfMethod")]
+    fn my_method_b(&self) -> i32 {
         0
     }
 }
@@ -396,9 +400,13 @@ Would be represented as
 ```ignore
 export declare class MyStruct {
     thisIsFieldA: number;
-    myMethod(): number;
+    myMethodA(): number;
+    newNameOfMethod(): number;
 }
 ```
+
+> ⚠ **NOTE**: `#[tslink(rename = "CustomName")]` cannot be used for renaming fields. Fields but `snake_case_naming` can be applied to fields.
+
 
 ### Binding data. Arguments binding.
 
@@ -436,6 +444,7 @@ struct MyData {
 
 struct MyStruct { }
 
+#[tslink(class)]
 impl MyStruct {
     #[tslink(
         my_data = "MyData",
@@ -503,6 +512,7 @@ struct MyData {
 
 struct MyStruct { }
 
+#[tslink(class)]
 impl MyStruct {
     #[tslink(
         my_data = "MyData",
@@ -563,6 +573,7 @@ Using previous example we can see:
 # }
 struct MyStruct { }
 
+#[tslink(class)]
 impl MyStruct {
     #[tslink(
         error = "json",
@@ -605,6 +616,7 @@ Using `#[tslink(exception_suppression)]` we can change it.
 # }
 struct MyStruct { }
 
+#[tslink(class)]
 impl MyStruct {
     #[tslink(
         error = "json",

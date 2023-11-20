@@ -6,7 +6,7 @@ use std::{
 };
 use toml::Value;
 
-fn value(value: &Value, key: &str) -> Result<String, E> {
+pub fn value(value: &Value, key: &str) -> Result<String, E> {
     Ok(value
         .get(key)
         .ok_or(E::Other(format!(

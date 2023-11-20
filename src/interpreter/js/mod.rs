@@ -24,7 +24,6 @@ pub trait Interpreter {
 
 pub fn write(natures: &Natures) -> Result<(), E> {
     let config = config::get()?;
-
     let dist = config
         .node_mod_dist
         .clone()
@@ -37,8 +36,8 @@ pub fn write(natures: &Natures) -> Result<(), E> {
         .ok_or(E::InvalidConfiguration(String::from(
             "No node module file name. Set correct path in tslink.toml; field \"node\"",
         )))?;
-    drop(config);
     let lib_file = dist.join("lib.js");
+    drop(config);
     if lib_file.exists() {
         fs::remove_file(&lib_file)?;
     }

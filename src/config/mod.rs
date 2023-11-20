@@ -1,8 +1,9 @@
-use crate::{error::E, CONFIG};
+use crate::{error::E, package::value, CONFIG};
 use cfg::{Cfg, SnakeCaseNaming};
 use convert_case::{Case, Casing};
 use std::{collections::HashSet, default::Default, fs, path::PathBuf};
 use toml::Table;
+use uuid::Uuid;
 
 pub mod cfg;
 
@@ -17,8 +18,9 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn overwrite(&mut self, cfg: Option<Cfg>, cargo: Table) {
+    pub fn overwrite(&mut self, cfg: Option<Cfg>, cargo: Table) -> Result<(), E> {
         self.inited = true;
+        self.cargo = Some(cargo);
         if let Some(cfg) = cfg {
             self.node_mod_dist = cfg
                 .node
@@ -47,20 +49,31 @@ impl Config {
                 false
             };
         } else {
-            self.node_mod_dist = Some(PathBuf::from("./dist"));
+            self.node_mod_dist = if self.is_self_testing()? {
+                Some(PathBuf::from(format!(
+                    "./target/selftests/{}",
+                    Uuid::new_v4()
+                )))
+            } else {
+                Some(PathBuf::from("./dist"))
+            };
             self.node_mod_filename = Some("index.node".to_string());
-            //             println!(
-            //                 "[tslink] Warting
-            // [tslink] file tslink.toml isn't found; will be used default path to node module: ./dist/index.node.
-            // [tslink] To configure correct path to node module file please create configuration file tslink.toml
-            // [tslink] in root folder of project and set field: node = \"./path/to/module/index.node\""
-            //             );
         }
-        self.cargo = Some(cargo);
+        Ok(())
     }
 
     pub fn get_cargo(&self) -> &Table {
         self.cargo.as_ref().expect("Cargo.toml should be available")
+    }
+
+    pub fn is_self_testing(&self) -> Result<bool, E> {
+        let package = self
+            .get_cargo()
+            .get("package")
+            .ok_or(E::Other(String::from(
+                "Fail to find [package] in Cargo.toml",
+            )))?;
+        Ok(value(package, "name")? == *"tslink")
     }
 
     pub fn rename_field(&self, origin: &str) -> String {
@@ -115,7 +128,7 @@ pub fn setup() -> Result<(), E> {
                 None
             },
             toml::from_str(&fs::read_to_string(cargo)?)?,
-        );
+        )?;
     Ok(())
 }
 
