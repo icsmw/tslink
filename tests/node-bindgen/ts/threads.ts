@@ -9,23 +9,28 @@ const struct = new StructThreads();
     const timeout = setTimeout(() => {
         test.fail(`Function rt() didn't call callback`);
     }, 50);
-    struct.rt((a: number) => {
-        if (a !== 101 && a !== -1) {
-            test.fail("Callback should return 101 or -1");
-        } else if (a === 101) {
-            struct.shutdown();
-        } else if (a === -1) {
-            test.success();
+    struct
+        .rt((a: number) => {
+            if (a !== 101 && a !== -1) {
+                test.fail("Callback should return 101 or -1");
+            } else if (a === 101) {
+                struct.shutdown();
+            } else if (a === -1) {
+                test.success();
+                clearTimeout(timeout);
+            }
+        })
+        .then(() => {
+            // Thread is created
+            const test = tests.test("incValue");
+            if (struct.incValue(100) instanceof Error) {
+                test.fail("Fail to call incValue");
+            } else {
+                test.success();
+            }
+        })
+        .catch(() => {
+            test.fail("Fail to create thread");
             clearTimeout(timeout);
-        }
-    });
-}
-
-{
-    const test = tests.test("incValue");
-    if (struct.incValue(100) instanceof Error) {
-        test.fail("Fail to call incValue");
-    } else {
-        test.success();
-    }
+        });
 }

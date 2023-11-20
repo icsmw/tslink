@@ -1,4 +1,7 @@
-use futures::{channel::mpsc, executor, StreamExt};
+use futures::{
+    channel::{mpsc, oneshot},
+    executor, StreamExt,
+};
 use node_bindgen::derive::node_bindgen;
 use std::thread::spawn;
 use tslink::tslink;
@@ -25,11 +28,13 @@ impl StructThreads {
 
     #[tslink(snake_case_naming, exception_suppression)]
     #[node_bindgen(mt)]
-    fn rt<F: Fn(i32) + Send + 'static>(&mut self, cb: F) {
+    async fn rt<F: Fn(i32) + Send + 'static>(&mut self, cb: F) -> Result<(), String> {
         let (tx, mut rx) = mpsc::unbounded::<Command>();
+        let (confirm_tx, confirm_rx) = oneshot::channel::<()>();
         self.tx = Some(tx);
         spawn(move || {
             executor::block_on(async {
+                let _ = confirm_tx.send(());
                 while let Some(cmd) = rx.next().await {
                     match cmd {
                         Command::IncValue(v) => {
@@ -43,6 +48,9 @@ impl StructThreads {
                 }
             });
         });
+        confirm_rx
+            .await
+            .map_err(|_| "Fail to confirm thread creating".to_string())
     }
 
     #[tslink(snake_case_naming, exception_suppression)]
