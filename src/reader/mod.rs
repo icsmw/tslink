@@ -2,6 +2,7 @@ mod enums;
 mod structs;
 
 use crate::{
+    config,
     context::Context,
     error::E,
     interpreter, modificator,
@@ -12,6 +13,7 @@ use std::ops::Deref;
 use syn::{Item, ItemEnum, ItemStruct};
 
 pub fn read(item: &mut Item, natures: &mut Natures, mut context: Context) -> Result<(), E> {
+    let io_allowed = config::get()?.io_allowed;
     let item_ref = item.clone();
     match item {
         Item::Struct(item_struct) => {
@@ -104,13 +106,15 @@ pub fn read(item: &mut Item, natures: &mut Natures, mut context: Context) -> Res
         }
         _ => Ok(()),
     }?;
-    package::create()
-        .map_err(|e| E::Compiler(syn::Error::new_spanned(item_ref.clone(), e.to_string())))?;
-    interpreter::ts(natures)
-        .map_err(|e| E::Compiler(syn::Error::new_spanned(item_ref.clone(), e.to_string())))?;
-    interpreter::dts(natures)
-        .map_err(|e| E::Compiler(syn::Error::new_spanned(item_ref.clone(), e.to_string())))?;
-    interpreter::js(natures)
-        .map_err(|e| E::Compiler(syn::Error::new_spanned(item_ref.clone(), e.to_string())))?;
+    if io_allowed {
+        package::create()
+            .map_err(|e| E::Compiler(syn::Error::new_spanned(item_ref.clone(), e.to_string())))?;
+        interpreter::ts(natures)
+            .map_err(|e| E::Compiler(syn::Error::new_spanned(item_ref.clone(), e.to_string())))?;
+        interpreter::dts(natures)
+            .map_err(|e| E::Compiler(syn::Error::new_spanned(item_ref.clone(), e.to_string())))?;
+        interpreter::js(natures)
+            .map_err(|e| E::Compiler(syn::Error::new_spanned(item_ref.clone(), e.to_string())))?;
+    }
     Ok(())
 }

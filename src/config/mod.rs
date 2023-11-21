@@ -1,16 +1,19 @@
 use crate::{error::E, package::value, CONFIG};
 use cfg::{Cfg, SnakeCaseNaming};
 use convert_case::{Case, Casing};
-use std::{collections::HashSet, default::Default, fs, path::PathBuf};
+use std::{collections::HashSet, default::Default, env, fs, path::PathBuf};
 use toml::Table;
 use uuid::Uuid;
 
 pub mod cfg;
 
+const TSLINK_BUILD_ENV: &str = "TSLINK_BUILD";
+
 #[derive(Debug, Clone, Default)]
 pub struct Config {
     inited: bool,
     cargo: Option<Table>,
+    pub io_allowed: bool,
     pub node_mod_filename: Option<String>,
     pub node_mod_dist: Option<PathBuf>,
     pub snake_case_naming: HashSet<SnakeCaseNaming>,
@@ -18,8 +21,9 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn overwrite(&mut self, cfg: Option<Cfg>, cargo: Table) -> Result<(), E> {
+    pub fn overwrite(&mut self, cfg: Option<Cfg>, cargo: Table, io_allowed: bool) -> Result<(), E> {
         self.inited = true;
+        self.io_allowed = io_allowed;
         self.cargo = Some(cargo);
         if let Some(cfg) = cfg {
             self.node_mod_dist = cfg
@@ -128,6 +132,9 @@ pub fn setup() -> Result<(), E> {
                 None
             },
             toml::from_str(&fs::read_to_string(cargo)?)?,
+            env::var_os(TSLINK_BUILD_ENV).map_or(false, |v| {
+                ["1", "true", "on"].contains(&v.to_string_lossy().to_lowercase().trim())
+            }),
         )?;
     Ok(())
 }
