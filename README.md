@@ -4,25 +4,52 @@
 
 # tslink
 
-`tslink` represents Rust types as `TypeScript` types. It helps to create
-the npm package (based on node module) with all necessary definitions and
-types.
+`tslink` represents Rust types as `TypeScript` types. It helps to create the npm package (based on node module) with all necessary definitions and types.
+
+# Table of Contents
+
+1. [How it can be useful](#how-it-can-be-useful)
+2. [Building](#building)
+3. [Output](#output)
+4. [Structs](#structs)
+5. [Enums](#enums)
+6. [Usage](#usage)
+- [Attributes](#attributes)
+- [Multiple attributes](#multiple-attributes)
+- [Struct to TypeScript class](#struct-to-typescript-class)
+- [Struct/Enum to TypeScript interface](#structenum-to-typescript-interface)
+- [Async methods/functions](#async-methods/functions)
+- [Callbacks in methods/functions](#callbacks-in-methodsfunctions)
+- [Naming methods/fields](#naming-methodsfields)
+- [Binding data. Arguments binding.](#binding-data.-arguments-binding.)
+- [Binding data. Result/Errors binding.](#binding-data.-resulterrors-binding.)
+- [Exception suppression](#exception-suppression)
+- [Usage with node-bindgen](#usage-with-node-bindgen)
+7. [Configuration file](#configuration-file)
+8. [QA and Troubleshooting](#qa-and-troubleshooting)
+
 
 ## How it can be useful?
 
 ### Node modules
 
-If you are developing a node module based on Rust for example using
-`node-bindgen` crate, `tslink` will generate an npm package with all necessary
-TypeScript definitions. It helps much with the integration of a node module
-and testing.
+If you are developing a node module based on Rust for example using `node-bindgen` crate, `tslink` will generate an npm package with all necessary TypeScript definitions. It helps much with the integration of a node module and testing.
 
 ### Sharing types
 
-If you are developing for example a server part on Rust and have a client part
-on TypeScript, you might be interested in sharing some types from Rust into
-TypeScript world. Requests or responses can be represented as TypeScript
-definitions in `*.ts` files.
+If you are developing for example a server part on Rust and have a client part on TypeScript, you might be interested in sharing some types from Rust into TypeScript world. Requests or responses can be represented as TypeScript definitions in `*.ts` files.
+
+## Building
+
+Because tslink produces artifacts, by default any IO operations from tslink side would be skipped. This is because compilation can be triggered by multiple reasons (clippy, rust analyzer, etc) and it gives unpredictable IO operations in the scope of the same files and IO errors as a result.
+To allow tslink to produce artifacts environment variable `TSLINK_BUILD` should be used with any positive value (`true`, `1`, `"on"`).
+
+
+```ignore
+export TSLINK_BUILD="true" && cargo build
+```
+
+> ☞ **NOTE**: tslink only creates a representation of the future node module in JavaScript and TypeScript. To create a native node module a crate `node-bindgen` can be used.
 
 ## Output
 
@@ -40,10 +67,7 @@ For example for an npm package `tslink` generates:
     - package.json # NPM package description
 ```
 
-Optionally `tslink` can generate `*.ts` files. Such files aren't a part of
-an npm-package and are used just to "share" types between Rust and TypeScript.
-As soon as `*.ts` files aren't part of an npm-package a destination path for
-it should be defined separately.
+Optionally `tslink` can generate `*.ts` files. Such files aren't a part of an npm-package and are used just to "share" types between Rust and TypeScript. As soon as `*.ts` files aren't part of an npm-package a destination path for it should be defined separately.
 
 ```
 # #[macro_use] extern crate tslink;
@@ -72,9 +96,7 @@ export interface TestingA {
 
 ## Structs
 
-`tslint` represents struct by default as an interface, but it also can be
-represented as `class`. Class representation should be used in case if struct
-has some methods and methods are propagated into the node module.
+`tslint` represents struct by default as an interface, but it also can be represented as `class`. Class representation should be used in case if struct has some methods and methods are propagated into the node module.
 
 If a struct is used as a type definition, better to use an interface representation.
 
@@ -281,7 +303,7 @@ impl MyStruct {
 }
 ```
 
-> ⚠ **NOTE**: if your structure has constructor mark this method with `#[tslink(constructor)]` is obligatory to allow tslink represent construtor in JS reflection.
+> ☞ **NOTE**: if your structure has constructor mark this method with `#[tslink(constructor)]` is obligatory to allow tslink represent construtor in JS reflection.
 
 
 ### Struct/Enum to TypeScript interface
@@ -343,7 +365,7 @@ export declare class MyStruct {
 }
 ```
 
-> ⚠ **NOTE**: suppression JS exceptions doesn't make sense with promises and using this attribute will not affect any.
+> ☞ **NOTE**: suppression JS exceptions doesn't make sense with promises and using this attribute will not affect any.
 
 ### Callbacks in methods/functions
 
@@ -409,7 +431,7 @@ export declare class MyStruct {
 }
 ```
 
-> ⚠ **NOTE**: `#[tslink(rename = "CustomName")]` cannot be used for renaming fields. Fields but `snake_case_naming` can be applied to fields.
+> ☞ **NOTE**: `#[tslink(rename = "CustomName")]` cannot be used for renaming fields. Fields but `snake_case_naming` can be applied to fields.
 
 
 ### Binding data. Arguments binding.
@@ -643,9 +665,49 @@ Now `getData` returns or `number`, or `Error & { err?: MyError}` in case of erro
 
 > Use or not to use this feature is up to the developer, but in general it's a good way to reduce `try/catch` blocks on JavaScript/TypeScript side and be ready for errors in places where it's potentially possible.
 
+### Usage with node-bindgen
+
+`node-bindgen` crate allows to create native node module and with tslink get a complete npm project.
+
+There just one rule to common usage - call of #[tslink] should be always above of call #[node_bindgen]
+
+```ignore
+#[macro_use] extern crate tslink;
+use tslink::tslink;
+use node_bindgen::derive::node_bindgen;
+
+struct MyScruct {}
+
+#[tslink(class)]
+#[node_bindgen]
+impl MyScruct {
+    #[tslink(constructor)]
+    #[node_bindgen(constructor)]
+    pub fn new() -> Self {
+        Self {}
+    }
+
+    #[tslink(snake_case_naming)]
+    #[node_bindgen]
+    fn inc_my_number(&self, a: i32) -> i32 {
+        a + 1
+    }
+}
+```
+
+Please **note**, `node-bindgen` by default applies snake case naming to methods. You should use `#[tslink(snake_case_naming)]` to consider this moment.
+
+By default `node-bindgen` creates `index.node` in `./dist` folder of your `root`. In `tslink.toml` file should be defined suitable path:
+
+File: `./tslink.toml` (in a `root` of project):
+
+```ignore
+node = "./dist/index.node"
+```
+
 ## Configuration file
 
-Configuration file (`tslink.toml` in the root of your project) is required in most cases. This file allows to define of a path to a native node module, which will be bound with an npm package.
+Configuration file (`tslink.toml` in the root of your project) is required in most cases. This file allows to define a path to a native node module, which will be bound with an npm package.
 
 But if tslink is used only to generate interfaces in `*.ts` files, a configuration file can be skipped.
 
@@ -666,3 +728,33 @@ exception_suppression = true
 | `snake_case_naming = "rule"` |  | "`methods`", "`fields`" or "`methods,fields`" | global rule of renaming |
 | `exception_suppression = true` |  | `bool` | global rule for javascript exception suppression |
 
+
+## QA and Troubleshooting
+
+>**Q**: tslink doesn't create any files
+>
+>**A**: make sure, the environment variable `TSLINK_BUILD` has been exported with `true` or `1`
+
+---
+
+>**Q**: rust-analyzer reports IO errors from tslink
+>
+>**A**: remove the environment variable `TSLINK_BUILD` or set it into `false` or `0`
+
+---
+
+>**Q**: what is it `./target/selftests`?
+>
+>**A**: these are artifacts, which tslink created with `cargo test`. It's safe to remove.
+
+---
+
+>**Q**: Does tslink create native node module (like `index.node`)
+>
+>**Q**: No, tslink only creates a representation of the future node module in JavaScript and TypeScript. To create a native node module a crate `node-bindgen` can be used.
+
+---
+
+>**Q**: With `node-bindgen` I get errors on JavaScript side like "no method_call_b() on undefined".
+>
+>**Q**: Note, `node-bindgen` by default applies snake case naming to methods. You should use `#[tslink(snake_case_naming)]` to consider this moment.
