@@ -705,6 +705,14 @@ File: `./tslink.toml` (in a `root` of project):
 node = "./dist/index.node"
 ```
 
+Full example of `node-bindgen` usage is [here](https://github.com/DmitryAstafyev/tslink/tree/master/examples/node_bindgen). To start it:
+
+```sh
+git clone https://github.com/DmitryAstafyev/tslink.git
+cd tslink/examples/node_bindgen
+sh ./run_test.sh
+```
+
 ## Configuration file
 
 Configuration file (`tslink.toml` in the root of your project) is required in most cases. This file allows to define a path to a native node module, which will be bound with an npm package.
