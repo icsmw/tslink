@@ -7,8 +7,8 @@ description = "Creates typescript definitions based on rust code"
 license = "Apache-2.0"
 keywords = ["typescript", "node", "node-bindgen", "javascript"]
 categories = ["node"]
-repository = "https://github.com/esrlabs/envvars.git"
-homepage = "https://github.com/esrlabs/envvars"
+repository = "https://github.com/DmitryAstafyev/tslink.git"
+homepage = "https://github.com/DmitryAstafyev/tslink"
 readme = "README.md"
 
 [lib]
