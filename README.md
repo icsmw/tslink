@@ -216,9 +216,9 @@ export interface SomeEnum {
 | Attribute | Usage | Description | Applied To |
 |----------|-------------|------|------|
 | `class` | `#[tslink(class)]` | Tells tslink create TypeScript class instead `interface`  | struct |
-| `ignore` | `#[tslink(ignore)]` | Ignore current struct's field or method | struct fields and method |
+| `ignore` | `#[tslink(ignore)]` | Ignore current struct's field or method | struct method |
 | `ignore = "list"` | `#[tslink(ignore = "field_a; field_b; method_a")]` | List of fields/methods, which should be ignored. Can be defined only on struct declaration. | struct |
-| `snake_case_naming` | `#[tslink(snake_case_naming)]` | Renames struct's field or method into snake case naming (`my_field_a` became `myFieldA`) | struct fields and method, functions |
+| `snake_case_naming` | `#[tslink(snake_case_naming)]` | Renames struct's field or method into snake case naming (`my_field_a` became `myFieldA`) | struct method, functions |
 | `rename = "name"` | `#[tslink(rename = "newNameOfFieldOrMethod")]` | Renames struct's methods or functions into given name | struct method and functions |
 | `constructor` | `#[tslink(constructor)]` | Marks current methods as constructor. Indeed can be defined only for method, which returns `Self`. | struct method returns `Self` |
 | `target = "path"` | `#[tslink(target = "./path_to/file.ts")]` | Tells tslink save TypeScript definitions `*.ts` / `*.d.ts` into given file | struct, enum |
@@ -501,7 +501,7 @@ export declare class MyStruct {
 
 ### Binding data. Result/Errors binding.
 
-To bind error with some of your custom types `#[tslink(error = "json")]` should be used, like it was shown in "### Binding data. Arguments binding.". Like an argument error will be serialized into `JSON string` on Rust level and parsed from `JSON string` on TypeScript/JavaScript level.
+To bind error with some of your custom types `#[tslink(error = "json")]` should be used, like it was shown in "Binding data. Arguments binding.". Like an argument error will be serialized into `JSON string` on Rust level and parsed from `JSON string` on TypeScript/JavaScript level.
 
 To bind result with some of your custom data type `#[tslink(result = "json")]` should be used. 
 
