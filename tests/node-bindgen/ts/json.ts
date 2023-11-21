@@ -139,12 +139,16 @@ const struct = new StructCustomData();
     const fourNone = struct.getEnumB({
         Four: null,
     });
+    const five = (struct.getEnumB as any)({
+        Five: null,
+    });
     if (
         one instanceof Error ||
         two instanceof Error ||
         three instanceof Error ||
         fourSome instanceof Error ||
-        fourNone instanceof Error
+        fourNone instanceof Error ||
+        five instanceof Error
     ) {
         test.fail(`Function getEnumB() of StructCustomData returns error`);
     } else {
@@ -173,6 +177,7 @@ const struct = new StructCustomData();
         test.assert(Object.keys(fourNone).length)
             .msg("Value of fourNone invalid")
             .equal(1);
+        test.assert(five).msg("Value of fourNone invalid").equal("Five");
         test.success();
     }
 }

@@ -42,11 +42,11 @@ If you are developing for example a server part on Rust and have a client part o
 ## Building
 
 Because tslink produces artifacts, by default any IO operations from tslink side would be skipped. This is because compilation can be triggered by multiple reasons (clippy, rust analyzer, etc) and it gives unpredictable IO operations in the scope of the same files and IO errors as a result.
-To allow tslink to produce artifacts environment variable `TSLINK_BUILD` should be used with any positive value (`true`, `1`, `"on"`).
+To allow tslink to produce artifacts environment variable `TSLINK_BUILD` should be used with any positive value (`true`, `1`, `on`).
 
 
 ```ignore
-export TSLINK_BUILD="true" && cargo build
+export TSLINK_BUILD=true && cargo build
 ```
 
 > ☞ **NOTE**: tslink only creates a representation of the future node module in JavaScript and TypeScript. To create a native node module a crate `node-bindgen` can be used.
@@ -121,6 +121,7 @@ struct StructureA {
 
 #[tslink]
 impl StructureA {
+    #[tslink]
     pub fn method_a(&self, abs: u8) -> u8 {
         0
     }
@@ -200,12 +201,12 @@ Became in `*.d.ts`
 
 ```ignore
 export interface SomeEnum {
-    One: null | void;
-    Two: null | void;
-    Three: number | void;
-    Four: [number, number, number] | void;
-    Five: [string, string] | void;
-    Six: number[] | void;
+    One?: null;
+    Two?: null;
+    Three?: number;
+    Four?: [number, number, number];
+    Five?: [string, string];
+    Six?: number[];
 }
 ```
 
@@ -431,7 +432,7 @@ export declare class MyStruct {
 }
 ```
 
-> ☞ **NOTE**: `#[tslink(rename = "CustomName")]` cannot be used for renaming fields. Fields but `snake_case_naming` can be applied to fields.
+> ☞ **NOTE**: `#[tslink(rename = "CustomName")]` cannot be used for renaming fields, but `snake_case_naming` can be applied to fields on a top of struct.
 
 
 ### Binding data. Arguments binding.
@@ -572,11 +573,11 @@ export declare class MyStruct {
 
 ### Exception suppression
 
-Of course, this is up to the library/crate, which is used to create a node module. For example `node-bindgen` throws exceptions on JavaScript level as soon as a method/function is done with an error. But tslink allows customizing this scenario.
+Would be exception thrown or no is up to the library/crate, which is used to create a node module. For example `node-bindgen` throws exceptions on JavaScript level as soon as a method/function is done with an error. But tslink allows customizing this scenario.
 
 By default exception suppression is off and any error on Rust level became an exception on JavaScript level. 
 
-Using previous example we can see:
+Let's take a look to the previous example:
 
 ```
 # #[macro_use] extern crate tslink;
@@ -667,9 +668,9 @@ Now `getData` returns or `number`, or `Error & { err?: MyError}` in case of erro
 
 ### Usage with node-bindgen
 
-`node-bindgen` crate allows to create native node module and with tslink get a complete npm project.
+`node-bindgen` crate allows to create native node module and with tslink to get a complete npm project.
 
-There just one rule to common usage - call of #[tslink] should be always above of call #[node_bindgen]
+There just one rule to common usage - call of `#[tslink]` should be always above of call `#[node_bindgen]`
 
 ```ignore
 #[macro_use] extern crate tslink;

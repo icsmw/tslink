@@ -79,6 +79,8 @@ enum EnumB {
     Two(i32, i32),
     Three(i32),
     Four(Option<u8>),
+    Five,
+    Six,
 }
 
 struct StructCustomData {}
