@@ -1,5 +1,6 @@
 [![LICENSE](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE.txt)
 [![](https://github.com/DmitryAstafyev/tslink/actions/workflows/on_pull_request.yml/badge.svg)](https://github.com/DmitryAstafyev/tslink/actions/workflows/on_pull_request.yml)
+![Crates.io](https://img.shields.io/crates/v/tslink)
 
 
 # tslink
