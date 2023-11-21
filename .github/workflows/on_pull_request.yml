@@ -28,6 +28,8 @@ jobs:
         run: cargo +nightly clippy --all --all-features -- -D warnings
   tests:
     runs-on: ubuntu-latest
+    env:
+      TSLINK_BUILD: true
     steps:
       - name: Checkout
         uses: actions/checkout@v2
