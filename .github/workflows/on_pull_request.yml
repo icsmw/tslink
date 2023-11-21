@@ -52,3 +52,6 @@ jobs:
       - name: NodeBindgen tests
         working-directory: ./tests/node-bindgen
         run: yarn run test
+      - name: Examples tests
+        working-directory: ./examples/node_bindgen
+        run: sh ./run_test.sh
