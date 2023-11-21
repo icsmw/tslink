@@ -1,0 +1,17 @@
+[package]
+name = "binding"
+version = "0.1.0"
+edition = "2021"
+# Added becuase: https://github.com/rust-lang/rust/issues/98903
+resolver = "2"
+
+[lib]
+crate-type = ["cdylib"]
+path = "src/lib.rs"
+
+[build-dependencies]
+node-bindgen = {git = "https://github.com/infinyon/node-bindgen.git", branch="master", default-features = false, features = ["build"] }
+
+[dependencies]
+node-bindgen = {git = "https://github.com/infinyon/node-bindgen.git", branch="master" }
+tslink = { path = "../../../" }

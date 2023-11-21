@@ -1,0 +1,36 @@
+{
+  "name": "core",
+  "version": "0.0.0",
+  "description": "",
+  "author": {
+    "name": "Dmitry Astafyev",
+    "email": "d.astafyev@outlook.com"
+  },
+  "repository": {
+      "type": "git",
+      "url": "https://github.com/DmitryAstafyev/icsmw.git"
+  },
+  "contributors": [
+      {
+          "name": "Dmitry Astafyev",
+          "email": "d.astafyev@outlook.com"
+      }
+  ],
+  "main": "./pkg/lib.js",
+  "types": "./pkg/lib.d.ts",
+  "scripts": {
+    "build": "node_modules/.bin/tsc -p tsconfig.json",
+    "prod": "node_modules/.bin/tsc -p tsconfig.json",
+    "lint": "node_modules/.bin/eslint . --ext .ts --max-warnings=0",
+    "test": "yarn run build && node ./pkg/lib.js"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.7.0",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "binding": "file:../native/dist"
+  },
+  "packageManager": "yarn@1.22.19"
+}
