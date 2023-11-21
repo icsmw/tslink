@@ -27,6 +27,68 @@ lazy_static! {
     static ref NATURES: RwLock<Natures> = RwLock::new(Natures::new());
 }
 
+/// Binds given entity with TypeScript type and generates JavaScript representation for it. This can be applied to:
+///
+/// ## Declaration of `struct`
+///
+/// ```
+/// # #[macro_use] extern crate tslink;
+/// # use tslink::tslink;
+/// #[tslink]
+/// struct MyStruct {
+///     pub p8: u8,
+///     pub p16: u16,
+///     pub p32: u32,
+///     pub p64: u64,
+///     pub a64: u64,
+/// }
+/// ```
+///
+/// ## Implementation of `struct` and its methods
+///
+/// ```
+/// # #[macro_use] extern crate tslink;
+/// # use tslink::tslink;
+///
+/// struct MyStruct { }
+///
+/// #[tslink]
+/// impl MyStruct {
+///     #[tslink]
+///     fn inc_num(&self, num: i32) -> i32 {
+///         num + 1
+///     }
+/// }
+/// ```
+///
+/// ## Declaration of `enum`
+///
+/// ```
+/// # #[macro_use] extern crate tslink;
+/// # use tslink::tslink;
+/// #[tslink]
+/// enum MyEnum {
+///     One,
+///     Two(i32),
+///     Three(String),
+///     Four(i32,i32),
+/// }
+/// ```
+///
+/// ## Functions `fn`
+///
+/// ```
+/// # #[macro_use] extern crate tslink;
+/// # use tslink::tslink;
+///
+/// #[tslink]
+/// fn inc_num(num: i32) -> i32 {
+///     num + 1
+/// }
+/// ```
+///
+/// `#[tslink]` uses multiple attributes to give flexibility with configuration and producing `*.js`/`*.d.ts`/`*.ts` artifacts. Please read more in the documentation.
+///
 #[proc_macro_attribute]
 pub fn tslink(args: TokenStream, item: TokenStream) -> TokenStream {
     if let Err(err) = config::setup() {
