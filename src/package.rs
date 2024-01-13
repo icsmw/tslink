@@ -30,13 +30,13 @@ pub fn create() -> Result<(), E> {
     let name = value(package, "name")?;
     let version = value(package, "version")?;
     let dist = config.node_mod_dist.clone().ok_or(E::Other(String::from(
-        "No path to folder with node module. Set correct path in tslink.toml; field \"node\"",
+        "No path to folder with node module. Set correct path in [tslink] of Cargo.toml; field \"node\"",
     )))?;
     let node_module = config
         .node_mod_filename
         .clone()
         .ok_or(E::Other(String::from(
-            "No node module file name. Set correct path in tslink.toml; field \"node\"",
+            "No node module file name. Set correct path in [tslink] of Cargo.toml; field \"node\"",
         )))?;
     drop(config);
     let package_file = dist.join("package.json");
@@ -53,10 +53,7 @@ pub fn create() -> Result<(), E> {
         )));
     }
     File::create(&package_file)?;
-    let file = OpenOptions::new()
-        .write(true)
-        .append(true)
-        .open(&package_file)?;
+    let file = OpenOptions::new().append(true).open(&package_file)?;
     let mut buf_writer = BufWriter::new(file);
     buf_writer.write_all(
         format!(

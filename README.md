@@ -699,12 +699,22 @@ impl MyScruct {
 
 Please **note**, `node-bindgen` by default applies snake case naming to methods. You should use `#[tslink(snake_case_naming)]` to consider this moment.
 
-By default `node-bindgen` creates `index.node` in `./dist` folder of your `root`. In `tslink.toml` file should be defined suitable path:
+By default `node-bindgen` creates `index.node` in `./dist` folder of your `root`. In `Cargo.toml` file should be defined suitable path in section `[tslink]`:
 
-File: `./tslink.toml` (in a `root` of project):
+File: `./Cargo.toml` (in a `root` of project):
 
 ```ignore
+[project]
+...
+
+[lib]
+...
+
+[tslink]
 node = "./dist/index.node"
+
+[dependencies]
+...
 ```
 
 Full example of `node-bindgen` usage is [here](https://github.com/DmitryAstafyev/tslink/tree/master/examples/node_bindgen). To start it:
@@ -715,15 +725,25 @@ cd tslink/examples/node_bindgen
 sh ./run_test.sh
 ```
 
-## Configuration file
+## Configuration
 
-Configuration file (`tslink.toml` in the root of your project) is required in most cases. This file allows to define a path to a native node module, which will be bound with an npm package.
+Global configuration of `tslink` can defined in section `[tslink]` of `Cargo.toml` file in the root of your project. It's required in most cases. This settings allows to define a path to a native node module, which will be bound with an npm package.
 
 But if tslink is used only to generate interfaces in `*.ts` files, a configuration file can be skipped.
 
-File: `./tslink.toml`:
+Example of `./Cargo.toml` with `tslink` settings:
 
 ```ignore
+[package]
+name = "tslink-test"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+path = "rs/lib.rs"
+
+[tslink]
 # [required] path to native node module
 node = "./dist/index.node"
 # [optional] global rule of renaming (can be: "method" or "fields" or both - "methods,fields")
