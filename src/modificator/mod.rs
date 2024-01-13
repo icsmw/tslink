@@ -50,8 +50,8 @@ fn split_fn_out(out: &Option<Box<Nature>>) -> (Option<Nature>, Option<Nature>) {
     if let Some(out) = out {
         if let Nature::Composite(Composite::Result(_, res, err, _, _)) = out.deref() {
             (
-                res.as_ref().map(|n| n.deref().clone()),
-                err.as_ref().map(|n| n.deref().clone()),
+                res.clone().map(|n| n.deref().clone()),
+                err.clone().map(|n| n.deref().clone()),
             )
         } else {
             (Some(out.deref().clone()), None)
