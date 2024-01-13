@@ -1,7 +1,6 @@
 [![LICENSE](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE.txt)
-[![](https://github.com/DmitryAstafyev/tslink/actions/workflows/on_pull_request.yml/badge.svg)](https://github.com/DmitryAstafyev/tslink/actions/workflows/on_pull_request.yml)
+[![](https://github.com/icsmw/tslink/actions/workflows/on_pull_request.yml/badge.svg)](https://github.com/icsmw/tslink/actions/workflows/on_pull_request.yml)
 ![Crates.io](https://img.shields.io/crates/v/tslink)
-
 
 # tslink
 
@@ -15,20 +14,21 @@
 4. [Structs](#structs)
 5. [Enums](#enums)
 6. [Usage](#usage)
-- [Attributes](#attributes)
-- [Multiple attributes](#multiple-attributes)
-- [Struct to TypeScript class](#struct-to-typescript-class)
-- [Struct/Enum to TypeScript interface](#structenum-to-typescript-interface)
-- [Async methods/functions](#async-methods/functions)
-- [Callbacks in methods/functions](#callbacks-in-methodsfunctions)
-- [Naming methods/fields](#naming-methodsfields)
-- [Binding data. Arguments binding.](#binding-data.-arguments-binding.)
-- [Binding data. Result/Errors binding.](#binding-data.-resulterrors-binding.)
-- [Exception suppression](#exception-suppression)
-- [Usage with node-bindgen](#usage-with-node-bindgen)
+
+-   [Attributes](#attributes)
+-   [Multiple attributes](#multiple-attributes)
+-   [Struct to TypeScript class](#struct-to-typescript-class)
+-   [Struct/Enum to TypeScript interface](#structenum-to-typescript-interface)
+-   [Async methods/functions](#async-methods/functions)
+-   [Callbacks in methods/functions](#callbacks-in-methodsfunctions)
+-   [Naming methods/fields](#naming-methodsfields)
+-   [Binding data. Arguments binding.](#binding-data.-arguments-binding.)
+-   [Binding data. Result/Errors binding.](#binding-data.-resulterrors-binding.)
+-   [Exception suppression](#exception-suppression)
+-   [Usage with node-bindgen](#usage-with-node-bindgen)
+
 7. [Configuration file](#configuration-file)
 8. [QA and Troubleshooting](#qa-and-troubleshooting)
-
 
 ## How it can be useful?
 
@@ -45,7 +45,6 @@ If you are developing for example a server part on Rust and have a client part o
 Because tslink produces artifacts, by default any IO operations from tslink side would be skipped. This is because compilation can be triggered by multiple reasons (clippy, rust analyzer, etc) and it gives unpredictable IO operations in the scope of the same files and IO errors as a result.
 To allow tslink to produce artifacts environment variable `TSLINK_BUILD` should be used with any positive value (`true`, `1`, `on`).
 
-
 ```ignore
 export TSLINK_BUILD=true && cargo build
 ```
@@ -55,9 +54,10 @@ export TSLINK_BUILD=true && cargo build
 ## Output
 
 Based on Rust code `tslink` generates:
-- javascript (`*.js`) for the npm package (library)
-- type definitions file (`*.d.ts`)
-- optionally TypeScript file (`*.ts`) with interfaces
+
+-   javascript (`*.js`) for the npm package (library)
+-   type definitions file (`*.d.ts`)
+-   optionally TypeScript file (`*.ts`) with interfaces
 
 For example for an npm package `tslink` generates:
 
@@ -215,19 +215,19 @@ export interface SomeEnum {
 
 ### Attributes
 
-| Attribute | Usage | Description | Applied To |
-|----------|-------------|------|------|
-| `class` | `#[tslink(class)]` | Tells tslink create TypeScript class instead `interface`  | struct |
-| `ignore` | `#[tslink(ignore)]` | Ignore current struct's field or method | struct method |
-| `ignore = "list"` | `#[tslink(ignore = "field_a; field_b; method_a")]` | List of fields/methods, which should be ignored. Can be defined only on struct declaration. | struct |
-| `snake_case_naming` | `#[tslink(snake_case_naming)]` | Renames struct's field or method into snake case naming (`my_field_a` became `myFieldA`) | struct method, functions |
-| `rename = "name"` | `#[tslink(rename = "newNameOfFieldOrMethod")]` | Renames struct's methods or functions into given name | struct method and functions |
-| `constructor` | `#[tslink(constructor)]` | Marks current methods as constructor. Indeed can be defined only for method, which returns `Self`. | struct method returns `Self` |
-| `target = "path"` | `#[tslink(target = "./path_to/file.ts")]` | Tells tslink save TypeScript definitions `*.ts` / `*.d.ts` into given file | struct, enum |
-| `exception_suppression` | `#[tslink(exception_suppression)]` | By default in case of error method/function throws a JavaScript exception. If "exception_suppression" is used, method/function returns an JavaScript Error instead throwing exceptions | struct methods, functions |
-| `result = "json"` | `#[tslink(result = "json")]` | Converts `Ok` case in `Result<T, _>` into JSON | struct methods, functions |
-| `error = "json"` | `#[tslink(error = "json")]` | Converts `Err` case in `Result<_, E>` into JSON | struct methods, functions |
-| `fn_arg_name = "ref_to_entity"` | `#[tslink(data = "MyStruct")]` | Binds argument type with struct/type/enum on Rust side | struct methods, functions |
+| Attribute                       | Usage                                              | Description                                                                                                                                                                            | Applied To                   |
+| ------------------------------- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| `class`                         | `#[tslink(class)]`                                 | Tells tslink create TypeScript class instead `interface`                                                                                                                               | struct                       |
+| `ignore`                        | `#[tslink(ignore)]`                                | Ignore current struct's field or method                                                                                                                                                | struct method                |
+| `ignore = "list"`               | `#[tslink(ignore = "field_a; field_b; method_a")]` | List of fields/methods, which should be ignored. Can be defined only on struct declaration.                                                                                            | struct                       |
+| `snake_case_naming`             | `#[tslink(snake_case_naming)]`                     | Renames struct's field or method into snake case naming (`my_field_a` became `myFieldA`)                                                                                               | struct method, functions     |
+| `rename = "name"`               | `#[tslink(rename = "newNameOfFieldOrMethod")]`     | Renames struct's methods or functions into given name                                                                                                                                  | struct method and functions  |
+| `constructor`                   | `#[tslink(constructor)]`                           | Marks current methods as constructor. Indeed can be defined only for method, which returns `Self`.                                                                                     | struct method returns `Self` |
+| `target = "path"`               | `#[tslink(target = "./path_to/file.ts")]`          | Tells tslink save TypeScript definitions `*.ts` / `*.d.ts` into given file                                                                                                             | struct, enum                 |
+| `exception_suppression`         | `#[tslink(exception_suppression)]`                 | By default in case of error method/function throws a JavaScript exception. If "exception_suppression" is used, method/function returns an JavaScript Error instead throwing exceptions | struct methods, functions    |
+| `result = "json"`               | `#[tslink(result = "json")]`                       | Converts `Ok` case in `Result<T, _>` into JSON                                                                                                                                         | struct methods, functions    |
+| `error = "json"`                | `#[tslink(error = "json")]`                        | Converts `Err` case in `Result<_, E>` into JSON                                                                                                                                        | struct methods, functions    |
+| `fn_arg_name = "ref_to_entity"` | `#[tslink(data = "MyStruct")]`                     | Binds argument type with struct/type/enum on Rust side                                                                                                                                 | struct methods, functions    |
 
 ### Multiple attributes
 
@@ -306,7 +306,6 @@ impl MyStruct {
 ```
 
 > ☞ **NOTE**: if your structure has constructor mark this method with `#[tslink(constructor)]` is obligatory to allow tslink represent construtor in JS reflection.
-
 
 ### Struct/Enum to TypeScript interface
 
@@ -397,7 +396,7 @@ export declare class MyStruct {
 
 ### Naming methods/fields
 
-TypeScript/JavaScript standard of naming: snake case naming. Some crates like `node-bindgen` automatically rename fields and methods based on this rule. To fit this behavior `tslink` should know, which fields/methods should be renamed. 
+TypeScript/JavaScript standard of naming: snake case naming. Some crates like `node-bindgen` automatically rename fields and methods based on this rule. To fit this behavior `tslink` should know, which fields/methods should be renamed.
 
 The easiest way would be using `#[tslink(snake_case_naming)]` on a level of method/field. Or at some very specific use-cases can be used `#[tslink(rename = "newNameOfFieldOrMethod")]` to give method/field some specific name.
 
@@ -434,7 +433,6 @@ export declare class MyStruct {
 ```
 
 > ☞ **NOTE**: `#[tslink(rename = "CustomName")]` cannot be used for renaming fields, but `snake_case_naming` can be applied to fields on a top of struct.
-
 
 ### Binding data. Arguments binding.
 
@@ -494,9 +492,10 @@ export declare class MyStruct {
 ```
 
 **Important**
+
 1. tslink converts bound data into `JSON string`. It requires `serde`, `serde_json` as dependencies in your project.
 2. Because parsing of `JSON string` potentially can be done with errors, the method/function should return only `Result<T, E>`
-3. Because `serde_json` returns `serde_json::Error` error type of result should be convertable from `serde_json::Error`. 
+3. Because `serde_json` returns `serde_json::Error` error type of result should be convertable from `serde_json::Error`.
 4. In most cases you would use binding of data with `#[tslink(error = "json")]` because it allows you to use your implementation of error. And it's a recommended way.
 5. In the declaration of the method/function on Rust side, the type of argument should be `String` (ex: `fn get_data(&self, my_data: String) -> Result<MyData, MyError>`), but in the body of your method/function this argument will be considered as bounded type.
 6. And bound type and error should implement `Serialize` and `Deserialize`
@@ -505,7 +504,7 @@ export declare class MyStruct {
 
 To bind error with some of your custom types `#[tslink(error = "json")]` should be used, like it was shown in "Binding data. Arguments binding.". Like an argument error will be serialized into `JSON string` on Rust level and parsed from `JSON string` on TypeScript/JavaScript level.
 
-To bind result with some of your custom data type `#[tslink(result = "json")]` should be used. 
+To bind result with some of your custom data type `#[tslink(result = "json")]` should be used.
 
 ```
 #[macro_use] extern crate tslink;
@@ -565,9 +564,10 @@ export declare class MyStruct {
 ```
 
 **Important**
+
 1. tslink converts bound data into `JSON string`. It requires `serde`, `serde_json` as dependencies in your project.
 2. Because parsing of `JSON string` potentially can be done with errors, the method/function should return only `Result<T, E>`
-3. Because `serde_json` returns `serde_json::Error` error type of result should be convertable from `serde_json::Error`. 
+3. Because `serde_json` returns `serde_json::Error` error type of result should be convertable from `serde_json::Error`.
 4. In most cases you would use binding of data with `#[tslink(error = "json")]` because it allows you to use your implementation of error. And it's a recommended way.
 5. In the declaration of the method/function on Rust side, the type of argument should be `String` (ex: `fn get_data(&self, my_data: String) -> Result<MyData, MyError>`), but in the body of your method/function this argument will be considered as bounded type.
 6. And result type and error should implement `Serialize` and `Deserialize`.
@@ -576,7 +576,7 @@ export declare class MyStruct {
 
 Would be exception thrown or no is up to the library/crate, which is used to create a node module. For example `node-bindgen` throws exceptions on JavaScript level as soon as a method/function is done with an error. But tslink allows customizing this scenario.
 
-By default exception suppression is off and any error on Rust level became an exception on JavaScript level. 
+By default exception suppression is off and any error on Rust level became an exception on JavaScript level.
 
 Let's take a look to the previous example:
 
@@ -717,10 +717,10 @@ node = "./dist/index.node"
 ...
 ```
 
-Full example of `node-bindgen` usage is [here](https://github.com/DmitryAstafyev/tslink/tree/master/examples/node_bindgen). To start it:
+Full example of `node-bindgen` usage is [here](https://github.com/icsmw/tslink/tree/master/examples/node_bindgen). To start it:
 
 ```sh
-git clone https://github.com/DmitryAstafyev/tslink.git
+git clone https://github.com/icsmw/tslink.git
 cd tslink/examples/node_bindgen
 sh ./run_test.sh
 ```
@@ -752,39 +752,38 @@ snake_case_naming = "methods"
 exception_suppression = true
 ```
 
-| Field | Required | Values   |  Description |
-|------|---|---|---|
-| `node = "path_to_native_node_module"` | yes | path to file | path to native node module |
-| `snake_case_naming = "rule"` |  | "`methods`", "`fields`" or "`methods,fields`" | global rule of renaming |
-| `exception_suppression = true` |  | `bool` | global rule for javascript exception suppression |
-
+| Field                                 | Required | Values                                        | Description                                      |
+| ------------------------------------- | -------- | --------------------------------------------- | ------------------------------------------------ |
+| `node = "path_to_native_node_module"` | yes      | path to file                                  | path to native node module                       |
+| `snake_case_naming = "rule"`          |          | "`methods`", "`fields`" or "`methods,fields`" | global rule of renaming                          |
+| `exception_suppression = true`        |          | `bool`                                        | global rule for javascript exception suppression |
 
 ## QA and Troubleshooting
 
->**Q**: tslink doesn't create any files
+> **Q**: tslink doesn't create any files
 >
->**A**: make sure, the environment variable `TSLINK_BUILD` has been exported with `true` or `1`
+> **A**: make sure, the environment variable `TSLINK_BUILD` has been exported with `true` or `1`
 
 ---
 
->**Q**: rust-analyzer reports IO errors from tslink
+> **Q**: rust-analyzer reports IO errors from tslink
 >
->**A**: remove the environment variable `TSLINK_BUILD` or set it into `false` or `0`
+> **A**: remove the environment variable `TSLINK_BUILD` or set it into `false` or `0`
 
 ---
 
->**Q**: what is it `./target/selftests`?
+> **Q**: what is it `./target/selftests`?
 >
->**A**: these are artifacts, which tslink created with `cargo test`. It's safe to remove.
+> **A**: these are artifacts, which tslink created with `cargo test`. It's safe to remove.
 
 ---
 
->**Q**: Does tslink create native node module (like `index.node`)
+> **Q**: Does tslink create native node module (like `index.node`)
 >
->**Q**: No, tslink only creates a representation of the future node module in JavaScript and TypeScript. To create a native node module a crate `node-bindgen` can be used.
+> **Q**: No, tslink only creates a representation of the future node module in JavaScript and TypeScript. To create a native node module a crate `node-bindgen` can be used.
 
 ---
 
->**Q**: With `node-bindgen` I get errors on JavaScript side like "no method_call_b() on undefined".
+> **Q**: With `node-bindgen` I get errors on JavaScript side like "no method_call_b() on undefined".
 >
->**Q**: Note, `node-bindgen` by default applies snake case naming to methods. You should use `#[tslink(snake_case_naming)]` to consider this moment.
+> **Q**: Note, `node-bindgen` by default applies snake case naming to methods. You should use `#[tslink(snake_case_naming)]` to consider this moment.

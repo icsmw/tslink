@@ -1,14 +1,14 @@
 [package]
 name = "tslink"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 authors = ["d.astafyev@outlook.com"]
 description = "Creates typescript definitions based on rust code"
 license = "Apache-2.0"
 keywords = ["typescript", "node", "node-bindgen", "javascript"]
 categories = ["node"]
-repository = "https://github.com/DmitryAstafyev/tslink.git"
-homepage = "https://github.com/DmitryAstafyev/tslink"
+repository = "https://github.com/icsmw/tslink.git"
+homepage = "https://github.com/icsmw/tslink"
 readme = "README.md"
 
 [lib]
