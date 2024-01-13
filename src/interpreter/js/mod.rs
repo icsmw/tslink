@@ -28,13 +28,13 @@ pub fn write(natures: &Natures) -> Result<(), E> {
         .node_mod_dist
         .clone()
         .ok_or(E::InvalidConfiguration(String::from(
-            "No path to folder with node module. Set correct path in tslink.toml; field \"node\"",
+            "No path to folder with node module. Set correct path in [tslink] of Cargo.toml; field \"node\"",
         )))?;
     let node_module = config
         .node_mod_filename
         .clone()
         .ok_or(E::InvalidConfiguration(String::from(
-            "No node module file name. Set correct path in tslink.toml; field \"node\"",
+            "No node module file name. Set correct path in [tslink] of Cargo.toml; field \"node\"",
         )))?;
     let lib_file = dist.join("lib.js");
     drop(config);
@@ -42,10 +42,7 @@ pub fn write(natures: &Natures) -> Result<(), E> {
         fs::remove_file(&lib_file)?;
     }
     File::create(&lib_file)?;
-    let file = OpenOptions::new()
-        .write(true)
-        .append(true)
-        .open(&lib_file)?;
+    let file = OpenOptions::new().append(true).open(&lib_file)?;
     let mut buf_writer = BufWriter::new(file);
     buf_writer.write_all(
         format!(

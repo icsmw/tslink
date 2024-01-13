@@ -25,11 +25,11 @@ pub fn create_node_located_file(
         .node_mod_dist
         .clone()
         .ok_or(E::InvalidConfiguration(String::from(
-            "No path to folder with node module. Set correct path in tslink.toml; field \"node\"",
+            "No path to folder with node module. Set correct path in [tslink] of Cargo.toml; field \"node\"",
         )))?
         .join(file_name);
     if dropped.contains(&path) {
-        return Ok(OpenOptions::new().write(true).append(true).open(&path)?);
+        return Ok(OpenOptions::new().append(true).open(&path)?);
     }
     if path.exists() {
         fs::remove_file(&path)?;
@@ -45,7 +45,7 @@ pub fn create_node_located_file(
         )));
     }
     File::create(&path)?;
-    Ok(OpenOptions::new().write(true).append(true).open(&path)?)
+    Ok(OpenOptions::new().append(true).open(&path)?)
 }
 
 pub fn create_target_file(
@@ -55,9 +55,7 @@ pub fn create_target_file(
 ) -> Result<Option<File>, E> {
     if let Some((_, path)) = context.targets.iter().find(|(t, _)| t == target) {
         if dropped.contains(path) {
-            return Ok(Some(
-                OpenOptions::new().write(true).append(true).open(path)?,
-            ));
+            return Ok(Some(OpenOptions::new().append(true).open(path)?));
         }
         if path.exists() {
             fs::remove_file(path)?;
@@ -73,9 +71,7 @@ pub fn create_target_file(
             )));
         }
         File::create(path)?;
-        Ok(Some(
-            OpenOptions::new().write(true).append(true).open(path)?,
-        ))
+        Ok(Some(OpenOptions::new().append(true).open(path)?))
     } else {
         Ok(None)
     }

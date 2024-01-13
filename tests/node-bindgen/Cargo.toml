@@ -9,6 +9,11 @@ resolver = "2"
 crate-type = ["cdylib"]
 path = "rs/lib.rs"
 
+[tslink]
+node = "./dist/index.node"
+snake_case_naming = "methods"
+# exception_suppression = true
+
 [build-dependencies]
 node-bindgen = {git = "https://github.com/infinyon/node-bindgen.git", branch="master", default-features = false, features = ["build"] }
 

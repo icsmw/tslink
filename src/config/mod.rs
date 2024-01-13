@@ -21,48 +21,40 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn overwrite(&mut self, cfg: Option<Cfg>, cargo: Table, io_allowed: bool) -> Result<(), E> {
+    pub fn overwrite(&mut self, cargo: Table, io_allowed: bool) -> Result<(), E> {
         self.inited = true;
         self.io_allowed = io_allowed;
+        let cfg = Cfg::new(&cargo);
         self.cargo = Some(cargo);
-        if let Some(cfg) = cfg {
-            self.node_mod_dist = cfg
-                .node
-                .clone()
-                .map(|s| PathBuf::from(s).parent().map(|p| p.to_path_buf()))
-                .unwrap_or(None);
-            self.node_mod_filename = cfg
-                .node
-                .map(|s| {
-                    PathBuf::from(s)
-                        .file_name()
-                        .map(|f| f.to_string_lossy().to_string())
+        let is_self_testing = self.is_self_testing()?;
+        self.node_mod_dist = cfg
+            .node
+            .clone()
+            .and_then(|s| PathBuf::from(s).parent().map(|p| p.to_path_buf()))
+            .or_else(|| {
+                Some(if is_self_testing {
+                    PathBuf::from(format!("./target/selftests/{}", Uuid::new_v4()))
+                } else {
+                    PathBuf::from("./dist")
                 })
-                .unwrap_or(None);
-            if let Some(snake_case_naming) = cfg.snake_case_naming {
-                snake_case_naming.split(',').for_each(|v| {
-                    let condition = SnakeCaseNaming::from_str(v).unwrap();
-                    if self.snake_case_naming.get(&condition).is_none() {
-                        self.snake_case_naming.insert(condition);
-                    }
-                });
-            }
-            self.exception_suppression = if let Some(v) = cfg.exception_suppression {
-                v
-            } else {
-                false
-            };
-        } else {
-            self.node_mod_dist = if self.is_self_testing()? {
-                Some(PathBuf::from(format!(
-                    "./target/selftests/{}",
-                    Uuid::new_v4()
-                )))
-            } else {
-                Some(PathBuf::from("./dist"))
-            };
-            self.node_mod_filename = Some("index.node".to_string());
+            });
+        self.node_mod_filename = cfg
+            .node
+            .and_then(|s| {
+                PathBuf::from(s)
+                    .file_name()
+                    .map(|f| f.to_string_lossy().to_string())
+            })
+            .or_else(|| Some("index.node".to_string()));
+        if let Some(snake_case_naming) = cfg.snake_case_naming {
+            snake_case_naming.split(',').for_each(|v| {
+                let condition = SnakeCaseNaming::from_str(v).unwrap();
+                if self.snake_case_naming.get(&condition).is_none() {
+                    self.snake_case_naming.insert(condition);
+                }
+            });
         }
+        self.exception_suppression = cfg.exception_suppression.unwrap_or(false);
         Ok(())
     }
 
@@ -115,7 +107,6 @@ pub fn setup() -> Result<(), E> {
     }
     let root = std::env::current_dir()?;
     let cargo = root.join("Cargo.toml");
-    let config = root.join("tslink.toml");
     if !cargo.exists() {
         return Err(E::FileNotFound(format!(
             "Cargo.toml isn't found in {}",
@@ -126,11 +117,6 @@ pub fn setup() -> Result<(), E> {
         .write()
         .map_err(|e| E::AccessError(e.to_string()))?
         .overwrite(
-            if config.exists() {
-                Some(toml::from_str(&fs::read_to_string(config)?)?)
-            } else {
-                None
-            },
             toml::from_str(&fs::read_to_string(cargo)?)?,
             env::var_os(TSLINK_BUILD_ENV).map_or(false, |v| {
                 ["1", "true", "on"].contains(&v.to_string_lossy().to_lowercase().trim())
