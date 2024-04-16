@@ -7,7 +7,7 @@ use quote::{format_ident, quote};
 
 #[derive(Clone, Debug)]
 pub enum Primitive {
-    Number(OriginType, String),
+    Number(OriginType),
     String(OriginType),
     Boolean(OriginType),
 }
@@ -15,7 +15,7 @@ pub enum Primitive {
 impl TypeTokenStream for Primitive {
     fn type_token_stream(&self) -> Result<TokenStream, E> {
         match self {
-            Self::Number(ty, _) => ty,
+            Self::Number(ty) => ty,
             Self::String(ty) => ty,
             Self::Boolean(ty) => ty,
         }
@@ -26,7 +26,7 @@ impl TypeTokenStream for Primitive {
 impl TypeAsString for Primitive {
     fn type_as_string(&self) -> Result<String, E> {
         match self {
-            Self::Number(ty, _) => ty,
+            Self::Number(ty) => ty,
             Self::String(ty) => ty,
             Self::Boolean(ty) => ty,
         }

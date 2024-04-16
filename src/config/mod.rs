@@ -49,7 +49,7 @@ impl Config {
         if let Some(snake_case_naming) = cfg.snake_case_naming {
             snake_case_naming.split(',').for_each(|v| {
                 let condition = SnakeCaseNaming::from_str(v).unwrap();
-                if self.snake_case_naming.get(&condition).is_none() {
+                if !self.snake_case_naming.contains(&condition) {
                     self.snake_case_naming.insert(condition);
                 }
             });
@@ -73,11 +73,7 @@ impl Config {
     }
 
     pub fn rename_field(&self, origin: &str) -> String {
-        if self
-            .snake_case_naming
-            .get(&SnakeCaseNaming::Fields)
-            .is_some()
-        {
+        if self.snake_case_naming.contains(&SnakeCaseNaming::Fields) {
             origin.to_case(Case::Camel)
         } else {
             origin.to_owned()
@@ -85,11 +81,7 @@ impl Config {
     }
 
     pub fn rename_method(&self, origin: &str) -> String {
-        if self
-            .snake_case_naming
-            .get(&SnakeCaseNaming::Methods)
-            .is_some()
-        {
+        if self.snake_case_naming.contains(&SnakeCaseNaming::Methods) {
             origin.to_case(Case::Camel)
         } else {
             origin.to_owned()

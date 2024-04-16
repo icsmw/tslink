@@ -58,10 +58,7 @@ impl Extract<&Ident> for Nature {
         let origin = ident.to_string();
         Ok(match origin.as_str() {
             "u8" | "u16" | "u32" | "i8" | "i16" | "i32" | "u64" | "i64" | "usize" => {
-                Nature::Primitive(Primitive::Number(
-                    OriginType::from(ident.clone()),
-                    origin.clone(),
-                ))
+                Nature::Primitive(Primitive::Number(OriginType::from(ident.clone())))
             }
             "bool" => Nature::Primitive(Primitive::Boolean(OriginType::from(ident.clone()))),
             "String" => Nature::Primitive(Primitive::String(OriginType::from(ident.clone()))),
