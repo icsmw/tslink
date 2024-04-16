@@ -182,7 +182,7 @@ dependencies = [
 
 [[package]]
 name = "tslink"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "convert_case",
  "lazy_static",
