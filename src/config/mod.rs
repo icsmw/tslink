@@ -105,7 +105,9 @@ pub fn setup() -> Result<(), E> {
     {
         return Ok(());
     }
-    let root = std::env::current_dir()?;
+    let manifest_dir = env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR is not set");
+    let root = PathBuf::from(manifest_dir);
+
     let cargo = root.join("Cargo.toml");
     if !cargo.exists() {
         return Err(E::FileNotFound(format!(
