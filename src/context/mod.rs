@@ -218,6 +218,10 @@ impl Context {
                     // No attributes
                     continue;
                 }
+                let attr_name = attr.path().segments.last().unwrap().ident.to_string();
+                if attr_name != env!("CARGO_PKG_NAME") {
+                    continue;
+                }
                 return attr
                     .parse_args_with(Context::parse)
                     .map_err(|e| E::PasringContext(e.to_string()));

@@ -1,6 +1,6 @@
 [package]
 name = "tslink"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 authors = ["d.astafyev@outlook.com"]
 description = "Creates typescript definitions based on rust code"
