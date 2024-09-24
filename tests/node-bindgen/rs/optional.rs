@@ -65,7 +65,7 @@ impl StructWithOptions {
 
     #[tslink(snake_case_naming)]
     #[node_bindgen]
-    fn optional_a(&self, a: Option<i64>, b: Option<i64>) -> i64 {
+    fn optional_a(&self, a: Option<i32>, b: Option<i32>) -> i32 {
         if let (Some(a), Some(b)) = (a, b) {
             a + b
         } else {
@@ -75,14 +75,14 @@ impl StructWithOptions {
 
     #[tslink(snake_case_naming)]
     #[node_bindgen]
-    fn optional_b(&self, a: Option<i64>, b: Option<i64>) -> (Option<i64>, Option<i64>) {
+    fn optional_b(&self, a: Option<i32>, b: Option<i32>) -> (Option<i32>, Option<i32>) {
         (a, b)
     }
 }
 
 #[tslink(snake_case_naming)]
 #[node_bindgen]
-fn optional_test_a(a: Option<i64>, b: Option<i64>) -> i64 {
+fn optional_test_a(a: Option<i32>, b: Option<i32>) -> i32 {
     if let (Some(a), Some(b)) = (a, b) {
         a + b
     } else {
@@ -92,6 +92,6 @@ fn optional_test_a(a: Option<i64>, b: Option<i64>) -> i64 {
 
 #[tslink(snake_case_naming)]
 #[node_bindgen]
-fn optional_test_b(a: Option<i64>, b: Option<i64>) -> (Option<i64>, Option<i64>) {
+fn optional_test_b(a: Option<i32>, b: Option<i32>) -> (Option<i32>, Option<i32>) {
     (a, b)
 }

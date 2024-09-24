@@ -1,6 +1,7 @@
 use crate::{
     context::Context,
     error::E,
+    interpreter::serialize_name,
     modificator,
     nature::{Extract, ExtractGenerics, Nature, Refered},
 };
@@ -24,7 +25,7 @@ pub fn read_fields(fields: &Fields, parent: &mut Nature, parent_context: Context
             }
             let name = field.ident.clone().unwrap();
             parent.bind(Nature::Refered(Refered::Field(
-                name.to_string(),
+                serialize_name(name.to_string()),
                 context.clone(),
                 Box::new(Nature::extract(&field.ty, context.clone())?),
                 context.get_bound(&name.to_string()),
@@ -55,7 +56,7 @@ pub fn read_impl(
             }
             let fn_nature = Nature::extract(&*fn_item, context.clone())?;
             parent.bind(Nature::Refered(Refered::Field(
-                name.clone(),
+                serialize_name(&name),
                 context.clone(),
                 Box::new(fn_nature.clone()),
                 context.get_bound(&name),

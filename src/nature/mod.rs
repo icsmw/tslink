@@ -121,7 +121,7 @@ impl Nature {
                     natures.push(nature);
                     Ok(())
                 }
-                _ => Err(E::NotSupported),
+                _ => Err(E::NotSupported("".to_owned())),
             },
             Self::Composite(othr) => match othr {
                 Composite::HashMap(_, k, v) => {
@@ -181,7 +181,7 @@ impl Nature {
                         Ok(())
                     }
                 }
-                _ => Err(E::NotSupported),
+                _ => Err(E::NotSupported("".to_owned())),
             },
         }
     }

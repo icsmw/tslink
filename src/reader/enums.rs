@@ -1,6 +1,7 @@
 use crate::{
     context::Context,
     error::E,
+    interpreter::serialize_name,
     nature::{Extract, Nature, Refered},
 };
 use syn::{punctuated::Punctuated, token::Comma, Fields};
@@ -39,7 +40,7 @@ pub fn read(
     let not_flat = fields.iter().any(|(_, v)| !v.is_empty());
     for (name, values) in fields {
         parent.bind(Nature::Refered(Refered::EnumVariant(
-            name.to_owned(),
+            serialize_name(&name),
             context.clone(),
             values.clone(),
             !not_flat,

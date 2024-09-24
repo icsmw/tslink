@@ -1,5 +1,5 @@
 import { Group } from "./common";
-import { typesA, typesB, typesC } from "binding";
+import { typesA, typesB, typesC, typesD } from "binding";
 
 const tests = new Group("Primitive Types Tests");
 
@@ -63,5 +63,18 @@ const tests = new Group("Primitive Types Tests");
     test.assert(result.length).msg("Value of result invalid").equal(2);
     test.assert(result[0]).msg("Value of result invalid").equal(1);
     test.assert(result[1]).msg("Value of result invalid").equal(1);
+    test.success();
+}
+
+{
+    const test = tests.test("typesD: value & value");
+    const result = typesD([1, 2, 3]);
+    test.assert(result instanceof Array)
+        .msg("Value of result invalid")
+        .beTrue();
+    test.assert(result.length).msg("Value of result invalid").equal(3);
+    test.assert(result[0]).msg("Value of result invalid").equal(1);
+    test.assert(result[1]).msg("Value of result invalid").equal(2);
+    test.assert(result[2]).msg("Value of result invalid").equal(3);
     test.success();
 }

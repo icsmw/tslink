@@ -5,7 +5,8 @@ use crate::{
     config,
     context::Context,
     error::E,
-    interpreter, modificator,
+    interpreter::{self, serialize_name},
+    modificator,
     nature::{Composite, Extract, ExtractGenerics, Nature, Natures, Refered},
     package,
 };
@@ -23,8 +24,11 @@ pub fn read(item: &mut Item, natures: &mut Natures, mut context: Context) -> Res
                 Err(E::EntityExist(name))
             } else {
                 context.add_generics(Nature::extract_generics(&item_struct.generics)?);
-                let mut nature =
-                    Nature::Refered(Refered::Struct(name.clone(), context.clone(), vec![]));
+                let mut nature = Nature::Refered(Refered::Struct(
+                    serialize_name(&name),
+                    context.clone(),
+                    vec![],
+                ));
                 structs::read_fields(fields, &mut nature, context.clone())?;
                 natures.insert(&name, nature)
             }
@@ -37,8 +41,11 @@ pub fn read(item: &mut Item, natures: &mut Natures, mut context: Context) -> Res
             if natures.contains(&name) {
                 Err(E::EntityExist(name))
             } else {
-                let mut nature =
-                    Nature::Refered(Refered::Enum(name.clone(), context.clone(), vec![]));
+                let mut nature = Nature::Refered(Refered::Enum(
+                    serialize_name(&name),
+                    context.clone(),
+                    vec![],
+                ));
                 enums::read(variants, &mut nature, context.clone())?;
                 natures.insert(&name, nature)
             }
@@ -63,7 +70,7 @@ pub fn read(item: &mut Item, natures: &mut Natures, mut context: Context) -> Res
                 let _ = natures.insert(
                     &name,
                     Nature::Refered(Refered::Func(
-                        name.clone(),
+                        serialize_name(&name),
                         context.clone(),
                         Box::new(fn_nature.clone()),
                     )),
@@ -85,7 +92,7 @@ pub fn read(item: &mut Item, natures: &mut Natures, mut context: Context) -> Res
             if let Some(nature) = natures.get_mut(
                 &struct_name,
                 Some(Nature::Refered(Refered::Struct(
-                    struct_name.clone(),
+                    serialize_name(&struct_name),
                     context.clone(),
                     vec![],
                 ))),

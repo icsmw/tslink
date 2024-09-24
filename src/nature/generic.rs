@@ -1,6 +1,7 @@
 use crate::{
     context::Context,
     error::E,
+    interpreter::serialize_name,
     nature::{types, Composite, Extract, Nature, OriginType, Refered},
 };
 use syn::{
@@ -43,7 +44,7 @@ impl ExtractGeneric<&TraitBound> for Nature {
                     }
                 };
                 return Ok(Some(Nature::Refered(Refered::Generic(
-                    generic_ref,
+                    serialize_name(generic_ref),
                     Box::new(Nature::Composite(Composite::Func(
                         OriginType::from(tr.clone()),
                         fn_args,

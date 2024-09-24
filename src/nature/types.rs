@@ -1,6 +1,7 @@
 use crate::{
     context::Context,
     error::E,
+    interpreter::serialize_name,
     nature::{Composite, Nature, OriginType, Primitive, Refered},
 };
 use syn::{
@@ -48,7 +49,7 @@ impl Extract<&GenericArgument> for Nature {
     fn extract(arg: &GenericArgument, context: Context) -> Result<Nature, E> {
         match arg {
             GenericArgument::Type(ty) => Nature::extract(ty, context),
-            _ => Err(E::NotSupported),
+            _ => Err(E::NotSupported("".to_owned())),
         }
     }
 }
@@ -57,12 +58,20 @@ impl Extract<&Ident> for Nature {
     fn extract(ident: &Ident, context: Context) -> Result<Nature, E> {
         let origin = ident.to_string();
         Ok(match origin.as_str() {
-            "u8" | "u16" | "u32" | "i8" | "i16" | "i32" | "u64" | "i64" | "usize" => {
+            "u8" | "u16" | "u32" | "i8" | "i16" | "i32" | "f16" | "f32" | "f64" => {
                 Nature::Primitive(Primitive::Number(OriginType::from(ident.clone())))
+            }
+            "u64" | "u128" | "i64" | "i128" | "usize" | "isize" => {
+                Nature::Primitive(Primitive::BigInt(OriginType::from(ident.clone())))
             }
             "bool" => Nature::Primitive(Primitive::Boolean(OriginType::from(ident.clone()))),
             "String" => Nature::Primitive(Primitive::String(OriginType::from(ident.clone()))),
-            a => Nature::Refered(Refered::Ref(a.to_string(), Some(context.clone()))),
+            "f128" => {
+                return Err(E::NotSupported(
+                    "Type <f128> doesn't have direct equalent in JavaScript".to_owned(),
+                ))
+            }
+            a => Nature::Refered(Refered::Ref(serialize_name(a), Some(context.clone()))),
         })
     }
 }
@@ -74,7 +83,7 @@ impl Extract<&Punctuated<PathSegment, PathSep>> for Nature {
                 "Not supported Other Type for more than 1 PathSegment",
             )));
         }
-        if let Some(segment) = segments.first() {
+        if let Some(segment) = segments.last() {
             let mut ty = match segment.ident.to_string().as_str() {
                 "Vec" => Nature::Composite(Composite::Vec(OriginType::from(segment.clone()), None)),
                 "HashMap" => Nature::Composite(Composite::HashMap(
@@ -93,18 +102,16 @@ impl Extract<&Punctuated<PathSegment, PathSep>> for Nature {
                     false,
                 )),
                 _ => {
-                    return Err(E::Parsing(String::from(
-                        "Only Vec, HashMap, Option and Result are supported",
-                    )))
+                    return Err(E::Parsing(format!(
+                        "Only Vec, HashMap, Option and Result are supported: {}",
+                        quote::quote! { #segment }
+                    )));
                 }
             };
-            match &segment.arguments {
-                PathArguments::AngleBracketed(args) => {
-                    for arg in args.args.iter() {
-                        ty.bind(Nature::extract(arg, context.clone())?)?;
-                    }
+            if let PathArguments::AngleBracketed(args) = &segment.arguments {
+                for arg in args.args.iter() {
+                    ty.bind(Nature::extract(arg, context.clone())?)?;
                 }
-                _ => return Err(E::NotSupported),
             }
             Ok(ty)
         } else {
@@ -143,7 +150,7 @@ impl Extract<&Type> for Nature {
                 }
             }
             Type::Tuple(type_tuple) => Nature::extract(type_tuple, context),
-            _ => Err(E::NotSupported),
+            _ => Err(E::NotSupported("".to_owned())),
         }
     }
 }
@@ -165,7 +172,7 @@ impl Extract<&ImplItemFn> for Nature {
                     return Err(E::Parsing(String::from("Cannot find ident for FnArg")));
                 };
                 args.push(Nature::Refered(Refered::FuncArg(
-                    arg_name.clone(),
+                    serialize_name(&arg_name),
                     context.clone(),
                     Box::new(Nature::extract(*ty.ty.clone(), context.clone())?),
                     context.get_bound(&arg_name),
@@ -203,7 +210,7 @@ impl Extract<&ItemFn> for Nature {
                     return Err(E::Parsing(String::from("Cannot find ident for FnArg")));
                 };
                 args.push(Nature::Refered(Refered::FuncArg(
-                    arg_name.clone(),
+                    serialize_name(&arg_name),
                     context.clone(),
                     Box::new(Nature::extract(*ty.ty.clone(), context.clone())?),
                     context.get_bound(&arg_name),

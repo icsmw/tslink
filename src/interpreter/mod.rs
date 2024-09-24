@@ -17,6 +17,14 @@ use std::{
     path::PathBuf,
 };
 
+pub fn serialize_name<S: AsRef<str>>(s: S) -> String {
+    if s.as_ref().starts_with("r#") {
+        s.as_ref().replace("r#", "")
+    } else {
+        s.as_ref().to_string()
+    }
+}
+
 pub fn create_node_located_file(
     file_name: &str,
     dropped: &mut HashSet<PathBuf>,

@@ -1,4 +1,8 @@
+#!/bin/sh
+set -e
+
 export TSLINK_BUILD=true
+
 cargo test -- --nocapture
 cd ./tests/callbacks
 yarn run test

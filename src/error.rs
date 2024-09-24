@@ -13,8 +13,8 @@ pub enum E {
     IO(#[from] std::io::Error),
     #[error("LexError error")]
     LexError(#[from] proc_macro2::LexError),
-    #[error("Not supported. Try to ignore it with #[tslink(ignore)]")]
-    NotSupported,
+    #[error("Not supported. Try to ignore it with #[tslink(ignore)]: {0}")]
+    NotSupported(String),
     #[error("Fail to identify name of entity")]
     FailIdentify,
     #[error("Fail to find parent struct. Make sure attribute #[tslink] had been added on struct declaration")]
