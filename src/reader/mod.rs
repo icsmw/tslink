@@ -26,7 +26,7 @@ pub fn read(
             let ItemStruct { ident, fields, .. } = item_struct;
             let name = ident.to_string();
             if natures.contains(&name) {
-                Err(E::EntityExist(name))
+                Err(E::EntityExist(quote::quote! { #item }.to_string()))
             } else {
                 context.add_generics(Nature::extract_generics(&item_struct.generics, cfg)?);
                 let mut nature = Nature::Refered(Refered::Struct(

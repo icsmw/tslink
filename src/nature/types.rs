@@ -116,13 +116,6 @@ impl Extract<&Punctuated<PathSegment, PathSep>> for Nature {
                     false,
                 )),
                 _ => Nature::extract(&segment.ident, context.clone(), cfg)?,
-                // {
-                //     Nature::Refered(Refered::Ref(serialize_name(name), Some(context.clone())))
-                //     // return Err(E::Parsing(format!(
-                //     //     "Only Vec, HashMap, Option and Result are supported: {}",
-                //     //     quote::quote! { #segment }
-                //     // )));
-                // }
             };
             if let PathArguments::AngleBracketed(args) = &segment.arguments {
                 for arg in args.args.iter() {
