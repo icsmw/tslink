@@ -1,3 +1,9 @@
+# 0.1.6 (24.20.2024)
+
+## Changes
+
+- Provide configuration setting to control applying BigInt type 
+
 # 0.1.5 (24.20.2024)
 
 ## Fixes

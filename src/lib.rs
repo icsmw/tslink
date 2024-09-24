@@ -103,7 +103,8 @@ pub fn tslink(args: TokenStream, item: TokenStream) -> TokenStream {
     } else {
         let mut natures = NATURES.write().expect("Get access to list of entities");
         let mut item = parse_macro_input!(item as Item);
-        if let Err(err) = reader::read(&mut item, &mut natures, context) {
+        let cfg = CONFIG.read().expect("Read configuration");
+        if let Err(err) = reader::read(&mut item, &mut natures, context, &cfg) {
             let str_err = err.to_string();
             return TryInto::<syn::Error>::try_into(err)
                 .unwrap_or(syn::Error::new_spanned(item_ref.to_string(), str_err))

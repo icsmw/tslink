@@ -18,6 +18,7 @@ pub struct Config {
     pub node_mod_dist: Option<PathBuf>,
     pub snake_case_naming: HashSet<SnakeCaseNaming>,
     pub exception_suppression: bool,
+    pub int_over_32_as_big_int: bool,
 }
 
 impl Config {
@@ -54,7 +55,8 @@ impl Config {
                 }
             });
         }
-        self.exception_suppression = cfg.exception_suppression.unwrap_or(false);
+        self.exception_suppression = cfg.exception_suppression;
+        self.int_over_32_as_big_int = cfg.int_over_32_as_big_int;
         Ok(())
     }
 

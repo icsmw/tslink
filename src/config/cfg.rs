@@ -41,17 +41,20 @@ impl fmt::Display for SnakeCaseNaming {
     }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Default)]
 pub struct Cfg {
     pub node: Option<String>,
     pub snake_case_naming: Option<String>,
-    pub exception_suppression: Option<bool>,
+    pub exception_suppression: bool,
+    pub int_over_32_as_big_int: bool,
 }
 
 impl Cfg {
     pub fn new(cargo: &Table) -> Self {
-        if let Some(settings) = cargo.get(TSLINK_CARGO_KEY).and_then(|v| v.as_table()) {
-            Cfg {
+        cargo
+            .get(TSLINK_CARGO_KEY)
+            .and_then(|v| v.as_table())
+            .map(|settings| Cfg {
                 node: settings
                     .get("node")
                     .and_then(|v| v.as_str().map(|v| v.to_string())),
@@ -60,14 +63,13 @@ impl Cfg {
                     .and_then(|v| v.as_str().map(|v| v.to_string())),
                 exception_suppression: settings
                     .get("exception_suppression")
-                    .and_then(|v| v.as_bool()),
-            }
-        } else {
-            Cfg {
-                node: None,
-                snake_case_naming: None,
-                exception_suppression: None,
-            }
-        }
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or_default(),
+                int_over_32_as_big_int: settings
+                    .get("int_over_32_as_big_int")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or_default(),
+            })
+            .unwrap_or_default()
     }
 }

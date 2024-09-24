@@ -1,4 +1,5 @@
 use crate::{
+    config::Config,
     context::Context,
     error::E,
     interpreter::serialize_name,
@@ -10,11 +11,19 @@ use syn::{
 };
 
 pub trait ExtractGeneric<T> {
-    fn extract_generic(t: T, generic_ref: Option<String>) -> Result<Option<Nature>, E>;
+    fn extract_generic(
+        t: T,
+        generic_ref: Option<String>,
+        cfg: &Config,
+    ) -> Result<Option<Nature>, E>;
 }
 
 impl ExtractGeneric<&TraitBound> for Nature {
-    fn extract_generic(tr: &TraitBound, generic_ref: Option<String>) -> Result<Option<Nature>, E> {
+    fn extract_generic(
+        tr: &TraitBound,
+        generic_ref: Option<String>,
+        cfg: &Config,
+    ) -> Result<Option<Nature>, E> {
         let generic_ref = if let Some(generic_ref) = generic_ref {
             generic_ref
         } else {
@@ -35,11 +44,11 @@ impl ExtractGeneric<&TraitBound> for Nature {
                     PathArguments::Parenthesized(arg) => {
                         let mut fn_args: Vec<Nature> = vec![];
                         for input in arg.inputs.iter() {
-                            fn_args.push(Nature::extract(input, Context::default())?);
+                            fn_args.push(Nature::extract(input, Context::default(), cfg)?);
                         }
                         (
                             fn_args,
-                            types::get_fn_return(&arg.output, &Context::default(), false)?,
+                            types::get_fn_return(&arg.output, &Context::default(), false, cfg)?,
                         )
                     }
                 };
@@ -63,6 +72,7 @@ impl ExtractGeneric<&TypeParam> for Nature {
     fn extract_generic(
         type_param: &TypeParam,
         _generic_ref: Option<String>,
+        cfg: &Config,
     ) -> Result<Option<Nature>, E> {
         let generic_ref = type_param.ident.to_string();
         for bound in type_param.bounds.iter() {
@@ -74,7 +84,7 @@ impl ExtractGeneric<&TypeParam> for Nature {
                     // Ignore
                 }
                 TypeParamBound::Trait(tr) => {
-                    return Nature::extract_generic(tr, Some(generic_ref));
+                    return Nature::extract_generic(tr, Some(generic_ref), cfg);
                 }
                 _ => {
                     // Ignore
@@ -89,9 +99,10 @@ impl ExtractGeneric<&PredicateType> for Nature {
     fn extract_generic(
         pre_type: &PredicateType,
         _generic_ref: Option<String>,
+        cfg: &Config,
     ) -> Result<Option<Nature>, E> {
         let generic_ref = if let Nature::Refered(Refered::Ref(name, _)) =
-            Nature::extract(&pre_type.bounded_ty, Context::default())?
+            Nature::extract(&pre_type.bounded_ty, Context::default(), cfg)?
         {
             name
         } else {
@@ -108,7 +119,7 @@ impl ExtractGeneric<&PredicateType> for Nature {
                     // Ignore
                 }
                 TypeParamBound::Trait(tr) => {
-                    return Nature::extract_generic(tr, Some(generic_ref));
+                    return Nature::extract_generic(tr, Some(generic_ref), cfg);
                 }
                 _ => {
                     // Ignore
@@ -120,17 +131,17 @@ impl ExtractGeneric<&PredicateType> for Nature {
 }
 
 pub trait ExtractGenerics<T> {
-    fn extract_generics(t: T) -> Result<Vec<Nature>, E>;
+    fn extract_generics(t: T, cfg: &Config) -> Result<Vec<Nature>, E>;
 }
 
 impl ExtractGenerics<&Generics> for Nature {
-    fn extract_generics(generics: &Generics) -> Result<Vec<Nature>, E> {
+    fn extract_generics(generics: &Generics, cfg: &Config) -> Result<Vec<Nature>, E> {
         let mut natures = vec![];
         for generic in generics.params.iter() {
             match &generic {
                 GenericParam::Const(_) => {}
                 GenericParam::Type(ty) => {
-                    if let Some(generic) = Nature::extract_generic(ty, None)? {
+                    if let Some(generic) = Nature::extract_generic(ty, None, cfg)? {
                         natures.push(generic);
                     }
                 }
@@ -141,7 +152,7 @@ impl ExtractGenerics<&Generics> for Nature {
             for generic in where_clause.predicates.iter() {
                 match generic {
                     WherePredicate::Type(ty) => {
-                        if let Some(generic) = Nature::extract_generic(ty, None)? {
+                        if let Some(generic) = Nature::extract_generic(ty, None, cfg)? {
                             natures.push(generic);
                         }
                     }

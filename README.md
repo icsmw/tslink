@@ -95,6 +95,8 @@ export interface TestingA {
 }
 ```
 
+> **Note**. Actually type `u64`, `i64`, `usize` and `isize` should be represented as `BigInt`, but in most cases `number` is used instead. To make your code safe, it's better to represent it as `BigInt`. To do it, you can use the setting `int_over_32_as_big_int` in `Cargo.toml` file (section `[tslink]`) with the value `true` (default - `false`).
+
 ## Structs
 
 `tslint` represents struct by default as an interface, but it also can be represented as `class`. Class representation should be used in case if struct has some methods and methods are propagated into the node module.
@@ -746,10 +748,15 @@ path = "rs/lib.rs"
 [tslink]
 # [required] path to native node module
 node = "./dist/index.node"
+
 # [optional] global rule of renaming (can be: "method" or "fields" or both - "methods,fields")
 snake_case_naming = "methods"
+
 # [optional] global rule for javascript exception suppression
 exception_suppression = true
+
+# [optional] in true will use <BigInt> (instead <number>) for <u64>, <i64>, <usize> and <isize> (default - false)
+int_over_32_as_big_int = true
 ```
 
 | Field                                 | Required | Values                                        | Description                                      |
@@ -757,6 +764,7 @@ exception_suppression = true
 | `node = "path_to_native_node_module"` | yes      | path to file                                  | path to native node module                       |
 | `snake_case_naming = "rule"`          |          | "`methods`", "`fields`" or "`methods,fields`" | global rule of renaming                          |
 | `exception_suppression = true`        |          | `bool`                                        | global rule for javascript exception suppression |
+| `int_over_32_as_big_int = true` | | `bool` | using of BigInt type |
 
 ## QA and Troubleshooting
 

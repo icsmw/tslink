@@ -2,7 +2,7 @@ mod enums;
 mod structs;
 
 use crate::{
-    config,
+    config::{self, Config},
     context::Context,
     error::E,
     interpreter::{self, serialize_name},
@@ -13,7 +13,12 @@ use crate::{
 use std::ops::Deref;
 use syn::{Item, ItemEnum, ItemStruct};
 
-pub fn read(item: &mut Item, natures: &mut Natures, mut context: Context) -> Result<(), E> {
+pub fn read(
+    item: &mut Item,
+    natures: &mut Natures,
+    mut context: Context,
+    cfg: &Config,
+) -> Result<(), E> {
     let io_allowed = config::get()?.io_allowed;
     let item_ref = item.clone();
     match item {
@@ -23,13 +28,13 @@ pub fn read(item: &mut Item, natures: &mut Natures, mut context: Context) -> Res
             if natures.contains(&name) {
                 Err(E::EntityExist(name))
             } else {
-                context.add_generics(Nature::extract_generics(&item_struct.generics)?);
+                context.add_generics(Nature::extract_generics(&item_struct.generics, cfg)?);
                 let mut nature = Nature::Refered(Refered::Struct(
                     serialize_name(&name),
                     context.clone(),
                     vec![],
                 ));
-                structs::read_fields(fields, &mut nature, context.clone())?;
+                structs::read_fields(fields, &mut nature, context.clone(), cfg)?;
                 natures.insert(&name, nature)
             }
         }
@@ -46,7 +51,7 @@ pub fn read(item: &mut Item, natures: &mut Natures, mut context: Context) -> Res
                     context.clone(),
                     vec![],
                 ));
-                enums::read(variants, &mut nature, context.clone())?;
+                enums::read(variants, &mut nature, context.clone(), cfg)?;
                 natures.insert(&name, nature)
             }
         }
@@ -54,9 +59,9 @@ pub fn read(item: &mut Item, natures: &mut Natures, mut context: Context) -> Res
             if structs::is_method(item_fn) {
                 return Ok(());
             }
-            context.add_generics(Nature::extract_generics(&item_fn.sig.generics)?);
+            context.add_generics(Nature::extract_generics(&item_fn.sig.generics, cfg)?);
             if let Nature::Composite(Composite::Func(_, _, _, _, constructor)) =
-                Nature::extract(&*item_fn, context.clone())?
+                Nature::extract(&*item_fn, context.clone(), cfg)?
             {
                 if constructor {
                     return Ok(());
@@ -66,7 +71,7 @@ pub fn read(item: &mut Item, natures: &mut Natures, mut context: Context) -> Res
             if natures.contains(&name) {
                 Err(E::EntityExist(name))
             } else {
-                let fn_nature = Nature::extract(&*item_fn, context.clone())?;
+                let fn_nature = Nature::extract(&*item_fn, context.clone(), cfg)?;
                 let _ = natures.insert(
                     &name,
                     Nature::Refered(Refered::Func(
@@ -103,6 +108,7 @@ pub fn read(item: &mut Item, natures: &mut Natures, mut context: Context) -> Res
                         nature,
                         struct_context.clone(),
                         context.clone(),
+                        cfg,
                     )
                 } else {
                     Err(E::NotFoundStruct)

@@ -1,4 +1,5 @@
 use crate::{
+    config::Config,
     context::Context,
     error::E,
     interpreter::serialize_name,
@@ -13,6 +14,7 @@ pub fn get_fn_return(
     output: &ReturnType,
     context: &Context,
     asyncness: bool,
+    cfg: &Config,
 ) -> Result<Option<Box<Nature>>, E> {
     Ok(match output {
         ReturnType::Default => Some(Box::new(Nature::Composite(Composite::Result(
@@ -23,7 +25,7 @@ pub fn get_fn_return(
             asyncness,
         )))),
         ReturnType::Type(_, ty) => {
-            let return_ty = Nature::extract(*ty.clone(), context.clone())?;
+            let return_ty = Nature::extract(*ty.clone(), context.clone(), cfg)?;
             Some(
                 if let Nature::Composite(Composite::Result(a, b, c, d, _)) = return_ty {
                     Box::new(Nature::Composite(Composite::Result(a, b, c, d, asyncness)))
@@ -42,47 +44,59 @@ pub fn get_fn_return(
 }
 
 pub trait Extract<T> {
-    fn extract(t: T, context: Context) -> Result<Nature, E>;
+    fn extract(t: T, context: Context, cfg: &Config) -> Result<Nature, E>;
 }
 
 impl Extract<&GenericArgument> for Nature {
-    fn extract(arg: &GenericArgument, context: Context) -> Result<Nature, E> {
+    fn extract(arg: &GenericArgument, context: Context, cfg: &Config) -> Result<Nature, E> {
         match arg {
-            GenericArgument::Type(ty) => Nature::extract(ty, context),
+            GenericArgument::Type(ty) => Nature::extract(ty, context, cfg),
             _ => Err(E::NotSupported("".to_owned())),
         }
     }
 }
 
 impl Extract<&Ident> for Nature {
-    fn extract(ident: &Ident, context: Context) -> Result<Nature, E> {
+    fn extract(ident: &Ident, context: Context, cfg: &Config) -> Result<Nature, E> {
         let origin = ident.to_string();
-        Ok(match origin.as_str() {
-            "u8" | "u16" | "u32" | "i8" | "i16" | "i32" | "f16" | "f32" | "f64" => {
+        Ok(match (origin.as_str(), cfg.int_over_32_as_big_int) {
+            ("u8" | "u16" | "u32" | "i8" | "i16" | "i32" | "f16" | "f32" | "f64", true) => {
                 Nature::Primitive(Primitive::Number(OriginType::from(ident.clone())))
             }
-            "u64" | "u128" | "i64" | "i128" | "usize" | "isize" => {
+            ("u64" | "u128" | "i64" | "i128" | "usize" | "isize", true) => {
                 Nature::Primitive(Primitive::BigInt(OriginType::from(ident.clone())))
             }
-            "bool" => Nature::Primitive(Primitive::Boolean(OriginType::from(ident.clone()))),
-            "String" => Nature::Primitive(Primitive::String(OriginType::from(ident.clone()))),
-            "f128" => {
+            (
+                "u8" | "u16" | "u32" | "u64" | "usize" | "i8" | "i16" | "i32" | "i64" | "isize"
+                | "f16" | "f32" | "f64",
+                false,
+            ) => Nature::Primitive(Primitive::Number(OriginType::from(ident.clone()))),
+            ("u128" | "i128", false) => {
+                Nature::Primitive(Primitive::BigInt(OriginType::from(ident.clone())))
+            }
+            ("bool", ..) => Nature::Primitive(Primitive::Boolean(OriginType::from(ident.clone()))),
+            ("String", ..) => Nature::Primitive(Primitive::String(OriginType::from(ident.clone()))),
+            ("f128", ..) => {
                 return Err(E::NotSupported(
                     "Type <f128> doesn't have direct equalent in JavaScript".to_owned(),
                 ))
             }
-            a => Nature::Refered(Refered::Ref(serialize_name(a), Some(context.clone()))),
+            (a, ..) => Nature::Refered(Refered::Ref(serialize_name(a), Some(context.clone()))),
         })
     }
 }
 
 impl Extract<&Punctuated<PathSegment, PathSep>> for Nature {
-    fn extract(segments: &Punctuated<PathSegment, PathSep>, context: Context) -> Result<Nature, E> {
-        if segments.len() > 1 {
-            return Err(E::Parsing(String::from(
-                "Not supported Other Type for more than 1 PathSegment",
-            )));
-        }
+    fn extract(
+        segments: &Punctuated<PathSegment, PathSep>,
+        context: Context,
+        cfg: &Config,
+    ) -> Result<Nature, E> {
+        // if segments.len() > 1 {
+        //     return Err(E::Parsing(String::from(
+        //         "Not supported Other Type for more than 1 PathSegment",
+        //     )));
+        // }
         if let Some(segment) = segments.last() {
             let mut ty = match segment.ident.to_string().as_str() {
                 "Vec" => Nature::Composite(Composite::Vec(OriginType::from(segment.clone()), None)),
@@ -101,16 +115,18 @@ impl Extract<&Punctuated<PathSegment, PathSep>> for Nature {
                     context.exception_suppression()?,
                     false,
                 )),
-                _ => {
-                    return Err(E::Parsing(format!(
-                        "Only Vec, HashMap, Option and Result are supported: {}",
-                        quote::quote! { #segment }
-                    )));
-                }
+                _ => Nature::extract(&segment.ident, context.clone(), cfg)?,
+                // {
+                //     Nature::Refered(Refered::Ref(serialize_name(name), Some(context.clone())))
+                //     // return Err(E::Parsing(format!(
+                //     //     "Only Vec, HashMap, Option and Result are supported: {}",
+                //     //     quote::quote! { #segment }
+                //     // )));
+                // }
             };
             if let PathArguments::AngleBracketed(args) = &segment.arguments {
                 for arg in args.args.iter() {
-                    ty.bind(Nature::extract(arg, context.clone())?)?;
+                    ty.bind(Nature::extract(arg, context.clone(), cfg)?)?;
                 }
             }
             Ok(ty)
@@ -123,7 +139,7 @@ impl Extract<&Punctuated<PathSegment, PathSep>> for Nature {
 }
 
 impl Extract<&TypeTuple> for Nature {
-    fn extract(ty: &TypeTuple, context: Context) -> Result<Nature, E> {
+    fn extract(ty: &TypeTuple, context: Context, cfg: &Config) -> Result<Nature, E> {
         if ty.elems.is_empty() {
             Ok(Nature::Composite(Composite::Undefined(OriginType::from(
                 ty.clone(),
@@ -132,7 +148,7 @@ impl Extract<&TypeTuple> for Nature {
             let mut nature =
                 Nature::Composite(Composite::Tuple(OriginType::from(ty.clone()), vec![]));
             for element in ty.elems.iter() {
-                nature.bind(Nature::extract(element, context.clone())?)?;
+                nature.bind(Nature::extract(element, context.clone(), cfg)?)?;
             }
             Ok(nature)
         }
@@ -140,29 +156,29 @@ impl Extract<&TypeTuple> for Nature {
 }
 
 impl Extract<&Type> for Nature {
-    fn extract(ty: &Type, context: Context) -> Result<Nature, E> {
+    fn extract(ty: &Type, context: Context, cfg: &Config) -> Result<Nature, E> {
         match ty {
             Type::Path(type_path) => {
                 if let Some(ident) = type_path.path.get_ident() {
-                    Nature::extract(ident, context)
+                    Nature::extract(ident, context, cfg)
                 } else {
-                    Nature::extract(&type_path.path.segments, context)
+                    Nature::extract(&type_path.path.segments, context, cfg)
                 }
             }
-            Type::Tuple(type_tuple) => Nature::extract(type_tuple, context),
+            Type::Tuple(type_tuple) => Nature::extract(type_tuple, context, cfg),
             _ => Err(E::NotSupported("".to_owned())),
         }
     }
 }
 
 impl Extract<Type> for Nature {
-    fn extract(ty: Type, context: Context) -> Result<Nature, E> {
-        Self::extract(&ty, context)
+    fn extract(ty: Type, context: Context, cfg: &Config) -> Result<Nature, E> {
+        Self::extract(&ty, context, cfg)
     }
 }
 
 impl Extract<&ImplItemFn> for Nature {
-    fn extract(fn_item: &ImplItemFn, context: Context) -> Result<Nature, E> {
+    fn extract(fn_item: &ImplItemFn, context: Context, cfg: &Config) -> Result<Nature, E> {
         let mut args = vec![];
         for fn_arg in fn_item.sig.inputs.iter() {
             if let FnArg::Typed(ty) = fn_arg {
@@ -174,7 +190,7 @@ impl Extract<&ImplItemFn> for Nature {
                 args.push(Nature::Refered(Refered::FuncArg(
                     serialize_name(&arg_name),
                     context.clone(),
-                    Box::new(Nature::extract(*ty.ty.clone(), context.clone())?),
+                    Box::new(Nature::extract(*ty.ty.clone(), context.clone(), cfg)?),
                     context.get_bound(&arg_name),
                 )));
             }
@@ -183,6 +199,7 @@ impl Extract<&ImplItemFn> for Nature {
             &fn_item.sig.output,
             &context,
             fn_item.sig.asyncness.is_some(),
+            cfg,
         )?;
         let constructor = if let Some(Nature::Refered(Refered::Ref(re, _))) = out.as_deref() {
             re == "Self"
@@ -200,7 +217,7 @@ impl Extract<&ImplItemFn> for Nature {
 }
 
 impl Extract<&ItemFn> for Nature {
-    fn extract(fn_item: &ItemFn, context: Context) -> Result<Nature, E> {
+    fn extract(fn_item: &ItemFn, context: Context, cfg: &Config) -> Result<Nature, E> {
         let mut args = vec![];
         for fn_arg in fn_item.sig.inputs.iter() {
             if let FnArg::Typed(ty) = fn_arg {
@@ -212,7 +229,7 @@ impl Extract<&ItemFn> for Nature {
                 args.push(Nature::Refered(Refered::FuncArg(
                     serialize_name(&arg_name),
                     context.clone(),
-                    Box::new(Nature::extract(*ty.ty.clone(), context.clone())?),
+                    Box::new(Nature::extract(*ty.ty.clone(), context.clone(), cfg)?),
                     context.get_bound(&arg_name),
                 )));
             }
@@ -221,6 +238,7 @@ impl Extract<&ItemFn> for Nature {
             &fn_item.sig.output,
             &context,
             fn_item.sig.asyncness.is_some(),
+            cfg,
         )?;
         let constructor = if let Some(Nature::Refered(Refered::Ref(re, _))) = out.as_deref() {
             re == "Self"
