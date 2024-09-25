@@ -13,12 +13,28 @@ pub use origin::OriginType;
 pub use types::Extract;
 
 use crate::{context::Context, error::E};
-use std::{
-    collections::{hash_map::Iter, HashMap},
-    ops::Deref,
-};
+use std::{collections::HashMap, ops::Deref};
 
-pub struct Natures(HashMap<String, Nature>);
+pub struct NatureDef {
+    pub nature: Nature,
+    pub module: Option<String>,
+}
+
+impl NatureDef {
+    pub fn new(nature: Nature, module: Option<String>) -> Self {
+        Self { nature, module }
+    }
+    pub fn get_mut(&mut self) -> &mut Nature {
+        &mut self.nature
+    }
+    pub fn get(&self) -> &Nature {
+        &self.nature
+    }
+    pub fn extract(&self) -> Nature {
+        self.nature.clone()
+    }
+}
+pub struct Natures(HashMap<String, NatureDef>);
 
 impl Natures {
     pub fn new() -> Self {
@@ -48,36 +64,54 @@ impl Natures {
     pub fn contains(&self, name: &str) -> bool {
         self.0.contains_key(name)
     }
-    pub fn insert(&mut self, name: &str, nature: Nature) -> Result<(), E> {
+    pub fn insert(&mut self, name: &str, nature: Nature, module: Option<String>) -> Result<(), E> {
         if self.contains(name) {
             Err(E::EntityExist(name.to_owned()))
         } else {
-            let _ = self.0.insert(name.to_owned(), nature);
+            let _ = self
+                .0
+                .insert(name.to_owned(), NatureDef::new(nature, module));
             Ok(())
         }
     }
-
-    pub fn get_mut(&mut self, name: &str, defaults: Option<Nature>) -> Option<&mut Nature> {
-        if let (exists, Some(defaults)) = (self.0.contains_key(name), defaults) {
+    pub fn get_module_of(&self, name: &str) -> Option<String> {
+        self.0.get(name).and_then(|n| n.module.clone())
+    }
+    pub fn exists_in_module(&self, name: &str, module: &str) -> bool {
+        self.0
+            .get(name)
+            .map(|n| n.module.as_ref().map(|m| m == module).unwrap_or_default())
+            .unwrap_or_default()
+    }
+    pub fn get_mut(
+        &mut self,
+        name: &str,
+        default_nature: Option<Nature>,
+        default_module: Option<String>,
+    ) -> Option<&mut Nature> {
+        if let (exists, Some(default_nature)) = (self.0.contains_key(name), default_nature) {
             if !exists {
-                let _ = self.0.insert(name.to_owned(), defaults);
+                let _ = self.0.insert(
+                    name.to_owned(),
+                    NatureDef::new(default_nature, default_module),
+                );
             }
         }
-        self.0.get_mut(name)
+        self.0.get_mut(name).map(|n| n.get_mut())
     }
 
     pub fn filter(&self, filter: fn(&Nature) -> bool) -> Vec<Nature> {
         let mut natures: Vec<Nature> = vec![];
         for (_, n) in self.0.iter() {
-            if filter(n) {
-                natures.push(n.clone());
+            if filter(n.get()) {
+                natures.push(n.extract());
             }
         }
         natures
     }
 
-    pub fn iter(&self) -> Iter<'_, std::string::String, Nature> {
-        self.0.iter()
+    pub fn iter(&self) -> impl Iterator<Item = (&String, &Nature)> {
+        self.0.iter().map(|(k, n)| (k, n.get()))
     }
 }
 

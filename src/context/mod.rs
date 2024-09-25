@@ -46,6 +46,16 @@ impl Context {
         }
     }
 
+    pub fn get_module(&self) -> Option<String> {
+        self.inputs.iter().find_map(|inp| {
+            if let Input::Module(module) = inp {
+                Some(module.to_owned())
+            } else {
+                None
+            }
+        })
+    }
+
     pub fn add_generics(&mut self, generics: Vec<Nature>) {
         generics.iter().for_each(|n| {
             if let Nature::Refered(Refered::Generic(k, n)) = n {
@@ -244,8 +254,9 @@ impl Parse for Context {
                             let value = value.value();
                             let mut input = match Input::try_from(left.to_string().as_ref()) {
                                 Ok(input) => match input {
-                                    Input::Rename(_) => Some(Input::Rename(value)),
-                                    Input::Target(_) => {
+                                    Input::Rename(..) => Some(Input::Rename(value)),
+                                    Input::Module(..) => Some(Input::Module(value)),
+                                    Input::Target(..) => {
                                         let mut targets: Vec<(Target, PathBuf)> = vec![];
                                         for s in value.split(';') {
                                             let path = PathBuf::from(s.trim());

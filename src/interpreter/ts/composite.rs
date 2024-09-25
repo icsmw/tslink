@@ -1,26 +1,23 @@
 use super::Interpreter;
 use crate::{
     error::E,
-    interpreter::Offset,
+    interpreter::{ts::Writer, Offset},
     nature::{Composite, Nature, Natures, Refered, TypeAsString},
-};
-use std::{
-    fs::File,
-    io::{BufWriter, Write},
 };
 
 impl Interpreter for Composite {
     fn reference(
         &self,
         natures: &Natures,
-        buf: &mut BufWriter<File>,
+        buf: &mut Writer,
         offset: Offset,
+        parent: Option<String>,
     ) -> Result<(), E> {
         match self {
             Self::Vec(_, ty) => {
                 if let Some(ty) = ty {
-                    ty.reference(natures, buf, offset)?;
-                    buf.write_all("[]".as_bytes())?;
+                    ty.reference(natures, buf, offset, parent)?;
+                    buf.push("[]");
                 } else {
                     return Err(E::Parsing(String::from(
                         "Type Vec doesn't include reference to type",
@@ -29,11 +26,11 @@ impl Interpreter for Composite {
             }
             Self::HashMap(_, key, ty) => {
                 if let (Some(key), Some(ty)) = (key, ty) {
-                    buf.write_all("Map<".as_bytes())?;
-                    key.reference(natures, buf, offset.clone())?;
-                    buf.write_all(", ".as_bytes())?;
-                    ty.reference(natures, buf, offset)?;
-                    buf.write_all(">".as_bytes())?;
+                    buf.push("Map<");
+                    key.reference(natures, buf, offset.clone(), parent.clone())?;
+                    buf.push(", ");
+                    ty.reference(natures, buf, offset, parent)?;
+                    buf.push(">");
                 } else {
                     return Err(E::Parsing(String::from(
                         "Type HashMap doesn't include reference to type or key",
@@ -41,19 +38,19 @@ impl Interpreter for Composite {
                 }
             }
             Self::Func(_, args, out, asyncness, constructor) => {
-                buf.write_all("(".as_bytes())?;
+                buf.push("(");
                 let mut generic = false;
                 for (i, nature) in args.iter().enumerate() {
                     if let Nature::Refered(Refered::FuncArg(name, _context, nature, _)) = nature {
-                        buf.write_all(format!("{name}: ").as_bytes())?;
-                        nature.reference(natures, buf, offset.clone())?;
+                        buf.push(format!("{name}: "));
+                        nature.reference(natures, buf, offset.clone(), parent.clone())?;
                     } else {
                         generic = true;
-                        buf.write_all(format!("arg{i}: ").as_bytes())?;
-                        nature.reference(natures, buf, offset.clone())?;
+                        buf.push(format!("arg{i}: "));
+                        nature.reference(natures, buf, offset.clone(), parent.clone())?;
                     }
                     if i < args.len() - 1 {
-                        buf.write_all(", ".as_bytes())?;
+                        buf.push(", ");
                     }
                 }
                 if *constructor && generic {
@@ -62,37 +59,37 @@ impl Interpreter for Composite {
                     )));
                 }
                 if *constructor {
-                    buf.write_all(")".as_bytes())?;
+                    buf.push(")");
                     return Ok(());
                 }
-                buf.write_all(format!("){} ", if generic { " =>" } else { ":" }).as_bytes())?;
+                buf.push(format!("){} ", if generic { " =>" } else { ":" }));
                 if *asyncness {
-                    buf.write_all("Promise<".as_bytes())?;
+                    buf.push("Promise<");
                 }
                 if let Some(out) = out {
-                    out.reference(natures, buf, offset.clone())?;
+                    out.reference(natures, buf, offset.clone(), parent)?;
                 } else {
-                    buf.write_all("void".as_bytes())?;
+                    buf.push("void");
                 }
                 if *asyncness {
-                    buf.write_all(">".as_bytes())?;
+                    buf.push(">");
                 }
             }
             Self::Tuple(_, tys) => {
-                buf.write_all("[".as_bytes())?;
+                buf.push("[");
                 let last = tys.len() - 1;
                 for (i, ty) in tys.iter().enumerate() {
-                    ty.reference(natures, buf, offset.clone())?;
+                    ty.reference(natures, buf, offset.clone(), parent.clone())?;
                     if i < last {
-                        buf.write_all(", ".as_bytes())?;
+                        buf.push(", ");
                     }
                 }
-                buf.write_all("]".as_bytes())?;
+                buf.push("]");
             }
             Self::Option(_, ty) => {
                 if let Some(ty) = ty {
-                    ty.reference(natures, buf, offset)?;
-                    buf.write_all(" | null".as_bytes())?;
+                    ty.reference(natures, buf, offset, parent)?;
+                    buf.push(" | null");
                 } else {
                     return Err(E::Parsing(String::from(
                         "Type Option doesn't include reference to type",
@@ -101,11 +98,11 @@ impl Interpreter for Composite {
             }
             Self::Result(_, res, err, exception_suppression, asyncness) => {
                 if let Some(res) = res {
-                    res.reference(natures, buf, offset.clone())?;
+                    res.reference(natures, buf, offset.clone(), parent)?;
                 }
                 if *asyncness {
                     if res.is_none() {
-                        buf.write_all("void".as_bytes())?;
+                        buf.push("void");
                     }
                     return Ok(());
                 }
@@ -115,17 +112,17 @@ impl Interpreter for Composite {
                     "Error".to_owned()
                 };
                 if res.is_some() && *exception_suppression {
-                    buf.write_all(format!(" | {}", err_ext).as_bytes())?;
+                    buf.push(format!(" | {}", err_ext));
                 }
                 if res.is_none() && *exception_suppression {
-                    buf.write_all(format!("{} | void", err_ext).as_bytes())?;
+                    buf.push(format!("{} | void", err_ext));
                 }
                 if res.is_none() && !*exception_suppression {
-                    buf.write_all("void".as_bytes())?;
+                    buf.push("void");
                 }
             }
             Self::Undefined(_) => {
-                buf.write_all("void".as_bytes())?;
+                buf.push("void");
             }
         }
         Ok(())

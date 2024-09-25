@@ -35,7 +35,7 @@ pub fn read(
                     vec![],
                 ));
                 structs::read_fields(fields, &mut nature, context.clone(), cfg)?;
-                natures.insert(&name, nature)
+                natures.insert(&name, nature, context.get_module())
             }
         }
         Item::Enum(item_enum) => {
@@ -52,7 +52,7 @@ pub fn read(
                     vec![],
                 ));
                 enums::read(variants, &mut nature, context.clone(), cfg)?;
-                natures.insert(&name, nature)
+                natures.insert(&name, nature, context.get_module())
             }
         }
         Item::Fn(item_fn) => {
@@ -79,6 +79,7 @@ pub fn read(
                         context.clone(),
                         Box::new(fn_nature.clone()),
                     )),
+                    context.get_module(),
                 );
                 modificator::bind_fn(item_fn, &name, &context, &fn_nature)?;
                 Ok(())
@@ -101,6 +102,7 @@ pub fn read(
                     context.clone(),
                     vec![],
                 ))),
+                context.get_module(),
             ) {
                 if let Nature::Refered(Refered::Struct(_, struct_context, _)) = nature.deref() {
                     structs::read_impl(

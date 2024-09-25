@@ -6,6 +6,7 @@ pub enum Input {
     Ignore(Vec<String>),
     Rename(String),
     Target(Vec<(Target, PathBuf)>),
+    Module(String),
     IgnoreSelf,
     Constructor,
     SnakeCaseNaming,
@@ -34,6 +35,8 @@ impl TryFrom<&str> for Input {
             Ok(Input::Rename(String::new()))
         } else if Input::Target(vec![]).to_string() == value {
             Ok(Input::Target(vec![]))
+        } else if Input::Module(String::new()).to_string() == value {
+            Ok(Input::Module(String::new()))
         } else if Input::ExceptionSuppression.to_string() == value {
             Ok(Input::ExceptionSuppression)
         } else {
@@ -48,14 +51,15 @@ impl fmt::Display for Input {
             f,
             "{}",
             match self {
-                Self::Ignore(_) => "ignore",
+                Self::Ignore(..) => "ignore",
                 Self::IgnoreSelf => "ignore_self",
                 Self::Constructor => "constructor",
-                Self::Rename(_) => "rename",
+                Self::Rename(..) => "rename",
                 Self::SnakeCaseNaming => "snake_case_naming",
                 Self::Interface => "interface",
-                Self::Target(_) => "target",
-                Self::Binding(_) => "**THIS_IS_RESERVED_KEY_WORD**",
+                Self::Target(..) => "target",
+                Self::Module(..) => "module",
+                Self::Binding(..) => "**THIS_IS_RESERVED_KEY_WORD**",
                 Self::Class => "class",
                 Self::ExceptionSuppression => "exception_suppression",
             }

@@ -1,29 +1,24 @@
 use super::Interpreter;
 use crate::{
     error::E,
-    interpreter::Offset,
+    interpreter::{ts::Writer, Offset},
     nature::{Natures, Primitive},
-};
-use std::{
-    fs::File,
-    io::{BufWriter, Write},
 };
 
 impl Interpreter for Primitive {
     fn reference(
         &self,
         _natures: &Natures,
-        buf: &mut BufWriter<File>,
+        buf: &mut Writer,
         _offset: Offset,
+        _parent: Option<String>,
     ) -> Result<(), E> {
-        Ok(buf.write_all(
-            match self {
-                Self::Number(..) => "number",
-                Self::BigInt(..) => "BigInt",
-                Self::String(..) => "string",
-                Self::Boolean(..) => "boolean",
-            }
-            .as_bytes(),
-        )?)
+        buf.push(match self {
+            Self::Number(..) => "number",
+            Self::BigInt(..) => "BigInt",
+            Self::String(..) => "string",
+            Self::Boolean(..) => "boolean",
+        });
+        Ok(())
     }
 }

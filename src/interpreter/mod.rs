@@ -8,12 +8,12 @@ use crate::{
     context::{Context, Target},
     error::E,
     nature::Natures,
+    TS_IMPORTS,
 };
-pub use offset::Offset;
+pub use offset::*;
 use std::{
     collections::HashSet,
     fs::{self, create_dir_all, File, OpenOptions},
-    io::BufWriter,
     path::PathBuf,
 };
 
@@ -67,7 +67,6 @@ pub fn create_target_file(
         }
         if path.exists() {
             fs::remove_file(path)?;
-            let _ = dropped.insert(path.clone());
         } else if let Some(basepath) = path.parent() {
             if !basepath.exists() {
                 create_dir_all(basepath)?;
@@ -78,6 +77,8 @@ pub fn create_target_file(
                 path.to_string_lossy()
             )));
         }
+        let _ = dropped.insert(path.clone());
+        TS_IMPORTS.write().unwrap().clear();
         File::create(path)?;
         Ok(Some(OpenOptions::new().append(true).open(path)?))
     } else {
@@ -90,8 +91,8 @@ pub fn ts(natures: &Natures) -> Result<(), E> {
     for (_name, entity) in natures.iter() {
         let context = entity.get_context()?;
         if let Some(file) = create_target_file(context, &Target::Ts, &mut dropped)? {
-            let mut buf_writer = BufWriter::new(file);
-            ts::write(entity, natures, &mut buf_writer)?;
+            let mut writer = ts::Writer::new(file);
+            ts::write(entity, natures, &mut writer)?;
         }
     }
     Ok(())
