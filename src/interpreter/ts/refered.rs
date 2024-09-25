@@ -184,7 +184,7 @@ impl Interpreter for Refered {
                         natures.get_module_of(ref_name),
                         natures.exists_in_module(ref_name, &module),
                     ) {
-                        buf.add_import(ref_name, ref_mod, module);
+                        buf.add_import(ref_name, ref_mod)?;
                     }
                 }
                 buf.push(ref_name)

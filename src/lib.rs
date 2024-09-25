@@ -17,7 +17,7 @@ use context::Context;
 use nature::Natures;
 use proc_macro::TokenStream;
 use quote::ToTokens;
-use std::{collections::HashSet, convert::TryInto, sync::RwLock};
+use std::{convert::TryInto, sync::RwLock};
 use syn::{parse_macro_input, Item};
 
 lazy_static! {
@@ -25,10 +25,6 @@ lazy_static! {
     static ref CONFIG: RwLock<Config> = RwLock::new(Config::default());
     #[doc(hidden)]
     static ref NATURES: RwLock<Natures> = RwLock::new(Natures::new());
-    #[doc(hidden)]
-    static ref TS_IMPORTS: RwLock<HashSet<(String, String, String)>> = RwLock::new(HashSet::new());
-    #[doc(hidden)]
-    static ref TS_EXPORTS: RwLock<HashSet<(String, String)>> = RwLock::new(HashSet::new());
 }
 
 /// Binds given entity with TypeScript type and generates JavaScript representation for it. This can be applied to:

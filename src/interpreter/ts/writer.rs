@@ -1,27 +1,47 @@
-use crate::TS_IMPORTS;
 use std::{
     collections::HashSet,
-    fs::File,
+    fmt::Display,
+    fs::{self, File},
     io::{BufWriter, Error, Write},
+    path::PathBuf,
 };
+
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Import {
+    pub entity: String,
+    pub module: String,
+}
+
+impl Display for Import {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "import {{ {} }} from \"./{}\";",
+            self.entity, self.module
+        )
+    }
+}
+
 pub struct Writer {
     buf_writer: BufWriter<File>,
+    file_name: PathBuf,
     buffer: String,
-    imports: HashSet<(String, String, String)>,
+    imports: HashSet<Import>,
 }
 
 impl Writer {
-    pub fn new(file: File) -> Self {
+    pub fn new(file: File, file_name: PathBuf) -> Self {
         Self {
             buf_writer: BufWriter::new(file),
+            file_name,
             buffer: String::new(),
             imports: HashSet::new(),
         }
     }
     pub fn write_all(&mut self) -> Result<(), Error> {
-        for (name, module, _) in self.imports.iter() {
+        for import in self.imports.iter() {
             self.buf_writer
-                .write_all(format!("import {{ {name} }} from \"./{module}\";\n").as_bytes())?;
+                .write_all(format!("{import}\n").as_bytes())?;
         }
         self.buf_writer.write_all(self.buffer.as_bytes())?;
         self.buf_writer.flush()?;
@@ -30,21 +50,19 @@ impl Writer {
     pub fn push<S: AsRef<str>>(&mut self, data: S) {
         self.buffer.push_str(data.as_ref());
     }
-    pub fn add_import<N: AsRef<str>, M: AsRef<str>, R: AsRef<str>>(
+    pub fn add_import<N: AsRef<str>, M: AsRef<str>>(
         &mut self,
         name: N,
         module: M,
-        requester: R,
-    ) {
-        let entry = (
-            name.as_ref().to_owned(),
-            module.as_ref().to_owned(),
-            requester.as_ref().to_owned(),
-        );
-        let mut global = TS_IMPORTS.write().expect("Read global imports list");
-        if !global.contains(&entry) && !self.imports.contains(&entry) {
-            self.imports.insert(entry.clone());
-            global.insert(entry);
+    ) -> Result<(), Error> {
+        let entity = Import {
+            entity: name.as_ref().to_owned(),
+            module: module.as_ref().to_owned(),
+        };
+        let content = fs::read_to_string(&self.file_name)?;
+        if !content.contains(&entity.to_string()) {
+            self.imports.insert(entity);
         }
+        Ok(())
     }
 }

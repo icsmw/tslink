@@ -8,7 +8,6 @@ use crate::{
     context::{Context, Target},
     error::E,
     nature::Natures,
-    TS_IMPORTS,
 };
 pub use offset::*;
 use std::{
@@ -60,10 +59,13 @@ pub fn create_target_file(
     context: &Context,
     target: &Target,
     dropped: &mut HashSet<PathBuf>,
-) -> Result<Option<File>, E> {
+) -> Result<Option<(File, PathBuf)>, E> {
     if let Some((_, path)) = context.targets.iter().find(|(t, _)| t == target) {
         if dropped.contains(path) {
-            return Ok(Some(OpenOptions::new().append(true).open(path)?));
+            return Ok(Some((
+                OpenOptions::new().append(true).open(path)?,
+                path.to_owned(),
+            )));
         }
         if path.exists() {
             fs::remove_file(path)?;
@@ -78,9 +80,11 @@ pub fn create_target_file(
             )));
         }
         let _ = dropped.insert(path.clone());
-        TS_IMPORTS.write().unwrap().clear();
         File::create(path)?;
-        Ok(Some(OpenOptions::new().append(true).open(path)?))
+        Ok(Some((
+            OpenOptions::new().append(true).open(path)?,
+            path.to_owned(),
+        )))
     } else {
         Ok(None)
     }
@@ -90,8 +94,8 @@ pub fn ts(natures: &Natures) -> Result<(), E> {
     let mut dropped: HashSet<PathBuf> = HashSet::new();
     for (_name, entity) in natures.iter() {
         let context = entity.get_context()?;
-        if let Some(file) = create_target_file(context, &Target::Ts, &mut dropped)? {
-            let mut writer = ts::Writer::new(file);
+        if let Some((file, file_name)) = create_target_file(context, &Target::Ts, &mut dropped)? {
+            let mut writer = ts::Writer::new(file, file_name);
             ts::write(entity, natures, &mut writer)?;
         }
     }
