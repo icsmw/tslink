@@ -1,13 +1,14 @@
-mod dts;
-mod js;
-mod offset;
-mod ts;
+pub(crate) mod dts;
+pub(crate) mod js;
+pub(crate) mod offset;
+pub(crate) mod ts;
 
 use crate::{
     config,
     context::{Context, Target},
     error::E,
     nature::Natures,
+    TS_IMPORTS,
 };
 pub use offset::*;
 use std::{
@@ -95,10 +96,14 @@ pub fn ts(natures: &Natures) -> Result<(), E> {
     for (_name, entity) in natures.iter() {
         let context = entity.get_context()?;
         if let Some((file, file_name)) = create_target_file(context, &Target::Ts, &mut dropped)? {
-            let mut writer = ts::Writer::new(file, file_name);
+            let mut writer = ts::Writer::new(file, file_name)?;
             ts::write(entity, natures, &mut writer)?;
         }
     }
+    TS_IMPORTS
+        .write()
+        .map_err(|_| E::ImportsListAccess)?
+        .write()?;
     Ok(())
 }
 

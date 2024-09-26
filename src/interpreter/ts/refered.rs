@@ -21,6 +21,11 @@ impl Interpreter for Refered {
                     "{offset}export {} {name} {{\n",
                     if flat { "enum" } else { "interface" }
                 ));
+                if let Some(module) = natures.get_module_of(name) {
+                    if natures.exists_in_module(name, &module) {
+                        buf.add_export(name, &module)?;
+                    }
+                }
                 for variant in variants.iter() {
                     variant.declaration(natures, buf, offset.inc(), Some(name.to_owned()))?;
                     buf.push(if flat { ",\n" } else { ";\n" });
@@ -106,6 +111,11 @@ impl Interpreter for Refered {
                         "export interface"
                     },
                 ));
+                if let Some(module) = natures.get_module_of(name) {
+                    if natures.exists_in_module(name, &module) {
+                        buf.add_export(name, &module)?;
+                    }
+                }
                 for field in fields {
                     if context.as_class() && field.is_method_constructor() {
                         continue;
@@ -185,6 +195,9 @@ impl Interpreter for Refered {
                         natures.exists_in_module(ref_name, &module),
                     ) {
                         buf.add_import(ref_name, ref_mod)?;
+                    }
+                    if natures.exists_in_module(ref_name, &module) {
+                        buf.add_export(ref_name, &module)?;
                     }
                 }
                 buf.push(ref_name)

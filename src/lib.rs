@@ -14,6 +14,7 @@ extern crate lazy_static;
 
 use config::Config;
 use context::Context;
+use interpreter::ts::Indexer;
 use nature::Natures;
 use proc_macro::TokenStream;
 use quote::ToTokens;
@@ -25,6 +26,8 @@ lazy_static! {
     static ref CONFIG: RwLock<Config> = RwLock::new(Config::default());
     #[doc(hidden)]
     static ref NATURES: RwLock<Natures> = RwLock::new(Natures::new());
+    #[doc(hidden)]
+    static ref TS_IMPORTS: RwLock<Indexer> = RwLock::new(Indexer::default());
 }
 
 /// Binds given entity with TypeScript type and generates JavaScript representation for it. This can be applied to:

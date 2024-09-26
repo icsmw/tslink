@@ -29,6 +29,8 @@ pub enum E {
     FileNotFound(String),
     #[error("Compiler error")]
     Compiler(syn::Error),
+    #[error("Fail to access to imports list")]
+    ImportsListAccess,
     #[error("{0}")]
     Other(String),
 }
