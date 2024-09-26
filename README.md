@@ -27,8 +27,10 @@
 -   [Exception suppression](#exception-suppression)
 -   [Usage with node-bindgen](#usage-with-node-bindgen)
 
-7. [Configuration file](#configuration-file)
-8. [QA and Troubleshooting](#qa-and-troubleshooting)
+
+7. [Import only](#import-only)
+8. [Configuration](#configuration)
+9. [QA and Troubleshooting](#qa-and-troubleshooting)
 
 ## How it can be useful?
 
@@ -225,7 +227,8 @@ export interface SomeEnum {
 | `snake_case_naming`             | `#[tslink(snake_case_naming)]`                     | Renames struct's field or method into snake case naming (`my_field_a` became `myFieldA`)                                                                                               | struct method, functions     |
 | `rename = "name"`               | `#[tslink(rename = "newNameOfFieldOrMethod")]`     | Renames struct's methods or functions into given name                                                                                                                                  | struct method and functions  |
 | `constructor`                   | `#[tslink(constructor)]`                           | Marks current methods as constructor. Indeed can be defined only for method, which returns `Self`.                                                                                     | struct method returns `Self` |
-| `target = "path"`               | `#[tslink(target = "./path_to/file.ts")]`          | Tells tslink save TypeScript definitions `*.ts` / `*.d.ts` into given file                                                                                                             | struct, enum                 |
+| `target = "path"`               | `#[tslink(target = "./path_to/file.ts")]`          | Tells tslink save TypeScript definitions `*.ts` into given file                                                                                                                        | struct, enum                 |
+| `module = "mod_name"`           | `#[tslink(target = "./path_to/file.ts", module = "mod_name")]` | Link `struct`/`enum` to target module. Uses with `target` only.                                                                                                            | struct, enum                 |
 | `exception_suppression`         | `#[tslink(exception_suppression)]`                 | By default in case of error method/function throws a JavaScript exception. If "exception_suppression" is used, method/function returns an JavaScript Error instead throwing exceptions | struct methods, functions    |
 | `result = "json"`               | `#[tslink(result = "json")]`                       | Converts `Ok` case in `Result<T, _>` into JSON                                                                                                                                         | struct methods, functions    |
 | `error = "json"`                | `#[tslink(error = "json")]`                        | Converts `Err` case in `Result<_, E>` into JSON                                                                                                                                        | struct methods, functions    |
@@ -725,6 +728,105 @@ Full example of `node-bindgen` usage is [here](https://github.com/icsmw/tslink/t
 git clone https://github.com/icsmw/tslink.git
 cd tslink/examples/node_bindgen
 sh ./run_test.sh
+```
+
+## Import only
+
+`tslink` can also be used to import Rust types into TypeScript. For this, you can use the `target` directive to specify the file name where the `*.ts` files will be saved. Additionally, to ensure modularity, you can use the `module` directive along with the `target` directive to bind a specific data type to a specific module.
+
+For example let's take a look on next rust code
+
+```ignore
+// ./lib.rs
+
+mod module_a;
+mod module_b;
+
+pub use module_a::*;
+pub use module_b::*;
+
+// ./module_a.rs
+use tslink::tslink;
+
+#[tslink(target = "./output/module_a.ts", module = "module_a")]
+pub enum FieldA {
+    One,
+    Two,
+    Three,
+}
+
+#[tslink(target = "./output/module_a.ts", module = "module_a")]
+pub enum FieldB {
+    One(String),
+    Two((u32, u32)),
+    Three(FieldA),
+}
+
+#[tslink(target = "./output/module_a.ts", module = "module_a")]
+pub struct StructA {
+    pub a: FieldA,
+    pub b: FieldB,
+}
+
+// ./module_b.ru
+use crate::{FieldA, FieldB, StructA};
+use tslink::tslink;
+
+#[tslink(target = "./output/module_b.ts", module = "module_b")]
+pub enum EntityA {
+    One,
+    Two,
+    Three,
+}
+
+#[tslink(target = "./output/module_b.ts", module = "module_b")]
+pub enum EntityB {
+    One(String),
+    Two((u32, u32)),
+    Three(EntityA),
+}
+
+#[tslink(target = "./output/module_b.ts", module = "module_b")]
+pub struct OtherStruct {
+    pub a: EntityA,
+    pub b: EntityB,
+    pub c: StructA,
+    pub d: FieldA,
+    pub e: FieldB,
+}
+```
+
+Based on this `tslink` will generate next files
+```ignore
+- ./output
+    - index.ts      - index with all types
+    - module_a.ts   - types related to module_a
+    - module_b.ts   - types related to module_b
+```
+
+For example `module_b` will look like
+
+```typescript
+export interface EntityB {
+    One?: string;
+    Two?: [number, number];
+    Three?: EntityA;
+}
+export enum EntityA {
+    One,
+    Two,
+    Three,
+}
+import { FieldB } from "./module_a";
+import { StructA } from "./module_a";
+import { FieldA } from "./module_a";
+export interface OtherStruct {
+    a: EntityA;
+    b: EntityB;
+    c: StructA;
+    d: FieldA;
+    e: FieldB;
+}
 ```
 
 ## Configuration

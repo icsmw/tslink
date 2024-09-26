@@ -10,5 +10,7 @@ cd ../renaming
 yarn run test
 cd ../node-bindgen
 yarn run test
+cd ../modules
+sh ./run_test.sh
 cd ../../examples/node_bindgen
 sh ./run_test.sh

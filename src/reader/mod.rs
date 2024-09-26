@@ -122,14 +122,19 @@ pub fn read(
         _ => Ok(()),
     }?;
     if io_allowed {
-        package::create()
-            .map_err(|e| E::Compiler(syn::Error::new_spanned(item_ref.clone(), e.to_string())))?;
         interpreter::ts(natures)
             .map_err(|e| E::Compiler(syn::Error::new_spanned(item_ref.clone(), e.to_string())))?;
-        interpreter::dts(natures)
-            .map_err(|e| E::Compiler(syn::Error::new_spanned(item_ref.clone(), e.to_string())))?;
-        interpreter::js(natures)
-            .map_err(|e| E::Compiler(syn::Error::new_spanned(item_ref.clone(), e.to_string())))?;
+        if cfg.node_mod_filename.is_some() {
+            package::create().map_err(|e| {
+                E::Compiler(syn::Error::new_spanned(item_ref.clone(), e.to_string()))
+            })?;
+            interpreter::dts(natures).map_err(|e| {
+                E::Compiler(syn::Error::new_spanned(item_ref.clone(), e.to_string()))
+            })?;
+            interpreter::js(natures).map_err(|e| {
+                E::Compiler(syn::Error::new_spanned(item_ref.clone(), e.to_string()))
+            })?;
+        }
     }
     Ok(())
 }

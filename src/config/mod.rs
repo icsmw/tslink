@@ -39,14 +39,11 @@ impl Config {
                     PathBuf::from("./dist")
                 })
             });
-        self.node_mod_filename = cfg
-            .node
-            .and_then(|s| {
-                PathBuf::from(s)
-                    .file_name()
-                    .map(|f| f.to_string_lossy().to_string())
-            })
-            .or_else(|| Some("index.node".to_string()));
+        self.node_mod_filename = cfg.node.and_then(|s| {
+            PathBuf::from(s)
+                .file_name()
+                .map(|f| f.to_string_lossy().to_string())
+        });
         if let Some(snake_case_naming) = cfg.snake_case_naming {
             snake_case_naming.split(',').for_each(|v| {
                 let condition = SnakeCaseNaming::from_str(v).unwrap();
