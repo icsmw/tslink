@@ -15,7 +15,7 @@ pub enum FnItem<'a> {
     ImplItemFn(&'a mut ImplItemFn),
 }
 
-impl<'a> FnItem<'a> {
+impl FnItem<'_> {
     pub fn get_block(&self) -> &Block {
         match self {
             Self::ImplItemFn(item) => &item.block,

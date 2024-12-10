@@ -1,7 +1,12 @@
 use crate::{error::E, package::value, CONFIG};
 use cfg::{Cfg, SnakeCaseNaming};
 use convert_case::{Case, Casing};
-use std::{collections::HashSet, default::Default, env, fs, path::PathBuf};
+use std::{
+    collections::{HashMap, HashSet},
+    default::Default,
+    env, fs,
+    path::PathBuf,
+};
 use toml::Table;
 use uuid::Uuid;
 
@@ -19,6 +24,7 @@ pub struct Config {
     pub snake_case_naming: HashSet<SnakeCaseNaming>,
     pub exception_suppression: bool,
     pub int_over_32_as_big_int: bool,
+    pub type_map: HashMap<String, String>,
 }
 
 impl Config {
@@ -54,6 +60,7 @@ impl Config {
         }
         self.exception_suppression = cfg.exception_suppression;
         self.int_over_32_as_big_int = cfg.int_over_32_as_big_int;
+        self.type_map = cfg.type_map;
         Ok(())
     }
 
@@ -86,6 +93,13 @@ impl Config {
             origin.to_owned()
         }
     }
+
+    pub fn overwrite_reftype<S: AsRef<str>>(&self, origin: S) -> String {
+        self.type_map
+            .get(origin.as_ref())
+            .map(|s| s.to_owned())
+            .unwrap_or(origin.as_ref().to_owned())
+    }
 }
 
 pub fn setup() -> Result<(), E> {
@@ -112,7 +126,7 @@ pub fn setup() -> Result<(), E> {
         .map_err(|e| E::AccessError(e.to_string()))?
         .overwrite(
             toml::from_str(&fs::read_to_string(cargo)?)?,
-            env::var_os(TSLINK_BUILD_ENV).map_or(false, |v| {
+            env::var_os(TSLINK_BUILD_ENV).is_some_and(|v| {
                 ["1", "true", "on"].contains(&v.to_string_lossy().to_lowercase().trim())
             }),
         )?;

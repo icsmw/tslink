@@ -1,5 +1,6 @@
 use serde::Deserialize;
 use std::{
+    collections::HashMap,
     fmt,
     io::{Error, ErrorKind},
 };
@@ -47,6 +48,7 @@ pub struct Cfg {
     pub snake_case_naming: Option<String>,
     pub exception_suppression: bool,
     pub int_over_32_as_big_int: bool,
+    pub type_map: HashMap<String, String>,
 }
 
 impl Cfg {
@@ -68,6 +70,17 @@ impl Cfg {
                 int_over_32_as_big_int: settings
                     .get("int_over_32_as_big_int")
                     .and_then(|v| v.as_bool())
+                    .unwrap_or_default(),
+                type_map: settings
+                    .get("type_map")
+                    .and_then(|v| v.as_table())
+                    .map(|m| {
+                        m.iter()
+                            .filter_map(|(key, value)| {
+                                value.as_str().map(|v| (key.clone(), v.to_string()))
+                            })
+                            .collect()
+                    })
                     .unwrap_or_default(),
             })
             .unwrap_or_default()

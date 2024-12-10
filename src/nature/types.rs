@@ -81,7 +81,21 @@ impl Extract<&Ident> for Nature {
                     "Type <f128> doesn't have direct equalent in JavaScript".to_owned(),
                 ))
             }
-            (a, ..) => Nature::Refered(Refered::Ref(serialize_name(a), Some(context.clone()))),
+            (a, ..) => {
+                let serialized = cfg.overwrite_reftype(serialize_name(a));
+                match serialized.as_ref() {
+                    "boolean" => {
+                        Nature::Primitive(Primitive::Boolean(OriginType::from(ident.clone())))
+                    }
+                    "string" => {
+                        Nature::Primitive(Primitive::String(OriginType::from(ident.clone())))
+                    }
+                    "number" => {
+                        Nature::Primitive(Primitive::Number(OriginType::from(ident.clone())))
+                    }
+                    _ => Nature::Refered(Refered::Ref(serialized, Some(context.clone()))),
+                }
+            }
         })
     }
 }
@@ -92,11 +106,6 @@ impl Extract<&Punctuated<PathSegment, PathSep>> for Nature {
         context: Context,
         cfg: &Config,
     ) -> Result<Nature, E> {
-        // if segments.len() > 1 {
-        //     return Err(E::Parsing(String::from(
-        //         "Not supported Other Type for more than 1 PathSegment",
-        //     )));
-        // }
         if let Some(segment) = segments.last() {
             let mut ty = match segment.ident.to_string().as_str() {
                 "Vec" => Nature::Composite(Composite::Vec(OriginType::from(segment.clone()), None)),
