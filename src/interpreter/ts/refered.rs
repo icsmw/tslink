@@ -17,14 +17,14 @@ impl Interpreter for Refered {
     ) -> Result<(), E> {
         match self {
             Refered::Enum(name, _context, variants, repres) => {
+                if let Some(module) = natures.get_module_of(name) {
+                    if natures.exists_in_module(name, &module) {
+                        buf.add_export(name, &module)?;
+                    }
+                }
                 let flat = Refered::is_flat_varians(variants)?;
                 if flat {
                     buf.push(format!("{offset}export enum {name} {{\n",));
-                    if let Some(module) = natures.get_module_of(name) {
-                        if natures.exists_in_module(name, &module) {
-                            buf.add_export(name, &module)?;
-                        }
-                    }
                     for variant in variants.iter() {
                         variant.declaration(natures, buf, offset.inc(), Some(name.to_owned()))?;
                         buf.push(",\n");
@@ -34,11 +34,6 @@ impl Interpreter for Refered {
                     match repres {
                         EnumRepresentation::AsInterface => {
                             buf.push(format!("{offset}export interface {name} {{\n",));
-                            if let Some(module) = natures.get_module_of(name) {
-                                if natures.exists_in_module(name, &module) {
-                                    buf.add_export(name, &module)?;
-                                }
-                            }
                             for variant in variants.iter() {
                                 variant.declaration(
                                     natures,
@@ -52,11 +47,6 @@ impl Interpreter for Refered {
                         }
                         EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
                             buf.push(format!("{offset}export type {name} =\n",));
-                            if let Some(module) = natures.get_module_of(name) {
-                                if natures.exists_in_module(name, &module) {
-                                    buf.add_export(name, &module)?;
-                                }
-                            }
                             for (n, variant) in variants.iter().enumerate() {
                                 variant.declaration(
                                     natures,
@@ -64,10 +54,7 @@ impl Interpreter for Refered {
                                     offset.inc(),
                                     Some(name.to_owned()),
                                 )?;
-                                buf.push(format!(
-                                    "{}\n",
-                                    if n == variants.len() - 1 { "" } else { " | " }
-                                ));
+                                buf.push(if n == variants.len() - 1 { "" } else { " |\n" });
                             }
                             buf.push(format!("{offset};\n",));
                         }
@@ -75,6 +62,9 @@ impl Interpreter for Refered {
                 }
             }
             Refered::EnumVariant(name, _context, fields, flat, repres) => {
+                let named = fields
+                    .iter()
+                    .any(|f| matches!(f, Nature::Refered(Refered::Field(..))));
                 if fields.is_empty() {
                     if *flat {
                         buf.push(format!("{offset}{name}"));
@@ -97,41 +87,113 @@ impl Interpreter for Refered {
                             buf.push(format!("{offset}{name}?: "));
                         }
                         EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
-                            buf.push(format!("{offset}{{ {name}: "));
+                            buf.push(format!(
+                                "{offset}{{{}{name}: ",
+                                if named {
+                                    format!("\n{}", offset.inc())
+                                } else {
+                                    " ".to_owned()
+                                }
+                            ));
                         }
+                    }
+                    if named {
+                        buf.push("{\n");
                     }
                     fields
                         .first()
                         .ok_or(E::Parsing(String::from(
                             "Expecting single field for Variant",
                         )))?
-                        .reference(natures, buf, offset.inc(), parent)?;
+                        .reference(
+                            natures,
+                            buf,
+                            match repres {
+                                EnumRepresentation::AsInterface => offset.inc(),
+                                EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
+                                    offset.inc().inc()
+                                }
+                            },
+                            parent,
+                        )?;
+                    if named {
+                        buf.push(format!(
+                            "\n{}}}",
+                            match repres {
+                                EnumRepresentation::AsInterface => offset.clone(),
+                                EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
+                                    offset.inc()
+                                }
+                            }
+                        ));
+                    }
                     match repres {
                         EnumRepresentation::AsInterface => {}
                         EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
-                            buf.push(" }");
+                            buf.push(if named {
+                                format!("\n{}}}", offset)
+                            } else {
+                                " }".to_owned()
+                            });
                         }
                     }
                 } else {
                     match repres {
                         EnumRepresentation::AsInterface => {
-                            buf.push(format!("{offset}{name}?: ["));
+                            buf.push(format!(
+                                "{offset}{name}?: {}",
+                                if named { "{\n" } else { "[" }
+                            ));
                         }
                         EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
-                            buf.push(format!("{offset}{{ {name}: ["));
+                            buf.push(format!(
+                                "{offset}{{{}{name}: {}",
+                                if named {
+                                    format!("\n{}", offset.inc())
+                                } else {
+                                    " ".to_owned()
+                                },
+                                if named { "{\n" } else { "[" }
+                            ));
                         }
                     }
                     for (i, field) in fields.iter().enumerate() {
-                        field.reference(natures, buf, offset.inc(), parent.clone())?;
+                        field.reference(
+                            natures,
+                            buf,
+                            match repres {
+                                EnumRepresentation::AsInterface => offset.inc(),
+                                EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
+                                    offset.inc().inc()
+                                }
+                            },
+                            parent.clone(),
+                        )?;
                         if i < fields.len() - 1 {
-                            buf.push(", ");
+                            buf.push(if named { ";\n" } else { "," });
                         }
                     }
-                    buf.push("]");
+                    buf.push(if named {
+                        format!(
+                            "\n{}}}",
+                            match repres {
+                                EnumRepresentation::AsInterface => offset.clone(),
+                                EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
+                                    offset.inc()
+                                }
+                            }
+                        )
+                    } else {
+                        "]".to_owned()
+                    });
                     match repres {
                         EnumRepresentation::AsInterface => {}
                         EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
-                            buf.push(" }");
+                            buf.push(if named {
+                                format!("\n{}}}", offset)
+                            } else {
+                                " }".to_owned()
+                            });
                         }
                     }
                 }

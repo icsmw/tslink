@@ -45,11 +45,7 @@ impl Interpreter for Refered {
                             for (n, variant) in variants.iter().enumerate() {
                                 variant.declaration(natures, buf, offset.inc())?;
                                 buf.write_all(
-                                    format!(
-                                        "{}\n",
-                                        if n == variants.len() - 1 { "" } else { " | " }
-                                    )
-                                    .as_bytes(),
+                                    if n == variants.len() - 1 { "" } else { " |\n" }.as_bytes(),
                                 )?;
                             }
                             buf.write_all(format!("{offset};\n",).as_bytes())?;
@@ -58,6 +54,9 @@ impl Interpreter for Refered {
                 }
             }
             Refered::EnumVariant(name, _context, fields, flat, repres) => {
+                let named = fields
+                    .iter()
+                    .any(|f| matches!(f, Nature::Refered(Refered::Field(..))));
                 if fields.is_empty() {
                     if *flat {
                         buf.write_all(format!("{offset}{name}").as_bytes())?;
@@ -80,41 +79,129 @@ impl Interpreter for Refered {
                             buf.write_all(format!("{offset}{name}?: ").as_bytes())?;
                         }
                         EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
-                            buf.write_all(format!("{offset}{{ {name}: ").as_bytes())?;
+                            buf.write_all(
+                                format!(
+                                    "{offset}{{{}{name}: ",
+                                    if named {
+                                        format!("\n{}", offset.inc())
+                                    } else {
+                                        " ".to_owned()
+                                    }
+                                )
+                                .as_bytes(),
+                            )?;
                         }
+                    }
+                    if named {
+                        buf.write_all("{\n".as_bytes())?;
                     }
                     fields
                         .first()
                         .ok_or(E::Parsing(String::from(
                             "Expecting single field for Variant",
                         )))?
-                        .reference(natures, buf, offset.inc())?;
+                        .reference(
+                            natures,
+                            buf,
+                            match repres {
+                                EnumRepresentation::AsInterface => offset.inc(),
+                                EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
+                                    offset.inc().inc()
+                                }
+                            },
+                        )?;
+                    if named {
+                        buf.write_all(
+                            format!(
+                                "\n{}}}",
+                                match repres {
+                                    EnumRepresentation::AsInterface => offset.clone(),
+                                    EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
+                                        offset.inc()
+                                    }
+                                }
+                            )
+                            .as_bytes(),
+                        )?;
+                    }
                     match repres {
                         EnumRepresentation::AsInterface => {}
                         EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
-                            buf.write_all(" }".as_bytes())?;
+                            buf.write_all(
+                                if named {
+                                    format!("\n{}}}", offset)
+                                } else {
+                                    " }".to_owned()
+                                }
+                                .as_bytes(),
+                            )?;
                         }
                     }
                 } else {
                     match repres {
                         EnumRepresentation::AsInterface => {
-                            buf.write_all(format!("{offset}{name}?: [").as_bytes())?;
+                            buf.write_all(
+                                format!("{offset}{name}?: {}", if named { "{\n" } else { "[" })
+                                    .as_bytes(),
+                            )?;
                         }
                         EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
-                            buf.write_all(format!("{offset}{{ {name}: [").as_bytes())?;
+                            buf.write_all(
+                                format!(
+                                    "{offset}{{{}{name}: {}",
+                                    if named {
+                                        format!("\n{}", offset.inc())
+                                    } else {
+                                        " ".to_owned()
+                                    },
+                                    if named { "{\n" } else { "[" }
+                                )
+                                .as_bytes(),
+                            )?;
                         }
                     }
                     for (i, field) in fields.iter().enumerate() {
-                        field.reference(natures, buf, offset.inc())?;
+                        field.reference(
+                            natures,
+                            buf,
+                            match repres {
+                                EnumRepresentation::AsInterface => offset.inc(),
+                                EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
+                                    offset.inc().inc()
+                                }
+                            },
+                        )?;
                         if i < fields.len() - 1 {
-                            buf.write_all(", ".as_bytes())?;
+                            buf.write_all(if named { ";\n" } else { "," }.as_bytes())?;
                         }
                     }
-                    buf.write_all("]".as_bytes())?;
+                    buf.write_all(
+                        if named {
+                            format!(
+                                "\n{}}}",
+                                match repres {
+                                    EnumRepresentation::AsInterface => offset.clone(),
+                                    EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
+                                        offset.inc()
+                                    }
+                                }
+                            )
+                        } else {
+                            "]".to_owned()
+                        }
+                        .as_bytes(),
+                    )?;
                     match repres {
                         EnumRepresentation::AsInterface => {}
                         EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
-                            buf.write_all(" }".as_bytes())?;
+                            buf.write_all(
+                                if named {
+                                    format!("\n{}}}", offset)
+                                } else {
+                                    " }".to_owned()
+                                }
+                                .as_bytes(),
+                            )?;
                         }
                     }
                 }

@@ -12,7 +12,13 @@ fn read_variant(fields: &Fields, context: Context, cfg: &Config) -> Result<Vec<N
     match fields {
         Fields::Named(ref fields) => {
             for field in fields.named.iter() {
-                values.push(Nature::extract(&field.ty, context.clone(), cfg)?);
+                let name = field.ident.clone().unwrap();
+                values.push(Nature::Refered(Refered::Field(
+                    serialize_name(name.to_string()),
+                    context.clone(),
+                    Box::new(Nature::extract(&field.ty, context.clone(), cfg)?),
+                    None,
+                )));
             }
         }
         Fields::Unnamed(ref fields) => {
@@ -44,7 +50,7 @@ pub fn read(
         parent.bind(Nature::Refered(Refered::EnumVariant(
             serialize_name(&name),
             context.clone(),
-            values.clone(),
+            values,
             !not_flat,
             cfg.enum_representation.clone(),
         )))?;
