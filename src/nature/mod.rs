@@ -147,6 +147,10 @@ impl Nature {
                     natures.push(nature);
                     Ok(())
                 }
+                Refered::TupleStruct(_, _, field) => {
+                    let _ = field.insert(Box::new(nature));
+                    Ok(())
+                }
                 Refered::Enum(_, _, natures) => {
                     natures.push(nature);
                     Ok(())
@@ -155,7 +159,7 @@ impl Nature {
                     natures.push(nature);
                     Ok(())
                 }
-                _ => Err(E::NotSupported("".to_owned())),
+                _ => Err(E::NotSupported("Refered".to_owned())),
             },
             Self::Composite(othr) => match othr {
                 Composite::HashMap(_, k, v) => {
@@ -215,7 +219,7 @@ impl Nature {
                         Ok(())
                     }
                 }
-                _ => Err(E::NotSupported("".to_owned())),
+                _ => Err(E::NotSupported(String::from("Composite"))),
             },
         }
     }
@@ -278,6 +282,7 @@ impl Nature {
                 Refered::Field(_, context, _, _) => context,
                 Refered::Func(_, context, _) => context,
                 Refered::FuncArg(_, context, _, _) => context,
+                Refered::TupleStruct(_, context, _) => context,
                 Refered::Struct(_, context, _) => context,
                 Refered::Ref(_, _) => {
                     Err(E::Parsing(String::from("Reference do not have context")))?

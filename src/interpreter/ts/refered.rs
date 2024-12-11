@@ -128,6 +128,20 @@ impl Interpreter for Refered {
                 }
                 buf.push(format!("{offset}}}\n",));
             }
+            Refered::TupleStruct(name, _context, field) => {
+                buf.push(format!("{offset}export type {name} = ",));
+                if let Some(module) = natures.get_module_of(name) {
+                    if natures.exists_in_module(name, &module) {
+                        buf.add_export(name, &module)?;
+                    }
+                }
+                if let Some(field) = field {
+                    field.reference(natures, buf, Offset::new(), Some(name.to_owned()))?;
+                } else {
+                    buf.push("undefined");
+                }
+                buf.push(";\n");
+            }
             Refered::Ref(ref_name, _) => {
                 return Err(E::Parsing(format!("Reference {ref_name} can be declared")));
             }
@@ -171,11 +185,16 @@ impl Interpreter for Refered {
                     }
                     nature.reference(natures, buf, offset, parent)?;
                 } else {
-                    buf.push(format!("{offset}{}: ", context.rename_field(name)?));
-                    if let Nature::Refered(Refered::Ref(ref_name, _)) = nature.deref() {
-                        if let Some(generic) = context.get_generic(ref_name) {
-                            generic.reference(natures, buf, offset, parent)?;
-                            return Ok(());
+                    if name.is_empty() {
+                        // This is name of unnamed field of TupleStruct
+                        buf.push(&(context.rename_field(name)?));
+                    } else {
+                        buf.push(format!("{offset}{}: ", context.rename_field(name)?));
+                        if let Nature::Refered(Refered::Ref(ref_name, _)) = nature.deref() {
+                            if let Some(generic) = context.get_generic(ref_name) {
+                                generic.reference(natures, buf, offset, parent)?;
+                                return Ok(());
+                            }
                         }
                     }
                     nature.reference(natures, buf, offset, parent)?;
@@ -188,6 +207,7 @@ impl Interpreter for Refered {
                 )));
             }
             Refered::Struct(name, _, _) => buf.push(name),
+            Refered::TupleStruct(name, _, _) => buf.push(name),
             Refered::Ref(ref_name, _) => {
                 if let Some(module) = parent.and_then(|p| natures.get_module_of(&p)) {
                     if let (Some(ref_mod), false) = (

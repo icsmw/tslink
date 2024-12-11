@@ -125,6 +125,15 @@ impl Interpreter for Refered {
                 }
                 buf.write_all(format!("{offset}}}\n",).as_bytes())?;
             }
+            Refered::TupleStruct(name, _context, field) => {
+                buf.write_all(format!("{offset}export type {name} = ").as_bytes())?;
+                if let Some(field) = field {
+                    field.reference(natures, buf, Offset::new())?;
+                } else {
+                    buf.write_all("undefined".as_bytes())?;
+                }
+                buf.write_all(";\n".as_bytes())?;
+            }
             Refered::Ref(ref_name, _) => {
                 return Err(E::Parsing(format!("Reference {ref_name} can be declared")));
             }
@@ -177,6 +186,7 @@ impl Interpreter for Refered {
                 )));
             }
             Refered::Struct(name, _, _) => buf.write_all(name.as_bytes())?,
+            Refered::TupleStruct(name, _, _) => buf.write_all(name.as_bytes())?,
             Refered::Ref(ref_name, context) => {
                 if let Some(context) = context {
                     if let Some(nature) = context.get_generic(ref_name) {

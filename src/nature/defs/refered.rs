@@ -8,6 +8,8 @@ use quote::{quote, format_ident};
 
 #[derive(Clone, Debug)]
 pub enum Refered {
+    // Name, Context, Field
+    TupleStruct(String, Context, Option<Box<Nature>>),
     // Name, Context, Fields
     Struct(String, Context, Vec<Nature>),
     // Name, Context, Variants
@@ -52,6 +54,7 @@ impl Refered {
 impl TypeTokenStream for Refered {
     fn type_token_stream(&self) -> Result<TokenStream, E> {
         let ident = match self {
+            Self::TupleStruct(name, _, _) => Ok(format_ident!("{}", name)),
             Self::Struct(name, _, _) => Ok(format_ident!("{}", name)),
             Self::Enum(name, _, _) => Ok(format_ident!("{}", name)),
             Self::Ref(name, _) => Ok(format_ident!("{}", name)),
@@ -68,6 +71,7 @@ impl TypeTokenStream for Refered {
 impl TypeAsString for Refered {
     fn type_as_string(&self) -> Result<String, E> {
         match self {
+            Self::TupleStruct(name, _, _) => Ok(name.clone()),
             Self::Struct(name, _, _) => Ok(name.clone()),
             Self::Enum(name, _, _) => Ok(name.clone()),
             Self::Ref(name, _) => Ok(name.clone()),

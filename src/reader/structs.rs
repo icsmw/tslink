@@ -38,6 +38,19 @@ pub fn read_fields(
             )))?;
         }
         parent.check_ignored_fields()?;
+    } else if let Fields::Unnamed(ref fields) = fields {
+        if let Some(field) = fields.unnamed.first() {
+            let mut context = Context::default();
+            context.set_parent(parent_context.clone());
+            parent.bind(Nature::Refered(Refered::Field(
+                String::new(),
+                context.clone(),
+                Box::new(Nature::extract(&field.ty, context.clone(), cfg)?),
+                None,
+            )))?;
+        }
+    } else {
+        return Err(E::NotSupported(String::from("Unsupported type of fields")));
     }
     Ok(())
 }

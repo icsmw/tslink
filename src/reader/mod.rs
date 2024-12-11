@@ -11,7 +11,7 @@ use crate::{
     package,
 };
 use std::ops::Deref;
-use syn::{Item, ItemEnum, ItemStruct};
+use syn::{Fields, Item, ItemEnum, ItemStruct};
 
 pub fn read(
     item: &mut Item,
@@ -29,11 +29,19 @@ pub fn read(
                 Err(E::EntityExist(quote::quote! { #item }.to_string()))
             } else {
                 context.add_generics(Nature::extract_generics(&item_struct.generics, cfg)?);
-                let mut nature = Nature::Refered(Refered::Struct(
-                    serialize_name(&name),
-                    context.clone(),
-                    vec![],
-                ));
+                let mut nature = if matches!(fields, Fields::Unnamed(..)) {
+                    Nature::Refered(Refered::TupleStruct(
+                        serialize_name(&name),
+                        context.clone(),
+                        None,
+                    ))
+                } else {
+                    Nature::Refered(Refered::Struct(
+                        serialize_name(&name),
+                        context.clone(),
+                        vec![],
+                    ))
+                };
                 structs::read_fields(fields, &mut nature, context.clone(), cfg)?;
                 natures.insert(&name, nature, context.get_module())
             }

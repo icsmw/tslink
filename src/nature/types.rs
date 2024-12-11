@@ -51,7 +51,7 @@ impl Extract<&GenericArgument> for Nature {
     fn extract(arg: &GenericArgument, context: Context, cfg: &Config) -> Result<Nature, E> {
         match arg {
             GenericArgument::Type(ty) => Nature::extract(ty, context, cfg),
-            _ => Err(E::NotSupported("".to_owned())),
+            _ => Err(E::NotSupported("GenericArgument".to_owned())),
         }
     }
 }
@@ -168,7 +168,7 @@ impl Extract<&Type> for Nature {
                 }
             }
             Type::Tuple(type_tuple) => Nature::extract(type_tuple, context, cfg),
-            _ => Err(E::NotSupported("".to_owned())),
+            _ => Err(E::NotSupported("Type".to_owned())),
         }
     }
 }
