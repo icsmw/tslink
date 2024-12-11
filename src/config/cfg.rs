@@ -14,8 +14,49 @@ pub enum SnakeCaseNaming {
     Fields,
 }
 
-impl SnakeCaseNaming {
-    pub fn from_str(value: &str) -> Result<Self, Error> {
+#[derive(Deserialize, Debug, Clone, Default)]
+pub enum EnumRepresentation {
+    Collapsed,
+    #[default]
+    AsInterface,
+    AsType,
+}
+
+impl TryFrom<&str> for EnumRepresentation {
+    type Error = Error;
+    fn try_from(value: &str) -> Result<EnumRepresentation, Self::Error> {
+        if value == EnumRepresentation::Collapsed.to_string() {
+            Ok(EnumRepresentation::Collapsed)
+        } else if value == EnumRepresentation::AsInterface.to_string() {
+            Ok(EnumRepresentation::AsInterface)
+        } else if value == EnumRepresentation::AsType.to_string() {
+            Ok(EnumRepresentation::AsType)
+        } else {
+            Err(Error::new(
+                ErrorKind::Other,
+                format!("Unknown option for enum_representation option: \"{value}\""),
+            ))
+        }
+    }
+}
+
+impl fmt::Display for EnumRepresentation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Collapsed => "collapsed",
+                Self::AsInterface => "as_interface",
+                Self::AsType => "as_type",
+            }
+        )
+    }
+}
+
+impl TryFrom<&str> for SnakeCaseNaming {
+    type Error = Error;
+    fn try_from(value: &str) -> Result<SnakeCaseNaming, Self::Error> {
         if value == SnakeCaseNaming::Methods.to_string() {
             Ok(SnakeCaseNaming::Methods)
         } else if value == SnakeCaseNaming::Fields.to_string() {
@@ -49,6 +90,7 @@ pub struct Cfg {
     pub exception_suppression: bool,
     pub int_over_32_as_big_int: bool,
     pub type_map: HashMap<String, String>,
+    pub enum_representation: EnumRepresentation,
 }
 
 impl Cfg {
@@ -81,6 +123,10 @@ impl Cfg {
                             })
                             .collect()
                     })
+                    .unwrap_or_default(),
+                enum_representation: settings
+                    .get("enum_representation")
+                    .and_then(|v| v.as_str().map(|s| s.try_into().unwrap_or_default()))
                     .unwrap_or_default(),
             })
             .unwrap_or_default()

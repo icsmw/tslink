@@ -1,5 +1,6 @@
 use super::Interpreter;
 use crate::{
+    config::cfg::EnumRepresentation,
     error::E,
     interpreter::Offset,
     nature::{Composite, Nature, Natures, Refered},
@@ -18,38 +19,91 @@ impl Interpreter for Refered {
         offset: Offset,
     ) -> Result<(), E> {
         match self {
-            Refered::Enum(name, _context, variants) => {
+            Refered::Enum(name, _context, variants, repres) => {
                 let flat = Refered::is_flat_varians(variants)?;
-                buf.write_all(
-                    format!(
-                        "{offset}export {} {name} {{\n",
-                        if flat { "enum" } else { "interface" }
-                    )
-                    .as_bytes(),
-                )?;
-                for variant in variants.iter() {
-                    variant.declaration(natures, buf, offset.inc())?;
-                    buf.write_all(if flat { ",\n" } else { ";\n" }.as_bytes())?;
+                if flat {
+                    buf.write_all(format!("{offset}export enum {name} {{\n",).as_bytes())?;
+                    for variant in variants.iter() {
+                        variant.declaration(natures, buf, offset.inc())?;
+                        buf.write_all(",\n".as_bytes())?;
+                    }
+                    buf.write_all(format!("{offset}}}\n",).as_bytes())?;
+                } else {
+                    match repres {
+                        EnumRepresentation::AsInterface => {
+                            buf.write_all(
+                                format!("{offset}export interface {name} {{\n",).as_bytes(),
+                            )?;
+                            for variant in variants.iter() {
+                                variant.declaration(natures, buf, offset.inc())?;
+                                buf.write_all(";\n".as_bytes())?;
+                            }
+                            buf.write_all(format!("{offset}}}\n",).as_bytes())?;
+                        }
+                        EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
+                            buf.write_all(format!("{offset}export type {name} =\n",).as_bytes())?;
+                            for (n, variant) in variants.iter().enumerate() {
+                                variant.declaration(natures, buf, offset.inc())?;
+                                buf.write_all(
+                                    format!(
+                                        "{}\n",
+                                        if n == variants.len() - 1 { "" } else { " | " }
+                                    )
+                                    .as_bytes(),
+                                )?;
+                            }
+                            buf.write_all(format!("{offset};\n",).as_bytes())?;
+                        }
+                    }
                 }
-                buf.write_all(format!("{offset}}}\n",).as_bytes())?;
             }
-            Refered::EnumVariant(name, _context, fields, flat) => {
+            Refered::EnumVariant(name, _context, fields, flat, repres) => {
                 if fields.is_empty() {
                     if *flat {
                         buf.write_all(format!("{offset}{name}").as_bytes())?;
                     } else {
-                        buf.write_all(format!("{offset}{name}?: null").as_bytes())?;
+                        match repres {
+                            EnumRepresentation::AsInterface => {
+                                buf.write_all(format!("{offset}{name}?: null").as_bytes())?;
+                            }
+                            EnumRepresentation::AsType => {
+                                buf.write_all(format!("{offset}{{ {name}: null }}").as_bytes())?;
+                            }
+                            EnumRepresentation::Collapsed => {
+                                buf.write_all(format!("{offset}\"{name}\"").as_bytes())?;
+                            }
+                        }
                     }
                 } else if fields.len() == 1 {
-                    buf.write_all(format!("{offset}{name}?: ").as_bytes())?;
+                    match repres {
+                        EnumRepresentation::AsInterface => {
+                            buf.write_all(format!("{offset}{name}?: ").as_bytes())?;
+                        }
+                        EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
+                            buf.write_all(format!("{offset}{{ {name}: ").as_bytes())?;
+                        }
+                    }
                     fields
                         .first()
                         .ok_or(E::Parsing(String::from(
                             "Expecting single field for Variant",
                         )))?
                         .reference(natures, buf, offset.inc())?;
+                    match repres {
+                        EnumRepresentation::AsInterface => {}
+                        EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
+                            buf.write_all(" }".as_bytes())?;
+                        }
+                    }
                 } else {
-                    buf.write_all(format!("{offset}{name}?: [").as_bytes())?;
+                    match repres {
+                        EnumRepresentation::AsInterface => {
+                            buf.write_all(format!("{offset}{name}?: [").as_bytes())?;
+                        }
+                        EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
+                            buf.write_all(format!("{offset}{{ {name}: [").as_bytes())?;
+                        }
+                    }
                     for (i, field) in fields.iter().enumerate() {
                         field.reference(natures, buf, offset.inc())?;
                         if i < fields.len() - 1 {
@@ -57,9 +111,15 @@ impl Interpreter for Refered {
                         }
                     }
                     buf.write_all("]".as_bytes())?;
+                    match repres {
+                        EnumRepresentation::AsInterface => {}
+                        EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
+                            buf.write_all(" }".as_bytes())?;
+                        }
+                    }
                 }
             }
-            Refered::Field(name, context, _, _) => {
+            Refered::Field(name, context, ..) => {
                 buf.write_all(format!("{}: ", context.rename_field(name)?).as_bytes())?
             }
             Refered::Func(name, context, func) => {
@@ -134,10 +194,10 @@ impl Interpreter for Refered {
                 }
                 buf.write_all(";\n".as_bytes())?;
             }
-            Refered::Ref(ref_name, _) => {
+            Refered::Ref(ref_name, ..) => {
                 return Err(E::Parsing(format!("Reference {ref_name} can be declared")));
             }
-            Refered::Generic(alias, _) => {
+            Refered::Generic(alias, ..) => {
                 return Err(E::Parsing(format!(
                     "Generic type cannot be rendered out of context; type alias = {alias}"
                 )))
@@ -153,11 +213,11 @@ impl Interpreter for Refered {
         offset: Offset,
     ) -> Result<(), E> {
         match self {
-            Refered::Enum(name, _, _) => buf.write_all(name.as_bytes())?,
-            Refered::EnumVariant(name, _, _, _) => {
+            Refered::Enum(name, ..) => buf.write_all(name.as_bytes())?,
+            Refered::EnumVariant(name, ..) => {
                 buf.write_all(format!("{offset}{name}: ").as_bytes())?
             }
-            Refered::Field(name, context, nature, _) => {
+            Refered::Field(name, context, nature, ..) => {
                 if let Nature::Composite(Composite::Func(_, _, _, _, constructor)) = nature.deref()
                 {
                     if *constructor {
@@ -179,14 +239,14 @@ impl Interpreter for Refered {
                     nature.reference(natures, buf, offset)?;
                 }
             }
-            Refered::Func(name, _, _) => buf.write_all(name.as_bytes())?,
-            Refered::FuncArg(name, _, _, _) => {
+            Refered::Func(name, ..) => buf.write_all(name.as_bytes())?,
+            Refered::FuncArg(name, ..) => {
                 return Err(E::Parsing(format!(
                     "Function argument {name} can be refered"
                 )));
             }
-            Refered::Struct(name, _, _) => buf.write_all(name.as_bytes())?,
-            Refered::TupleStruct(name, _, _) => buf.write_all(name.as_bytes())?,
+            Refered::Struct(name, ..) => buf.write_all(name.as_bytes())?,
+            Refered::TupleStruct(name, ..) => buf.write_all(name.as_bytes())?,
             Refered::Ref(ref_name, context) => {
                 if let Some(context) = context {
                     if let Some(nature) = context.get_generic(ref_name) {

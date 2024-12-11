@@ -58,6 +58,7 @@ pub fn read(
                     serialize_name(&name),
                     context.clone(),
                     vec![],
+                    cfg.enum_representation.clone(),
                 ));
                 enums::read(variants, &mut nature, context.clone(), cfg)?;
                 natures.insert(&name, nature, context.get_module())

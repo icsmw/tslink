@@ -46,6 +46,7 @@ pub fn read(
             context.clone(),
             values.clone(),
             !not_flat,
+            cfg.enum_representation.clone(),
         )))?;
     }
     Ok(())

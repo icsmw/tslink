@@ -261,10 +261,10 @@ impl Interpreter for Refered {
                     buf.write_all(format!("\nexports.{struct_name} = {alias};\n").as_bytes())?;
                 }
             }
-            Refered::Enum(name, _context, variants) => {
+            Refered::Enum(name, _context, variants, ..) => {
                 buf.write_all(format!("{}exports.{name} = Object.freeze({{\n", offset).as_bytes())?;
                 for (i, variant) in variants.iter().enumerate() {
-                    if let Nature::Refered(Refered::EnumVariant(name, _, _, _)) = variant {
+                    if let Nature::Refered(Refered::EnumVariant(name, ..)) = variant {
                         buf.write_all(
                             format!(
                                 "{}{name}: \"{name}\", {i}: \"{name}\", \"{i}\": \"{name}\",\n",

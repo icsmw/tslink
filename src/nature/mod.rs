@@ -151,11 +151,11 @@ impl Nature {
                     let _ = field.insert(Box::new(nature));
                     Ok(())
                 }
-                Refered::Enum(_, _, natures) => {
+                Refered::Enum(_, _, natures, ..) => {
                     natures.push(nature);
                     Ok(())
                 }
-                Refered::EnumVariant(_, _, natures, _) => {
+                Refered::EnumVariant(_, _, natures, ..) => {
                     natures.push(nature);
                     Ok(())
                 }
@@ -277,17 +277,15 @@ impl Nature {
                 Err(E::Parsing(String::from("Composite do not have context")))?
             }
             Self::Refered(refered) => match refered {
-                Refered::Enum(_, context, _) => context,
-                Refered::EnumVariant(_, context, _, _) => context,
-                Refered::Field(_, context, _, _) => context,
-                Refered::Func(_, context, _) => context,
-                Refered::FuncArg(_, context, _, _) => context,
-                Refered::TupleStruct(_, context, _) => context,
-                Refered::Struct(_, context, _) => context,
-                Refered::Ref(_, _) => {
-                    Err(E::Parsing(String::from("Reference do not have context")))?
-                }
-                Refered::Generic(_, _) => {
+                Refered::Enum(_, context, ..) => context,
+                Refered::EnumVariant(_, context, ..) => context,
+                Refered::Field(_, context, ..) => context,
+                Refered::Func(_, context, ..) => context,
+                Refered::FuncArg(_, context, ..) => context,
+                Refered::TupleStruct(_, context, ..) => context,
+                Refered::Struct(_, context, ..) => context,
+                Refered::Ref(..) => Err(E::Parsing(String::from("Reference do not have context")))?,
+                Refered::Generic(..) => {
                     Err(E::Parsing(String::from("Generic do not have context")))?
                 }
             },

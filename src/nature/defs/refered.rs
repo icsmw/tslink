@@ -1,7 +1,5 @@
 use crate::{
-    context::Context,
-    error::E,
-    nature::{Nature, VariableTokenStream, TypeTokenStream, TypeAsString},
+    config::cfg::EnumRepresentation, context::Context, error::E, nature::{Nature, TypeAsString, TypeTokenStream, VariableTokenStream}
 };
 use proc_macro2::TokenStream;
 use quote::{quote, format_ident};
@@ -12,10 +10,10 @@ pub enum Refered {
     TupleStruct(String, Context, Option<Box<Nature>>),
     // Name, Context, Fields
     Struct(String, Context, Vec<Nature>),
-    // Name, Context, Variants
-    Enum(String, Context, Vec<Nature>),
+    // Name, Context, Variants, EnumRepresentation
+    Enum(String, Context, Vec<Nature>, EnumRepresentation),
     // name, context, values, is_flat
-    EnumVariant(String, Context, Vec<Nature>, bool),
+    EnumVariant(String, Context, Vec<Nature>, bool, EnumRepresentation),
     // Name, Context, FuncNature
     Func(String, Context, Box<Nature>),
     // Name, Context, Nature, Binding
@@ -31,7 +29,7 @@ pub enum Refered {
 impl Refered {
     pub fn is_flat_varians(variants: &[Nature]) -> Result<bool, E> {
         for variant in variants {
-            if let Nature::Refered(Refered::EnumVariant(_, _, values, _)) = variant {
+            if let Nature::Refered(Refered::EnumVariant(_, _, values, ..)) = variant {
                 if !values.is_empty() {
                     return Ok(false);
                 }
@@ -43,7 +41,7 @@ impl Refered {
     }
 
     pub fn is_enum_flat(&self) -> Result<bool, E> {
-        if let Refered::Enum(_, _, variants) = self {
+        if let Refered::Enum(_, _, variants,_) = self {
             Refered::is_flat_varians(variants)
         } else {
             Err(E::Parsing(String::from("Given Nature isn't enum")))
@@ -54,15 +52,15 @@ impl Refered {
 impl TypeTokenStream for Refered {
     fn type_token_stream(&self) -> Result<TokenStream, E> {
         let ident = match self {
-            Self::TupleStruct(name, _, _) => Ok(format_ident!("{}", name)),
-            Self::Struct(name, _, _) => Ok(format_ident!("{}", name)),
-            Self::Enum(name, _, _) => Ok(format_ident!("{}", name)),
-            Self::Ref(name, _) => Ok(format_ident!("{}", name)),
-            Self::EnumVariant(_, _, _, _) |
-            Self::Func(_, _, _) |
-            Self::Field(_, _, _, _) |
-            Self::FuncArg(_, _, _, _) |
-            Self::Generic(_, _) => Err(E::Other("EnumVariant, Func, Field, FuncArg, Generic of Refered doesn't support TypeTokenStream".to_string()))
+            Self::TupleStruct(name, ..) => Ok(format_ident!("{}", name)),
+            Self::Struct(name, ..) => Ok(format_ident!("{}", name)),
+            Self::Enum(name, ..) => Ok(format_ident!("{}", name)),
+            Self::Ref(name, ..) => Ok(format_ident!("{}", name)),
+            Self::EnumVariant(..) |
+            Self::Func(..) |
+            Self::Field(..) |
+            Self::FuncArg(..) |
+            Self::Generic(..) => Err(E::Other("EnumVariant, Func, Field, FuncArg, Generic of Refered doesn't support TypeTokenStream".to_string()))
         }?;
         Ok(quote! { #ident })
     }
@@ -71,15 +69,15 @@ impl TypeTokenStream for Refered {
 impl TypeAsString for Refered {
     fn type_as_string(&self) -> Result<String, E> {
         match self {
-            Self::TupleStruct(name, _, _) => Ok(name.clone()),
-            Self::Struct(name, _, _) => Ok(name.clone()),
-            Self::Enum(name, _, _) => Ok(name.clone()),
-            Self::Ref(name, _) => Ok(name.clone()),
-            Self::EnumVariant(_, _, _, _) |
-            Self::Func(_, _, _) |
-            Self::Field(_, _, _, _) |
-            Self::FuncArg(_, _, _, _) |
-            Self::Generic(_, _) => Err(E::Other("EnumVariant, Func, Field, FuncArg, Generic of Refered doesn't support TypeAsString".to_string()))
+            Self::TupleStruct(name, ..) => Ok(name.clone()),
+            Self::Struct(name, ..) => Ok(name.clone()),
+            Self::Enum(name, ..) => Ok(name.clone()),
+            Self::Ref(name, ..) => Ok(name.clone()),
+            Self::EnumVariant(..) |
+            Self::Func(..) |
+            Self::Field(..) |
+            Self::FuncArg(..) |
+            Self::Generic(..) => Err(E::Other("EnumVariant, Func, Field, FuncArg, Generic of Refered doesn't support TypeAsString".to_string()))
         }
     }
 }

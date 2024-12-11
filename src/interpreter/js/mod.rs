@@ -64,7 +64,7 @@ const nativeModuleRef = native();
         )
         .as_bytes(),
     )?;
-    for en_nature in natures.filter(|n| matches!(n, Nature::Refered(Refered::Enum(_, _, _)))) {
+    for en_nature in natures.filter(|n| matches!(n, Nature::Refered(Refered::Enum(..)))) {
         if let Nature::Refered(en_nature) = en_nature {
             if en_nature.is_enum_flat()? {
                 en_nature.declaration(natures, &mut buf_writer, Offset::new())?;

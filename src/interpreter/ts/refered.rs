@@ -1,5 +1,6 @@
 use super::Interpreter;
 use crate::{
+    config::cfg::EnumRepresentation,
     error::E,
     interpreter::{ts::Writer, Offset},
     nature::{Composite, Nature, Natures, Refered},
@@ -15,40 +16,111 @@ impl Interpreter for Refered {
         parent: Option<String>,
     ) -> Result<(), E> {
         match self {
-            Refered::Enum(name, _context, variants) => {
+            Refered::Enum(name, _context, variants, repres) => {
                 let flat = Refered::is_flat_varians(variants)?;
-                buf.push(format!(
-                    "{offset}export {} {name} {{\n",
-                    if flat { "enum" } else { "interface" }
-                ));
-                if let Some(module) = natures.get_module_of(name) {
-                    if natures.exists_in_module(name, &module) {
-                        buf.add_export(name, &module)?;
+                if flat {
+                    buf.push(format!("{offset}export enum {name} {{\n",));
+                    if let Some(module) = natures.get_module_of(name) {
+                        if natures.exists_in_module(name, &module) {
+                            buf.add_export(name, &module)?;
+                        }
+                    }
+                    for variant in variants.iter() {
+                        variant.declaration(natures, buf, offset.inc(), Some(name.to_owned()))?;
+                        buf.push(",\n");
+                    }
+                    buf.push(format!("{offset}}}\n",));
+                } else {
+                    match repres {
+                        EnumRepresentation::AsInterface => {
+                            buf.push(format!("{offset}export interface {name} {{\n",));
+                            if let Some(module) = natures.get_module_of(name) {
+                                if natures.exists_in_module(name, &module) {
+                                    buf.add_export(name, &module)?;
+                                }
+                            }
+                            for variant in variants.iter() {
+                                variant.declaration(
+                                    natures,
+                                    buf,
+                                    offset.inc(),
+                                    Some(name.to_owned()),
+                                )?;
+                                buf.push(";\n");
+                            }
+                            buf.push(format!("{offset}}}\n",));
+                        }
+                        EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
+                            buf.push(format!("{offset}export type {name} =\n",));
+                            if let Some(module) = natures.get_module_of(name) {
+                                if natures.exists_in_module(name, &module) {
+                                    buf.add_export(name, &module)?;
+                                }
+                            }
+                            for (n, variant) in variants.iter().enumerate() {
+                                variant.declaration(
+                                    natures,
+                                    buf,
+                                    offset.inc(),
+                                    Some(name.to_owned()),
+                                )?;
+                                buf.push(format!(
+                                    "{}\n",
+                                    if n == variants.len() - 1 { "" } else { " | " }
+                                ));
+                            }
+                            buf.push(format!("{offset};\n",));
+                        }
                     }
                 }
-                for variant in variants.iter() {
-                    variant.declaration(natures, buf, offset.inc(), Some(name.to_owned()))?;
-                    buf.push(if flat { ",\n" } else { ";\n" });
-                }
-                buf.push(format!("{offset}}}\n",));
             }
-            Refered::EnumVariant(name, _context, fields, flat) => {
+            Refered::EnumVariant(name, _context, fields, flat, repres) => {
                 if fields.is_empty() {
                     if *flat {
                         buf.push(format!("{offset}{name}"));
                     } else {
-                        buf.push(format!("{offset}{name}?: null"));
+                        match repres {
+                            EnumRepresentation::AsInterface => {
+                                buf.push(format!("{offset}{name}?: null"));
+                            }
+                            EnumRepresentation::AsType => {
+                                buf.push(format!("{offset}{{ {name}: null }}"));
+                            }
+                            EnumRepresentation::Collapsed => {
+                                buf.push(format!("{offset}\"{name}\""));
+                            }
+                        }
                     }
                 } else if fields.len() == 1 {
-                    buf.push(format!("{offset}{name}?: "));
+                    match repres {
+                        EnumRepresentation::AsInterface => {
+                            buf.push(format!("{offset}{name}?: "));
+                        }
+                        EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
+                            buf.push(format!("{offset}{{ {name}: "));
+                        }
+                    }
                     fields
                         .first()
                         .ok_or(E::Parsing(String::from(
                             "Expecting single field for Variant",
                         )))?
                         .reference(natures, buf, offset.inc(), parent)?;
+                    match repres {
+                        EnumRepresentation::AsInterface => {}
+                        EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
+                            buf.push(" }");
+                        }
+                    }
                 } else {
-                    buf.push(format!("{offset}{name}?: ["));
+                    match repres {
+                        EnumRepresentation::AsInterface => {
+                            buf.push(format!("{offset}{name}?: ["));
+                        }
+                        EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
+                            buf.push(format!("{offset}{{ {name}: ["));
+                        }
+                    }
                     for (i, field) in fields.iter().enumerate() {
                         field.reference(natures, buf, offset.inc(), parent.clone())?;
                         if i < fields.len() - 1 {
@@ -56,9 +128,15 @@ impl Interpreter for Refered {
                         }
                     }
                     buf.push("]");
+                    match repres {
+                        EnumRepresentation::AsInterface => {}
+                        EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
+                            buf.push(" }");
+                        }
+                    }
                 }
             }
-            Refered::Field(name, context, _, _) => {
+            Refered::Field(name, context, ..) => {
                 buf.push(format!("{}: ", context.rename_field(name)?))
             }
             Refered::Func(name, context, func) => {
@@ -142,10 +220,10 @@ impl Interpreter for Refered {
                 }
                 buf.push(";\n");
             }
-            Refered::Ref(ref_name, _) => {
+            Refered::Ref(ref_name, ..) => {
                 return Err(E::Parsing(format!("Reference {ref_name} can be declared")));
             }
-            Refered::Generic(alias, _) => {
+            Refered::Generic(alias, ..) => {
                 return Err(E::Parsing(format!(
                     "Generic type cannot be rendered out of context; type alias = {alias}"
                 )))
@@ -162,8 +240,8 @@ impl Interpreter for Refered {
         parent: Option<String>,
     ) -> Result<(), E> {
         match self {
-            Refered::Enum(name, _, _) => buf.push(name),
-            Refered::EnumVariant(name, _, _, _) => buf.push(format!("{offset}{name}")),
+            Refered::Enum(name, ..) => buf.push(name),
+            Refered::EnumVariant(name, ..) => buf.push(format!("{offset}{name}")),
             Refered::Field(name, context, nature, _) => {
                 if let Nature::Composite(Composite::Func(_, _, _, _, constructor)) = nature.deref()
                 {
@@ -200,15 +278,15 @@ impl Interpreter for Refered {
                     nature.reference(natures, buf, offset, parent)?;
                 }
             }
-            Refered::Func(name, _context, _func) => buf.push(name),
-            Refered::FuncArg(name, _context, _, _) => {
+            Refered::Func(name, ..) => buf.push(name),
+            Refered::FuncArg(name, ..) => {
                 return Err(E::Parsing(format!(
                     "Function argument {name} can be refered"
                 )));
             }
-            Refered::Struct(name, _, _) => buf.push(name),
-            Refered::TupleStruct(name, _, _) => buf.push(name),
-            Refered::Ref(ref_name, _) => {
+            Refered::Struct(name, ..) => buf.push(name),
+            Refered::TupleStruct(name, ..) => buf.push(name),
+            Refered::Ref(ref_name, ..) => {
                 if let Some(module) = parent.and_then(|p| natures.get_module_of(&p)) {
                     if let (Some(ref_mod), false) = (
                         natures.get_module_of(ref_name),
@@ -222,7 +300,7 @@ impl Interpreter for Refered {
                 }
                 buf.push(ref_name)
             }
-            Refered::Generic(alias, _) => {
+            Refered::Generic(alias, ..) => {
                 return Err(E::Parsing(format!(
                     "Generic type cannot be rendered out of context; type alias = {alias}"
                 )))

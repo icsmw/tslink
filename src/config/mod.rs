@@ -1,5 +1,5 @@
 use crate::{error::E, package::value, CONFIG};
-use cfg::{Cfg, SnakeCaseNaming};
+use cfg::{Cfg, EnumRepresentation, SnakeCaseNaming};
 use convert_case::{Case, Casing};
 use std::{
     collections::{HashMap, HashSet},
@@ -25,6 +25,7 @@ pub struct Config {
     pub exception_suppression: bool,
     pub int_over_32_as_big_int: bool,
     pub type_map: HashMap<String, String>,
+    pub enum_representation: EnumRepresentation,
 }
 
 impl Config {
@@ -51,16 +52,17 @@ impl Config {
                 .map(|f| f.to_string_lossy().to_string())
         });
         if let Some(snake_case_naming) = cfg.snake_case_naming {
-            snake_case_naming.split(',').for_each(|v| {
-                let condition = SnakeCaseNaming::from_str(v).unwrap();
+            for case in snake_case_naming.split(',') {
+                let condition: SnakeCaseNaming = case.try_into()?;
                 if !self.snake_case_naming.contains(&condition) {
                     self.snake_case_naming.insert(condition);
                 }
-            });
+            }
         }
         self.exception_suppression = cfg.exception_suppression;
         self.int_over_32_as_big_int = cfg.int_over_32_as_big_int;
         self.type_map = cfg.type_map;
+        self.enum_representation = cfg.enum_representation;
         Ok(())
     }
 
