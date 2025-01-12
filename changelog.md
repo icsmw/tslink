@@ -1,3 +1,9 @@
+# 0.3.0 (12.01.2025)
+
+## Features
+
+- Add support for different ways to represent `enum`
+
 # 0.2.0 (26.09.2024)
 
 ## Features
