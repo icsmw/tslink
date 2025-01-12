@@ -16,21 +16,21 @@ pub enum SnakeCaseNaming {
 
 #[derive(Deserialize, Debug, Clone, Default)]
 pub enum EnumRepresentation {
-    Collapsed,
+    DiscriminatedUnion,
     #[default]
-    AsInterface,
-    AsType,
+    Flat,
+    Union,
 }
 
 impl TryFrom<&str> for EnumRepresentation {
     type Error = Error;
     fn try_from(value: &str) -> Result<EnumRepresentation, Self::Error> {
-        if value == EnumRepresentation::Collapsed.to_string() {
-            Ok(EnumRepresentation::Collapsed)
-        } else if value == EnumRepresentation::AsInterface.to_string() {
-            Ok(EnumRepresentation::AsInterface)
-        } else if value == EnumRepresentation::AsType.to_string() {
-            Ok(EnumRepresentation::AsType)
+        if value == EnumRepresentation::DiscriminatedUnion.to_string() {
+            Ok(EnumRepresentation::DiscriminatedUnion)
+        } else if value == EnumRepresentation::Flat.to_string() {
+            Ok(EnumRepresentation::Flat)
+        } else if value == EnumRepresentation::Union.to_string() {
+            Ok(EnumRepresentation::Union)
         } else {
             Err(Error::new(
                 ErrorKind::Other,
@@ -46,9 +46,9 @@ impl fmt::Display for EnumRepresentation {
             f,
             "{}",
             match self {
-                Self::Collapsed => "collapsed",
-                Self::AsInterface => "as_interface",
-                Self::AsType => "as_type",
+                Self::DiscriminatedUnion => "discriminated",
+                Self::Flat => "flat",
+                Self::Union => "union",
             }
         )
     }

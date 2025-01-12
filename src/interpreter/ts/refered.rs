@@ -32,7 +32,7 @@ impl Interpreter for Refered {
                     buf.push(format!("{offset}}}\n",));
                 } else {
                     match repres {
-                        EnumRepresentation::AsInterface => {
+                        EnumRepresentation::Flat => {
                             buf.push(format!("{offset}export interface {name} {{\n",));
                             for variant in variants.iter() {
                                 variant.declaration(
@@ -45,7 +45,7 @@ impl Interpreter for Refered {
                             }
                             buf.push(format!("{offset}}}\n",));
                         }
-                        EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
+                        EnumRepresentation::Union | EnumRepresentation::DiscriminatedUnion => {
                             buf.push(format!("{offset}export type {name} =\n",));
                             for (n, variant) in variants.iter().enumerate() {
                                 variant.declaration(
@@ -70,23 +70,23 @@ impl Interpreter for Refered {
                         buf.push(format!("{offset}{name}"));
                     } else {
                         match repres {
-                            EnumRepresentation::AsInterface => {
+                            EnumRepresentation::Flat => {
                                 buf.push(format!("{offset}{name}?: null"));
                             }
-                            EnumRepresentation::AsType => {
+                            EnumRepresentation::Union => {
                                 buf.push(format!("{offset}{{ {name}: null }}"));
                             }
-                            EnumRepresentation::Collapsed => {
+                            EnumRepresentation::DiscriminatedUnion => {
                                 buf.push(format!("{offset}\"{name}\""));
                             }
                         }
                     }
                 } else if fields.len() == 1 {
                     match repres {
-                        EnumRepresentation::AsInterface => {
+                        EnumRepresentation::Flat => {
                             buf.push(format!("{offset}{name}?: "));
                         }
-                        EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
+                        EnumRepresentation::Union | EnumRepresentation::DiscriminatedUnion => {
                             buf.push(format!(
                                 "{offset}{{{}{name}: ",
                                 if named {
@@ -109,10 +109,9 @@ impl Interpreter for Refered {
                             natures,
                             buf,
                             match repres {
-                                EnumRepresentation::AsInterface => offset.inc(),
-                                EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
-                                    offset.inc().inc()
-                                }
+                                EnumRepresentation::Flat => offset.inc(),
+                                EnumRepresentation::Union
+                                | EnumRepresentation::DiscriminatedUnion => offset.inc().inc(),
                             },
                             parent,
                         )?;
@@ -120,16 +119,17 @@ impl Interpreter for Refered {
                         buf.push(format!(
                             "\n{}}}",
                             match repres {
-                                EnumRepresentation::AsInterface => offset.clone(),
-                                EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
+                                EnumRepresentation::Flat => offset.clone(),
+                                EnumRepresentation::Union
+                                | EnumRepresentation::DiscriminatedUnion => {
                                     offset.inc()
                                 }
                             }
                         ));
                     }
                     match repres {
-                        EnumRepresentation::AsInterface => {}
-                        EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
+                        EnumRepresentation::Flat => {}
+                        EnumRepresentation::Union | EnumRepresentation::DiscriminatedUnion => {
                             buf.push(if named {
                                 format!("\n{}}}", offset)
                             } else {
@@ -139,13 +139,13 @@ impl Interpreter for Refered {
                     }
                 } else {
                     match repres {
-                        EnumRepresentation::AsInterface => {
+                        EnumRepresentation::Flat => {
                             buf.push(format!(
                                 "{offset}{name}?: {}",
                                 if named { "{\n" } else { "[" }
                             ));
                         }
-                        EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
+                        EnumRepresentation::Union | EnumRepresentation::DiscriminatedUnion => {
                             buf.push(format!(
                                 "{offset}{{{}{name}: {}",
                                 if named {
@@ -162,10 +162,9 @@ impl Interpreter for Refered {
                             natures,
                             buf,
                             match repres {
-                                EnumRepresentation::AsInterface => offset.inc(),
-                                EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
-                                    offset.inc().inc()
-                                }
+                                EnumRepresentation::Flat => offset.inc(),
+                                EnumRepresentation::Union
+                                | EnumRepresentation::DiscriminatedUnion => offset.inc().inc(),
                             },
                             parent.clone(),
                         )?;
@@ -177,8 +176,9 @@ impl Interpreter for Refered {
                         format!(
                             "\n{}}}",
                             match repres {
-                                EnumRepresentation::AsInterface => offset.clone(),
-                                EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
+                                EnumRepresentation::Flat => offset.clone(),
+                                EnumRepresentation::Union
+                                | EnumRepresentation::DiscriminatedUnion => {
                                     offset.inc()
                                 }
                             }
@@ -187,8 +187,8 @@ impl Interpreter for Refered {
                         "]".to_owned()
                     });
                     match repres {
-                        EnumRepresentation::AsInterface => {}
-                        EnumRepresentation::AsType | EnumRepresentation::Collapsed => {
+                        EnumRepresentation::Flat => {}
+                        EnumRepresentation::Union | EnumRepresentation::DiscriminatedUnion => {
                             buf.push(if named {
                                 format!("\n{}}}", offset)
                             } else {

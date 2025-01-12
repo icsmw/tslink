@@ -152,9 +152,11 @@ export declare class StructureA {
 
 ## Enums
 
-Flat enum will be represented as classic TypeScript enum
+### Flat Enum Representation
 
-```
+A flat enum will be represented as a classic TypeScript `enum`.
+
+```rust
 # #[macro_use] extern crate tslink;
 # use tslink::tslink;
 #[tslink]
@@ -170,9 +172,9 @@ enum FlatEnum {
 }
 ```
 
-Became in `*.d.ts`
+This Rust enum will be converted to the following TypeScript definition in `*.d.ts`:
 
-```ignore
+```typescript
 export enum FlatEnum {
     One,
     Two,
@@ -185,10 +187,11 @@ export enum FlatEnum {
 }
 ```
 
-But any enum with nested types will be represented as `interface` on TypeScript
-side.
+### Nested Enum Representation
 
-```
+Any Rust enum with variants that include nested types will, by default, be represented as an `interface` in TypeScript. Here is an example:
+
+```rust
 # #[macro_use] extern crate tslink;
 # use tslink::tslink;
 #[tslink]
@@ -202,9 +205,9 @@ enum SomeEnum {
 }
 ```
 
-Became in `*.d.ts`
+This will be converted to the following TypeScript definition in `*.d.ts`:
 
-```ignore
+```typescript
 export interface SomeEnum {
     One?: null;
     Two?: null;
@@ -214,6 +217,59 @@ export interface SomeEnum {
     Six?: number[];
 }
 ```
+
+### Enum Representation Configuration
+
+You can customize how enums are represented in TypeScript by using the `enum_representation` setting in your `Cargo.toml` file. The following options are available:
+
+#### 1. `flat` (default)
+
+This option represents the enum as a TypeScript `interface` with optional fields corresponding to each variant of the Rust enum. Example:
+
+```typescript
+export interface SomeEnum {
+    One?: null;
+    Two?: null;
+    Three?: number;
+    Four?: [number, number, number];
+    Five?: [string, string];
+    Six?: number[];
+}
+```
+
+#### 2. `union`
+
+This option represents the enum as a TypeScript `type` that uses a union of objects. Each variant is represented as an object with a single field named after the variant. Example:
+
+```typescript
+export type SomeEnum =
+    { One: null; } |
+    { Two: null; } |
+    { Three: number; } |
+    { Four: [number, number, number]; } |
+    { Five: [string, string]; } |
+    { Six: number[]; };
+```
+
+#### 3. `discriminated`
+
+This option is similar to `union`, but variants without associated data are represented as string literals. Example:
+
+```typescript
+export type SomeEnum =
+    "One" |
+    "Two" |
+    "Three" |
+    { Four: [number, number, number]; } |
+    { Five: [string, string]; } |
+    { Six: number[]; };
+```
+
+### Why Multiple Representations?
+
+The flexibility in enum representation is necessary because different serialization and deserialization methods between Rust and TypeScript may require specific formats. This allows developers to choose the representation that best fits their use case.
+
+ 
 
 ## Usage
 
