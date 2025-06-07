@@ -6,3 +6,4 @@ import "./types";
 import "./optional";
 import "./asyncness";
 import "./threads";
+import "./constant";

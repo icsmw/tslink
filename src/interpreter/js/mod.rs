@@ -73,7 +73,7 @@ const nativeModuleRef = native();
     }
     for (_, filtered) in natures.iter().filter(|(_, nature)| match nature {
         Nature::Referred(Referred::Struct(_, context, _)) => context.as_class(),
-        Nature::Referred(Referred::Func(_, _, _)) => true,
+        Nature::Referred(Referred::Func(..)) | Nature::Referred(Referred::Constant(..)) => true,
         _ => false,
     }) {
         if let Nature::Referred(nature) = filtered {
