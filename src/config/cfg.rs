@@ -1,9 +1,5 @@
 use serde::Deserialize;
-use std::{
-    collections::HashMap,
-    fmt,
-    io::{Error, ErrorKind},
-};
+use std::{collections::HashMap, fmt, io::Error};
 use toml::Table;
 
 const TSLINK_CARGO_KEY: &str = "tslink";
@@ -32,10 +28,9 @@ impl TryFrom<&str> for EnumRepresentation {
         } else if value == EnumRepresentation::Union.to_string() {
             Ok(EnumRepresentation::Union)
         } else {
-            Err(Error::new(
-                ErrorKind::Other,
-                format!("Unknown option for enum_representation option: \"{value}\""),
-            ))
+            Err(Error::other(format!(
+                "Unknown option for enum_representation option: \"{value}\""
+            )))
         }
     }
 }
@@ -62,10 +57,9 @@ impl TryFrom<&str> for SnakeCaseNaming {
         } else if value == SnakeCaseNaming::Fields.to_string() {
             Ok(SnakeCaseNaming::Fields)
         } else {
-            Err(Error::new(
-                ErrorKind::Other,
-                format!("Unknown option for snake_case_naming option: \"{value}\""),
-            ))
+            Err(Error::other(format!(
+                "Unknown option for snake_case_naming option: \"{value}\""
+            )))
         }
     }
 }

@@ -8,6 +8,8 @@ cd ./tests/callbacks
 yarn run test
 cd ../renaming
 yarn run test
+cd ../constant
+yarn run test
 cd ../node-bindgen
 yarn run test
 cd ../modules

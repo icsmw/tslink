@@ -7,11 +7,12 @@ use crate::{
     error::E,
     interpreter::{self, serialize_name},
     modificator,
-    nature::{Composite, Extract, ExtractGenerics, Nature, Natures, Refered},
+    nature::{Composite, Extract, ExtractGenerics, Nature, Natures, Referred},
     package,
 };
+use quote::ToTokens;
 use std::ops::Deref;
-use syn::{Fields, Item, ItemEnum, ItemStruct};
+use syn::{Fields, Item, ItemConst, ItemEnum, ItemStruct};
 
 pub fn read(
     item: &mut Item,
@@ -30,13 +31,13 @@ pub fn read(
             } else {
                 context.add_generics(Nature::extract_generics(&item_struct.generics, cfg)?);
                 let mut nature = if matches!(fields, Fields::Unnamed(..)) {
-                    Nature::Refered(Refered::TupleStruct(
+                    Nature::Referred(Referred::TupleStruct(
                         serialize_name(&name),
                         context.clone(),
                         None,
                     ))
                 } else {
-                    Nature::Refered(Refered::Struct(
+                    Nature::Referred(Referred::Struct(
                         serialize_name(&name),
                         context.clone(),
                         vec![],
@@ -54,7 +55,7 @@ pub fn read(
             if natures.contains(&name) {
                 Err(E::EntityExist(name))
             } else {
-                let mut nature = Nature::Refered(Refered::Enum(
+                let mut nature = Nature::Referred(Referred::Enum(
                     serialize_name(&name),
                     context.clone(),
                     vec![],
@@ -83,7 +84,7 @@ pub fn read(
                 let fn_nature = Nature::extract(&*item_fn, context.clone(), cfg)?;
                 let _ = natures.insert(
                     &name,
-                    Nature::Refered(Refered::Func(
+                    Nature::Referred(Referred::Func(
                         serialize_name(&name),
                         context.clone(),
                         Box::new(fn_nature.clone()),
@@ -106,14 +107,14 @@ pub fn read(
             };
             if let Some(nature) = natures.get_mut(
                 &struct_name,
-                Some(Nature::Refered(Refered::Struct(
+                Some(Nature::Referred(Referred::Struct(
                     serialize_name(&struct_name),
                     context.clone(),
                     vec![],
                 ))),
                 context.get_module(),
             ) {
-                if let Nature::Refered(Refered::Struct(_, struct_context, _)) = nature.deref() {
+                if let Nature::Referred(Referred::Struct(_, struct_context, _)) = nature.deref() {
                     structs::read_impl(
                         &mut item_impl.items,
                         nature,
@@ -126,6 +127,23 @@ pub fn read(
                 }
             } else {
                 Err(E::NotFoundStruct)
+            }
+        }
+        Item::Const(item_const) => {
+            let ItemConst {
+                ident, ty, expr, ..
+            } = item_const;
+            let name = ident.to_string();
+            if natures.contains(&name) {
+                Err(E::EntityExist(name))
+            } else {
+                let nature = Nature::Referred(Referred::Constant(
+                    serialize_name(ident.to_string()),
+                    context.to_owned(),
+                    Box::new(Nature::extract(ty.as_ref(), context.to_owned(), cfg)?),
+                    expr.as_ref().into_token_stream().to_string(),
+                ));
+                natures.insert(&name, nature, context.get_module())
             }
         }
         _ => Ok(()),

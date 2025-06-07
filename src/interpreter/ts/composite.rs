@@ -2,7 +2,7 @@ use super::Interpreter;
 use crate::{
     error::E,
     interpreter::{ts::Writer, Offset},
-    nature::{Composite, Nature, Natures, Refered, TypeAsString},
+    nature::{Composite, Nature, Natures, Referred, TypeAsString},
 };
 
 impl Interpreter for Composite {
@@ -41,7 +41,7 @@ impl Interpreter for Composite {
                 buf.push("(");
                 let mut generic = false;
                 for (i, nature) in args.iter().enumerate() {
-                    if let Nature::Refered(Refered::FuncArg(name, _context, nature, _)) = nature {
+                    if let Nature::Referred(Referred::FuncArg(name, _context, nature, _)) = nature {
                         buf.push(format!("{name}: "));
                         nature.reference(natures, buf, offset.clone(), parent.clone())?;
                     } else {
@@ -112,10 +112,10 @@ impl Interpreter for Composite {
                     "Error".to_owned()
                 };
                 if res.is_some() && *exception_suppression {
-                    buf.push(format!(" | {}", err_ext));
+                    buf.push(format!(" | {err_ext}",));
                 }
                 if res.is_none() && *exception_suppression {
-                    buf.push(format!("{} | void", err_ext));
+                    buf.push(format!("{err_ext} | void",));
                 }
                 if res.is_none() && !*exception_suppression {
                     buf.push("void");

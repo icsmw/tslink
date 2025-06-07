@@ -72,7 +72,7 @@ impl Writer {
         };
         TS_IMPORTS
             .write()
-            .map_err(|_| Error::new(ErrorKind::Other, "Fail access to a list of imports"))?
+            .map_err(|_| Error::other("Fail access to a list of imports"))?
             .add(&self.location, entity);
         Ok(())
     }

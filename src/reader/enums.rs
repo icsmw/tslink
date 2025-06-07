@@ -3,7 +3,7 @@ use crate::{
     context::Context,
     error::E,
     interpreter::serialize_name,
-    nature::{Extract, Nature, Refered},
+    nature::{Extract, Nature, Referred},
 };
 use syn::{punctuated::Punctuated, token::Comma, Fields};
 
@@ -13,7 +13,7 @@ fn read_variant(fields: &Fields, context: Context, cfg: &Config) -> Result<Vec<N
         Fields::Named(ref fields) => {
             for field in fields.named.iter() {
                 let name = field.ident.clone().unwrap();
-                values.push(Nature::Refered(Refered::Field(
+                values.push(Nature::Referred(Referred::Field(
                     serialize_name(name.to_string()),
                     context.clone(),
                     Box::new(Nature::extract(&field.ty, context.clone(), cfg)?),
@@ -47,7 +47,7 @@ pub fn read(
     }
     let not_flat = fields.iter().any(|(_, v)| !v.is_empty());
     for (name, values) in fields {
-        parent.bind(Nature::Refered(Refered::EnumVariant(
+        parent.bind(Nature::Referred(Referred::EnumVariant(
             serialize_name(&name),
             context.clone(),
             values,

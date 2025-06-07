@@ -10,7 +10,7 @@ impl TypeTokenStream for Nature {
         match self {
             Nature::Composite(ty) => ty.type_token_stream(),
             Nature::Primitive(ty) => ty.type_token_stream(),
-            Nature::Refered(ty) => ty.type_token_stream(),
+            Nature::Referred(ty) => ty.type_token_stream(),
         }
     }
 }
@@ -23,7 +23,7 @@ impl TypeAsString for Nature {
         match self {
             Nature::Composite(ty) => ty.type_as_string(),
             Nature::Primitive(ty) => ty.type_as_string(),
-            Nature::Refered(ty) => ty.type_as_string(),
+            Nature::Referred(ty) => ty.type_as_string(),
         }
     }
 }
@@ -42,7 +42,7 @@ impl VariableTokenStream for Nature {
         match self {
             Nature::Composite(v) => v.variable_token_stream(var_name, err),
             Nature::Primitive(v) => v.variable_token_stream(var_name, err),
-            Nature::Refered(v) => v.variable_token_stream(var_name, err),
+            Nature::Referred(v) => v.variable_token_stream(var_name, err),
         }
     }
 }

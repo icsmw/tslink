@@ -50,7 +50,7 @@ impl Interpreter for Nature {
         match self {
             Self::Primitive(primitive) => primitive.declaration(natures, buf, offset, parent),
             Self::Composite(composite) => composite.declaration(natures, buf, offset, parent),
-            Self::Refered(refered) => refered.declaration(natures, buf, offset, parent),
+            Self::Referred(refered) => refered.declaration(natures, buf, offset, parent),
         }
     }
 
@@ -64,7 +64,7 @@ impl Interpreter for Nature {
         match self {
             Self::Primitive(primitive) => primitive.reference(natures, buf, offset, parent),
             Self::Composite(composite) => composite.reference(natures, buf, offset, parent),
-            Self::Refered(refered) => refered.reference(natures, buf, offset, parent),
+            Self::Referred(refered) => refered.reference(natures, buf, offset, parent),
         }
     }
 }

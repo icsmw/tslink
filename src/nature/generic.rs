@@ -3,7 +3,7 @@ use crate::{
     context::Context,
     error::E,
     interpreter::serialize_name,
-    nature::{types, Composite, Extract, Nature, OriginType, Refered},
+    nature::{types, Composite, Extract, Nature, OriginType, Referred},
 };
 use syn::{
     GenericParam, Generics, PathArguments, PredicateType, TraitBound, TypeParam, TypeParamBound,
@@ -52,7 +52,7 @@ impl ExtractGeneric<&TraitBound> for Nature {
                         )
                     }
                 };
-                return Ok(Some(Nature::Refered(Refered::Generic(
+                return Ok(Some(Nature::Referred(Referred::Generic(
                     serialize_name(generic_ref),
                     Box::new(Nature::Composite(Composite::Func(
                         OriginType::from(tr.clone()),
@@ -101,7 +101,7 @@ impl ExtractGeneric<&PredicateType> for Nature {
         _generic_ref: Option<String>,
         cfg: &Config,
     ) -> Result<Option<Nature>, E> {
-        let generic_ref = if let Nature::Refered(Refered::Ref(name, _)) =
+        let generic_ref = if let Nature::Referred(Referred::Ref(name, _)) =
             Nature::extract(&pre_type.bounded_ty, Context::default(), cfg)?
         {
             name

@@ -5,7 +5,7 @@ use proc_macro2::TokenStream;
 use quote::{quote, format_ident};
 
 #[derive(Clone, Debug)]
-pub enum Refered {
+pub enum Referred {
     // Name, Context, Field
     TupleStruct(String, Context, Option<Box<Nature>>),
     // Name, Context, Fields
@@ -23,13 +23,15 @@ pub enum Refered {
     // Name
     Ref(String, Option<Context>),
     // Alias, Nature
-    Generic(String, Box<Nature>)
+    Generic(String, Box<Nature>),
+    // Name, Context, Type, Value
+    Constant(String, Context, Box<Nature>, String)
 }
 
-impl Refered {
+impl Referred {
     pub fn is_flat_varians(variants: &[Nature]) -> Result<bool, E> {
         for variant in variants {
-            if let Nature::Refered(Refered::EnumVariant(_, _, values, ..)) = variant {
+            if let Nature::Referred(Referred::EnumVariant(_, _, values, ..)) = variant {
                 if !values.is_empty() {
                     return Ok(false);
                 }
@@ -41,48 +43,50 @@ impl Refered {
     }
 
     pub fn is_enum_flat(&self) -> Result<bool, E> {
-        if let Refered::Enum(_, _, variants,_) = self {
-            Refered::is_flat_varians(variants)
+        if let Referred::Enum(_, _, variants,_) = self {
+            Referred::is_flat_varians(variants)
         } else {
             Err(E::Parsing(String::from("Given Nature isn't enum")))
         }
     }
 }
 
-impl TypeTokenStream for Refered {
+impl TypeTokenStream for Referred {
     fn type_token_stream(&self) -> Result<TokenStream, E> {
         let ident = match self {
             Self::TupleStruct(name, ..) => Ok(format_ident!("{}", name)),
             Self::Struct(name, ..) => Ok(format_ident!("{}", name)),
             Self::Enum(name, ..) => Ok(format_ident!("{}", name)),
             Self::Ref(name, ..) => Ok(format_ident!("{}", name)),
+            Self::Constant(name, ..) => Ok(format_ident!("{}", name)),
             Self::EnumVariant(..) |
             Self::Func(..) |
             Self::Field(..) |
             Self::FuncArg(..) |
-            Self::Generic(..) => Err(E::Other("EnumVariant, Func, Field, FuncArg, Generic of Refered doesn't support TypeTokenStream".to_string()))
+            Self::Generic(..) => Err(E::Other("EnumVariant, Func, Field, FuncArg, Generic of Referred doesn't support TypeTokenStream".to_string()))
         }?;
         Ok(quote! { #ident })
     }
 }
 
-impl TypeAsString for Refered {
+impl TypeAsString for Referred {
     fn type_as_string(&self) -> Result<String, E> {
         match self {
             Self::TupleStruct(name, ..) => Ok(name.clone()),
             Self::Struct(name, ..) => Ok(name.clone()),
             Self::Enum(name, ..) => Ok(name.clone()),
             Self::Ref(name, ..) => Ok(name.clone()),
+            Self::Constant(name, ..) => Ok(name.clone()),
             Self::EnumVariant(..) |
             Self::Func(..) |
             Self::Field(..) |
             Self::FuncArg(..) |
-            Self::Generic(..) => Err(E::Other("EnumVariant, Func, Field, FuncArg, Generic of Refered doesn't support TypeAsString".to_string()))
+            Self::Generic(..) => Err(E::Other("EnumVariant, Func, Field, FuncArg, Generic of Referred doesn't support TypeAsString".to_string()))
         }
     }
 }
 
-impl VariableTokenStream for Refered {
+impl VariableTokenStream for Referred {
     fn variable_token_stream(&self, var_name: &str, err: Option<&Nature>) -> Result<TokenStream, E> {
         let var_name = format_ident!("{}", var_name);
         match self {   
