@@ -332,6 +332,9 @@ function {alias}({}) {{
                 )?;
                 buf.write_all(format!("\nexports.{fn_name} = {alias};\n").as_bytes())?;
             }
+            Referred::Constant(name, _context, _ty, value) => {
+                buf.write_all(format!("{offset}exports.{name} = {value};\n",).as_bytes())?;
+            }
             _ => {
                 return Err(E::Parsing(
                     "Given nature cannot be declared for JS".to_string(),
