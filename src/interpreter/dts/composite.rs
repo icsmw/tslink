@@ -2,7 +2,7 @@ use super::Interpreter;
 use crate::{
     error::E,
     interpreter::Offset,
-    nature::{Composite, Nature, Natures, Refered, TypeAsString},
+    nature::{Composite, Nature, Natures, Referred, TypeAsString},
 };
 use std::{
     fs::File,
@@ -44,7 +44,7 @@ impl Interpreter for Composite {
                 buf.write_all("(".as_bytes())?;
                 let mut generic = false;
                 for (i, nature) in args.iter().enumerate() {
-                    if let Nature::Refered(Refered::FuncArg(name, _context, nature, binding)) =
+                    if let Nature::Referred(Referred::FuncArg(name, _context, nature, binding)) =
                         nature
                     {
                         buf.write_all(format!("{name}: ").as_bytes())?;
@@ -121,10 +121,10 @@ impl Interpreter for Composite {
                     "Error".to_owned()
                 };
                 if res.is_some() && *exception_suppression {
-                    buf.write_all(format!(" | {}", err_ext).as_bytes())?;
+                    buf.write_all(format!(" | {err_ext}",).as_bytes())?;
                 }
                 if res.is_none() && *exception_suppression {
-                    buf.write_all(format!("{} | void", err_ext).as_bytes())?;
+                    buf.write_all(format!("{err_ext} | void",).as_bytes())?;
                 }
                 if res.is_none() && !*exception_suppression {
                     buf.write_all("void".as_bytes())?;

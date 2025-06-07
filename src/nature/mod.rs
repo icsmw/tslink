@@ -6,7 +6,7 @@ mod types;
 
 pub use defs::Composite;
 pub use defs::Primitive;
-pub use defs::Refered;
+pub use defs::Referred;
 pub use fabric::{TypeAsString, TypeTokenStream, VariableTokenStream};
 pub use generic::ExtractGenerics;
 pub use origin::OriginType;
@@ -42,7 +42,7 @@ impl Natures {
     }
     pub fn is_any_bound(natures: &[Nature]) -> bool {
         for nature in natures.iter() {
-            if let Nature::Refered(Refered::Field(_, _, _, binding)) = nature {
+            if let Nature::Referred(Referred::Field(_, _, _, binding)) = nature {
                 if binding.is_some() {
                     return true;
                 }
@@ -53,7 +53,7 @@ impl Natures {
     pub fn get_fn_args_names(args: &[Nature]) -> Vec<String> {
         args.iter()
             .filter_map(|arg| {
-                if let Nature::Refered(Refered::FuncArg(name, _, _, _)) = arg {
+                if let Nature::Referred(Referred::FuncArg(name, _, _, _)) = arg {
                     Some(name.to_owned())
                 } else {
                     None
@@ -118,7 +118,7 @@ impl Natures {
 #[derive(Clone, Debug)]
 pub enum Nature {
     Primitive(Primitive),
-    Refered(Refered),
+    Referred(Referred),
     Composite(Composite),
 }
 
@@ -142,24 +142,24 @@ impl Nature {
     pub fn bind(&mut self, nature: Nature) -> Result<(), E> {
         match self {
             Self::Primitive(_) => Err(E::Parsing(String::from("Primitive type cannot be bound"))),
-            Self::Refered(re) => match re {
-                Refered::Struct(_, _, natures) => {
+            Self::Referred(re) => match re {
+                Referred::Struct(_, _, natures) => {
                     natures.push(nature);
                     Ok(())
                 }
-                Refered::TupleStruct(_, _, field) => {
+                Referred::TupleStruct(_, _, field) => {
                     let _ = field.insert(Box::new(nature));
                     Ok(())
                 }
-                Refered::Enum(_, _, natures, ..) => {
+                Referred::Enum(_, _, natures, ..) => {
                     natures.push(nature);
                     Ok(())
                 }
-                Refered::EnumVariant(_, _, natures, ..) => {
+                Referred::EnumVariant(_, _, natures, ..) => {
                     natures.push(nature);
                     Ok(())
                 }
-                _ => Err(E::NotSupported("Refered".to_owned())),
+                _ => Err(E::NotSupported("Referred".to_owned())),
             },
             Self::Composite(othr) => match othr {
                 Composite::HashMap(_, k, v) => {
@@ -225,7 +225,7 @@ impl Nature {
     }
 
     pub fn is_method_constructor(&self) -> bool {
-        if let Nature::Refered(Refered::Field(_, _, nature, _)) = self {
+        if let Nature::Referred(Referred::Field(_, _, nature, _)) = self {
             if let Nature::Composite(Composite::Func(_, _, _, _, constructor)) = nature.deref() {
                 return *constructor;
             }
@@ -234,7 +234,7 @@ impl Nature {
     }
 
     pub fn is_field_ignored(&self) -> bool {
-        if let Nature::Refered(Refered::Field(name, context, _, _)) = self {
+        if let Nature::Referred(Referred::Field(name, context, _, _)) = self {
             context.is_ignored(name)
         } else {
             false
@@ -242,7 +242,7 @@ impl Nature {
     }
 
     pub fn check_ignored_fields(&self) -> Result<(), E> {
-        if let Nature::Refered(Refered::Struct(name, context, fields)) = self {
+        if let Nature::Referred(Referred::Struct(name, context, fields)) = self {
             let ignored = context.ignored_list();
             if ignored.is_empty() {
                 return Ok(());
@@ -250,7 +250,7 @@ impl Nature {
             let existed = fields
                 .iter()
                 .filter_map(|f| {
-                    if let Nature::Refered(Refered::Field(name, _, _, _)) = f {
+                    if let Nature::Referred(Referred::Field(name, _, _, _)) = f {
                         Some(name.to_owned())
                     } else {
                         None
@@ -276,16 +276,19 @@ impl Nature {
             Self::Composite(_composite) => {
                 Err(E::Parsing(String::from("Composite do not have context")))?
             }
-            Self::Refered(refered) => match refered {
-                Refered::Enum(_, context, ..) => context,
-                Refered::EnumVariant(_, context, ..) => context,
-                Refered::Field(_, context, ..) => context,
-                Refered::Func(_, context, ..) => context,
-                Refered::FuncArg(_, context, ..) => context,
-                Refered::TupleStruct(_, context, ..) => context,
-                Refered::Struct(_, context, ..) => context,
-                Refered::Ref(..) => Err(E::Parsing(String::from("Reference do not have context")))?,
-                Refered::Generic(..) => {
+            Self::Referred(refered) => match refered {
+                Referred::Enum(_, context, ..) => context,
+                Referred::EnumVariant(_, context, ..) => context,
+                Referred::Field(_, context, ..) => context,
+                Referred::Func(_, context, ..) => context,
+                Referred::FuncArg(_, context, ..) => context,
+                Referred::TupleStruct(_, context, ..) => context,
+                Referred::Struct(_, context, ..) => context,
+                Referred::Constant(_, context, ..) => context,
+                Referred::Ref(..) => {
+                    Err(E::Parsing(String::from("Reference do not have context")))?
+                }
+                Referred::Generic(..) => {
                     Err(E::Parsing(String::from("Generic do not have context")))?
                 }
             },

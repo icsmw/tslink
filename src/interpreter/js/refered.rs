@@ -2,7 +2,7 @@ use super::Interpreter;
 use crate::{
     error::E,
     interpreter::Offset,
-    nature::{Composite, Nature, Natures, Refered},
+    nature::{Composite, Nature, Natures, Referred},
 };
 use std::{
     fs::File,
@@ -102,7 +102,7 @@ fn fn_body(
     }
 }
 
-impl Interpreter for Refered {
+impl Interpreter for Referred {
     fn declaration(
         &self,
         _natures: &Natures,
@@ -110,7 +110,7 @@ impl Interpreter for Refered {
         offset: Offset,
     ) -> Result<(), E> {
         match self {
-            Refered::Struct(struct_name, _, fields) => {
+            Referred::Struct(struct_name, _, fields) => {
                 buf.write_all(
                     format!("\nconst {{ {struct_name} }} = nativeModuleRef;").as_bytes(),
                 )?;
@@ -127,7 +127,7 @@ impl Interpreter for Refered {
                     )?;
                     // Render fields
                     for field in fields.iter() {
-                        if let Nature::Refered(Refered::Field(name, _, nature, _)) = field {
+                        if let Nature::Referred(Referred::Field(name, _, nature, _)) = field {
                             if !matches!(
                                 nature.deref(),
                                 Nature::Composite(Composite::Func(_, _, _, _, _))
@@ -149,7 +149,7 @@ impl Interpreter for Refered {
                     // Render constructor
                     let mut constuctor_rendered = false;
                     for field in fields.iter() {
-                        if let Nature::Refered(Refered::Field(_, context, nature, _)) = field {
+                        if let Nature::Referred(Referred::Field(_, context, nature, _)) = field {
                             if let Nature::Composite(Composite::Func(_, args, _, _, true)) =
                                 &**nature
                             {
@@ -205,7 +205,7 @@ impl Interpreter for Refered {
                     }
                     // Render methods
                     for field in fields.iter() {
-                        if let Nature::Refered(Refered::Field(name, context, nature, _)) = field {
+                        if let Nature::Referred(Referred::Field(name, context, nature, _)) = field {
                             if let Nature::Composite(Composite::Func(
                                 _,
                                 args,
@@ -261,10 +261,10 @@ impl Interpreter for Refered {
                     buf.write_all(format!("\nexports.{struct_name} = {alias};\n").as_bytes())?;
                 }
             }
-            Refered::Enum(name, _context, variants, ..) => {
-                buf.write_all(format!("{}exports.{name} = Object.freeze({{\n", offset).as_bytes())?;
+            Referred::Enum(name, _context, variants, ..) => {
+                buf.write_all(format!("{offset}exports.{name} = Object.freeze({{\n",).as_bytes())?;
                 for (i, variant) in variants.iter().enumerate() {
-                    if let Nature::Refered(Refered::EnumVariant(name, ..)) = variant {
+                    if let Nature::Referred(Referred::EnumVariant(name, ..)) = variant {
                         buf.write_all(
                             format!(
                                 "{}{name}: \"{name}\", {i}: \"{name}\", \"{i}\": \"{name}\",\n",
@@ -278,9 +278,9 @@ impl Interpreter for Refered {
                         )));
                     }
                 }
-                buf.write_all(format!("{}}});\n", offset).as_bytes())?;
+                buf.write_all(format!("{offset}}});\n",).as_bytes())?;
             }
-            Refered::Func(fn_name, context, nature) => {
+            Referred::Func(fn_name, context, nature) => {
                 let fn_name = context.rename_method(fn_name)?;
                 let bound = context.get_bound_args();
                 let json_res = context.result_as_json()?;

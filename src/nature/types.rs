@@ -3,7 +3,7 @@ use crate::{
     context::Context,
     error::E,
     interpreter::serialize_name,
-    nature::{Composite, Nature, OriginType, Primitive, Refered},
+    nature::{Composite, Nature, OriginType, Primitive, Referred},
 };
 use syn::{
     punctuated::Punctuated, token::PathSep, FnArg, GenericArgument, Ident, ImplItemFn, ItemFn, Pat,
@@ -75,7 +75,9 @@ impl Extract<&Ident> for Nature {
                 Nature::Primitive(Primitive::BigInt(OriginType::from(ident.clone())))
             }
             ("bool", ..) => Nature::Primitive(Primitive::Boolean(OriginType::from(ident.clone()))),
-            ("String", ..) => Nature::Primitive(Primitive::String(OriginType::from(ident.clone()))),
+            ("String" | "str", ..) => {
+                Nature::Primitive(Primitive::String(OriginType::from(ident.clone())))
+            }
             ("f128", ..) => {
                 return Err(E::NotSupported(
                     "Type <f128> doesn't have direct equalent in JavaScript".to_owned(),
@@ -93,7 +95,7 @@ impl Extract<&Ident> for Nature {
                     "number" => {
                         Nature::Primitive(Primitive::Number(OriginType::from(ident.clone())))
                     }
-                    _ => Nature::Refered(Refered::Ref(serialized, Some(context.clone()))),
+                    _ => Nature::Referred(Referred::Ref(serialized, Some(context.clone()))),
                 }
             }
         })
@@ -160,6 +162,7 @@ impl Extract<&TypeTuple> for Nature {
 impl Extract<&Type> for Nature {
     fn extract(ty: &Type, context: Context, cfg: &Config) -> Result<Nature, E> {
         match ty {
+            Type::Reference(ty_ref) => Nature::extract(ty_ref.elem.as_ref(), context, cfg),
             Type::Path(type_path) => {
                 if let Some(ident) = type_path.path.get_ident() {
                     Nature::extract(ident, context, cfg)
@@ -189,7 +192,7 @@ impl Extract<&ImplItemFn> for Nature {
                 } else {
                     return Err(E::Parsing(String::from("Cannot find ident for FnArg")));
                 };
-                args.push(Nature::Refered(Refered::FuncArg(
+                args.push(Nature::Referred(Referred::FuncArg(
                     serialize_name(&arg_name),
                     context.clone(),
                     Box::new(Nature::extract(*ty.ty.clone(), context.clone(), cfg)?),
@@ -203,7 +206,7 @@ impl Extract<&ImplItemFn> for Nature {
             fn_item.sig.asyncness.is_some(),
             cfg,
         )?;
-        let constructor = if let Some(Nature::Refered(Refered::Ref(re, _))) = out.as_deref() {
+        let constructor = if let Some(Nature::Referred(Referred::Ref(re, _))) = out.as_deref() {
             re == "Self"
         } else {
             false
@@ -228,7 +231,7 @@ impl Extract<&ItemFn> for Nature {
                 } else {
                     return Err(E::Parsing(String::from("Cannot find ident for FnArg")));
                 };
-                args.push(Nature::Refered(Refered::FuncArg(
+                args.push(Nature::Referred(Referred::FuncArg(
                     serialize_name(&arg_name),
                     context.clone(),
                     Box::new(Nature::extract(*ty.ty.clone(), context.clone(), cfg)?),
@@ -242,7 +245,7 @@ impl Extract<&ItemFn> for Nature {
             fn_item.sig.asyncness.is_some(),
             cfg,
         )?;
-        let constructor = if let Some(Nature::Refered(Refered::Ref(re, _))) = out.as_deref() {
+        let constructor = if let Some(Nature::Referred(Referred::Ref(re, _))) = out.as_deref() {
             re == "Self"
         } else {
             false

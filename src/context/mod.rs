@@ -4,7 +4,7 @@ mod target;
 use crate::{
     config,
     error::E,
-    nature::{Nature, Refered},
+    nature::{Nature, Referred},
 };
 use convert_case::{Case, Casing};
 use input::Input;
@@ -58,7 +58,7 @@ impl Context {
 
     pub fn add_generics(&mut self, generics: Vec<Nature>) {
         generics.iter().for_each(|n| {
-            if let Nature::Refered(Refered::Generic(k, n)) = n {
+            if let Nature::Referred(Referred::Generic(k, n)) = n {
                 self.generics.insert(k.clone(), n.deref().clone());
             }
         });

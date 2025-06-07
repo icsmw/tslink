@@ -4,7 +4,7 @@ use crate::{
     config,
     error::E,
     interpreter::Offset,
-    nature::{Nature, Natures, Refered},
+    nature::{Nature, Natures, Referred},
 };
 use std::{
     fs::{self, File, OpenOptions},
@@ -64,19 +64,19 @@ const nativeModuleRef = native();
         )
         .as_bytes(),
     )?;
-    for en_nature in natures.filter(|n| matches!(n, Nature::Refered(Refered::Enum(..)))) {
-        if let Nature::Refered(en_nature) = en_nature {
+    for en_nature in natures.filter(|n| matches!(n, Nature::Referred(Referred::Enum(..)))) {
+        if let Nature::Referred(en_nature) = en_nature {
             if en_nature.is_enum_flat()? {
                 en_nature.declaration(natures, &mut buf_writer, Offset::new())?;
             }
         }
     }
     for (_, filtered) in natures.iter().filter(|(_, nature)| match nature {
-        Nature::Refered(Refered::Struct(_, context, _)) => context.as_class(),
-        Nature::Refered(Refered::Func(_, _, _)) => true,
+        Nature::Referred(Referred::Struct(_, context, _)) => context.as_class(),
+        Nature::Referred(Referred::Func(_, _, _)) => true,
         _ => false,
     }) {
-        if let Nature::Refered(nature) = filtered {
+        if let Nature::Referred(nature) = filtered {
             nature.declaration(natures, &mut buf_writer, Offset::new())?;
         }
     }

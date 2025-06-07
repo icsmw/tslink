@@ -3,11 +3,11 @@ use crate::{
     config::cfg::EnumRepresentation,
     error::E,
     interpreter::{ts::Writer, Offset},
-    nature::{Composite, Nature, Natures, Refered},
+    nature::{Composite, Nature, Natures, Referred},
 };
 use std::ops::Deref;
 
-impl Interpreter for Refered {
+impl Interpreter for Referred {
     fn declaration(
         &self,
         natures: &Natures,
@@ -16,13 +16,13 @@ impl Interpreter for Refered {
         parent: Option<String>,
     ) -> Result<(), E> {
         match self {
-            Refered::Enum(name, _context, variants, repres) => {
+            Referred::Enum(name, _context, variants, repres) => {
                 if let Some(module) = natures.get_module_of(name) {
                     if natures.exists_in_module(name, &module) {
                         buf.add_export(name, &module)?;
                     }
                 }
-                let flat = Refered::is_flat_varians(variants)?;
+                let flat = Referred::is_flat_varians(variants)?;
                 if flat {
                     buf.push(format!("{offset}export enum {name} {{\n",));
                     for variant in variants.iter() {
@@ -61,10 +61,10 @@ impl Interpreter for Refered {
                     }
                 }
             }
-            Refered::EnumVariant(name, _context, fields, flat, repres) => {
+            Referred::EnumVariant(name, _context, fields, flat, repres) => {
                 let named = fields
                     .iter()
-                    .any(|f| matches!(f, Nature::Refered(Refered::Field(..))));
+                    .any(|f| matches!(f, Nature::Referred(Referred::Field(..))));
                 if fields.is_empty() {
                     if *flat {
                         buf.push(format!("{offset}{name}"));
@@ -131,7 +131,7 @@ impl Interpreter for Refered {
                         EnumRepresentation::Flat => {}
                         EnumRepresentation::Union | EnumRepresentation::DiscriminatedUnion => {
                             buf.push(if named {
-                                format!("\n{}}}", offset)
+                                format!("\n{offset}}}",)
                             } else {
                                 " }".to_owned()
                             });
@@ -190,7 +190,7 @@ impl Interpreter for Refered {
                         EnumRepresentation::Flat => {}
                         EnumRepresentation::Union | EnumRepresentation::DiscriminatedUnion => {
                             buf.push(if named {
-                                format!("\n{}}}", offset)
+                                format!("\n{offset}}}",)
                             } else {
                                 " }".to_owned()
                             });
@@ -198,10 +198,10 @@ impl Interpreter for Refered {
                     }
                 }
             }
-            Refered::Field(name, context, ..) => {
+            Referred::Field(name, context, ..) => {
                 buf.push(format!("{}: ", context.rename_field(name)?))
             }
-            Refered::Func(name, context, func) => {
+            Referred::Func(name, context, func) => {
                 if let Nature::Composite(Composite::Func(_, args, out, asyncness, constructor)) =
                     func.deref()
                 {
@@ -238,11 +238,11 @@ impl Interpreter for Refered {
                     return Err(E::Parsing(format!("Cannot find body of function {name}")));
                 }
             }
-            Refered::FuncArg(name, _context, nature, _) => {
+            Referred::FuncArg(name, _context, nature, _) => {
                 buf.push(format!("{name}: "));
                 nature.reference(natures, buf, offset.clone(), parent)?;
             }
-            Refered::Struct(name, context, fields) => {
+            Referred::Struct(name, context, fields) => {
                 buf.push(format!(
                     "{offset}{} {name} {{\n",
                     if context.as_class() {
@@ -268,7 +268,7 @@ impl Interpreter for Refered {
                 }
                 buf.push(format!("{offset}}}\n",));
             }
-            Refered::TupleStruct(name, _context, field) => {
+            Referred::TupleStruct(name, _context, field) => {
                 buf.push(format!("{offset}export type {name} = ",));
                 if let Some(module) = natures.get_module_of(name) {
                     if natures.exists_in_module(name, &module) {
@@ -282,10 +282,13 @@ impl Interpreter for Refered {
                 }
                 buf.push(";\n");
             }
-            Refered::Ref(ref_name, ..) => {
+            Referred::Constant(name, _context, _ty, value) => {
+                buf.push(format!("{offset}export const {name} = {value};\n",));
+            }
+            Referred::Ref(ref_name, ..) => {
                 return Err(E::Parsing(format!("Reference {ref_name} can be declared")));
             }
-            Refered::Generic(alias, ..) => {
+            Referred::Generic(alias, ..) => {
                 return Err(E::Parsing(format!(
                     "Generic type cannot be rendered out of context; type alias = {alias}"
                 )))
@@ -302,9 +305,9 @@ impl Interpreter for Refered {
         parent: Option<String>,
     ) -> Result<(), E> {
         match self {
-            Refered::Enum(name, ..) => buf.push(name),
-            Refered::EnumVariant(name, ..) => buf.push(format!("{offset}{name}")),
-            Refered::Field(name, context, nature, _) => {
+            Referred::Enum(name, ..) => buf.push(name),
+            Referred::EnumVariant(name, ..) => buf.push(format!("{offset}{name}")),
+            Referred::Field(name, context, nature, _) => {
                 if let Nature::Composite(Composite::Func(_, _, _, _, constructor)) = nature.deref()
                 {
                     if *constructor {
@@ -330,7 +333,7 @@ impl Interpreter for Refered {
                         buf.push(&(context.rename_field(name)?));
                     } else {
                         buf.push(format!("{offset}{}: ", context.rename_field(name)?));
-                        if let Nature::Refered(Refered::Ref(ref_name, _)) = nature.deref() {
+                        if let Nature::Referred(Referred::Ref(ref_name, _)) = nature.deref() {
                             if let Some(generic) = context.get_generic(ref_name) {
                                 generic.reference(natures, buf, offset, parent)?;
                                 return Ok(());
@@ -340,15 +343,15 @@ impl Interpreter for Refered {
                     nature.reference(natures, buf, offset, parent)?;
                 }
             }
-            Refered::Func(name, ..) => buf.push(name),
-            Refered::FuncArg(name, ..) => {
+            Referred::Func(name, ..) => buf.push(name),
+            Referred::FuncArg(name, ..) => {
                 return Err(E::Parsing(format!(
                     "Function argument {name} can be refered"
                 )));
             }
-            Refered::Struct(name, ..) => buf.push(name),
-            Refered::TupleStruct(name, ..) => buf.push(name),
-            Refered::Ref(ref_name, ..) => {
+            Referred::Struct(name, ..) => buf.push(name),
+            Referred::TupleStruct(name, ..) => buf.push(name),
+            Referred::Ref(ref_name, ..) => {
                 if let Some(module) = parent.and_then(|p| natures.get_module_of(&p)) {
                     if let (Some(ref_mod), false) = (
                         natures.get_module_of(ref_name),
@@ -362,7 +365,10 @@ impl Interpreter for Refered {
                 }
                 buf.push(ref_name)
             }
-            Refered::Generic(alias, ..) => {
+            Referred::Constant(name, ..) => {
+                return Err(E::Parsing(format!("Constant {name} can be refered")));
+            }
+            Referred::Generic(alias, ..) => {
                 return Err(E::Parsing(format!(
                     "Generic type cannot be rendered out of context; type alias = {alias}"
                 )))
