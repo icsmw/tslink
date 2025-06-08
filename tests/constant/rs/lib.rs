@@ -12,3 +12,9 @@ pub const C: u32 = 42;
 
 #[tslink(target = "./output/module.ts")]
 pub const D: i32 = 42;
+
+#[tslink(target = "./output/module.ts")]
+pub const F: [u8; 4] = [1, 2, 3, 4];
+
+#[tslink(target = "./output/module.ts")]
+pub const G: [&str; 4] = ["1", "2", "3", "4"];

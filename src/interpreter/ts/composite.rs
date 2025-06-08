@@ -14,6 +14,10 @@ impl Interpreter for Composite {
         parent: Option<String>,
     ) -> Result<(), E> {
         match self {
+            Self::Array(ty) => {
+                ty.reference(natures, buf, offset, parent)?;
+                buf.push("[]");
+            }
             Self::Vec(_, ty) => {
                 if let Some(ty) = ty {
                     ty.reference(natures, buf, offset, parent)?;

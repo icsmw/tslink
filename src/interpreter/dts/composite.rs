@@ -17,6 +17,10 @@ impl Interpreter for Composite {
         offset: Offset,
     ) -> Result<(), E> {
         match self {
+            Self::Array(ty) => {
+                ty.reference(natures, buf, offset)?;
+                buf.write_all("[]".as_bytes())?;
+            }
             Self::Vec(_, ty) => {
                 if let Some(ty) = ty {
                     ty.reference(natures, buf, offset)?;

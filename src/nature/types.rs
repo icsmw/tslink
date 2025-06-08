@@ -10,6 +10,8 @@ use syn::{
     PathArguments, PathSegment, ReturnType, Type, TypeTuple,
 };
 
+use super::TypeAsString;
+
 pub fn get_fn_return(
     output: &ReturnType,
     context: &Context,
@@ -162,6 +164,16 @@ impl Extract<&TypeTuple> for Nature {
 impl Extract<&Type> for Nature {
     fn extract(ty: &Type, context: Context, cfg: &Config) -> Result<Nature, E> {
         match ty {
+            Type::Array(ty_array) => {
+                let inner = Nature::extract(ty_array.elem.as_ref(), context, cfg)?;
+                if !matches!(inner, Nature::Primitive(..)) {
+                    return Err(E::NotSupported(format!(
+                        "{} isn't supported in Array",
+                        inner.type_as_string()?
+                    )));
+                }
+                Ok(Nature::Composite(Composite::Array(Box::new(inner))))
+            }
             Type::Reference(ty_ref) => Nature::extract(ty_ref.elem.as_ref(), context, cfg),
             Type::Path(type_path) => {
                 if let Some(ident) = type_path.path.get_ident() {

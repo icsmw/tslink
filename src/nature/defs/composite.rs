@@ -7,6 +7,7 @@ use quote::{format_ident, quote};
 
 #[derive(Clone, Debug)]
 pub enum Composite {
+    Array(Box<Nature>),
     Vec(OriginType, Option<Box<Nature>>),
     HashMap(OriginType, Option<Primitive>, Option<Box<Nature>>),
     Tuple(OriginType, Vec<Nature>),
@@ -31,9 +32,14 @@ impl TypeTokenStream for Composite {
             Self::HashMap(ty, _, _) => ty,
             Self::Tuple(ty, _) => ty,
             Self::Option(ty, _) => ty,
-            Self::Result(ty, _, _, _, _) => ty,
+            Self::Result(ty, ..) => ty,
             Self::Undefined(ty) => ty,
-            Self::Func(ty, _, _, _, _) => ty,
+            Self::Func(ty, ..) => ty,
+            Self::Array(..) => {
+                return Err(E::NotSupported(
+                    "Array isn't supported in this context".to_owned(),
+                ))
+            }
         }
         .type_token_stream()
     }
@@ -46,9 +52,12 @@ impl TypeAsString for Composite {
             Self::HashMap(ty, _, _) => ty,
             Self::Tuple(ty, _) => ty,
             Self::Option(ty, _) => ty,
-            Self::Result(ty, _, _, _, _) => ty,
+            Self::Result(ty, ..) => ty,
             Self::Undefined(ty) => ty,
-            Self::Func(ty, _, _, _, _) => ty,
+            Self::Func(ty, ..) => ty,
+            Self::Array(ty) => {
+                return Ok(format!("{}[]", ty.type_as_string()?));
+            }
         }
         .type_as_string()
     }
@@ -62,7 +71,7 @@ impl VariableTokenStream for Composite {
     ) -> Result<TokenStream, E> {
         let var_name = format_ident!("{}", var_name);
         Ok(match self {
-            Self::Option(_, _) | Self::Tuple(_, _) | Self::Vec(_, _) | Self::HashMap(_, _, _) => {
+            Self::Option(..) | Self::Tuple(..) | Self::Vec(..) | Self::HashMap(..) => {
                 if let Some(nature) = err {
                     let err_type_ref = nature.type_token_stream()?;
                     quote! {
@@ -79,14 +88,19 @@ impl VariableTokenStream for Composite {
                     #var_name
                 }
             }
-            Self::Result(_, _, _, _, _) => {
+            Self::Result(..) => {
                 Err(E::Parsing(format!(
                     "<Result> cannot be converted to JSON string (field: {var_name})"
                 )))
             }?,
-            Self::Func(_, _, _, _, _) => {
+            Self::Func(..) => {
                 Err(E::Parsing(format!(
                     "<Func> cannot be converted to JSON string (field: {var_name})"
+                )))
+            }?,
+            Self::Array(..) => {
+                Err(E::Parsing(format!(
+                    "<Array> cannot be converted to JSON string (field: {var_name})"
                 )))
             }?,
         })

@@ -1,3 +1,9 @@
+# 0.4.1 (08.06.2025)
+
+## Changes
+
+- Add support arrays in the context of `const`
+
 # 0.4.0 (08.06.2025)
 
 ## Features

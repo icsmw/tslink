@@ -4,8 +4,8 @@ export interface EntityB {
     Three?: EntityA;
 }
 import { FieldB } from "./module_a";
-import { FieldA } from "./module_a";
 import { StructA } from "./module_a";
+import { FieldA } from "./module_a";
 export interface OtherStruct {
     a: EntityA;
     b: EntityB;
