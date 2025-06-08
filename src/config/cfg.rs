@@ -12,11 +12,68 @@ pub enum SnakeCaseNaming {
     Fields,
 }
 
+/// Specifies how a Rust `enum` should be represented in the generated TypeScript definitions.
+///
+/// This enum controls the output format for enums with mixed variants — including unit, tuple, and struct-like variants —
+/// to ensure compatibility and clarity on the TypeScript side.
+///
+/// The following Rust example:
+/// ```ignore
+/// enum SomeEnum {
+///     One,
+///     Two,
+///     Three(u8),
+///     Four(u8, u16, u32),
+///     Five((String, String)),
+///     Six(Vec<u8>),
+/// }
+/// ```
+/// can be transformed into TypeScript in different ways depending on the selected representation.
 #[derive(Deserialize, Debug, Clone, Default)]
 pub enum EnumRepresentation {
+    /// Generates a single interface with optional discriminant fields.
+    ///
+    /// ```ignore
+    /// export interface SomeEnum {
+    ///     One?: null;
+    ///     Two?: null;
+    ///     Three?: number;
+    ///     Four?: [number, number, number];
+    ///     Five?: [string, string];
+    ///     Six?: number[];
+    /// }
+    /// ```
     DiscriminatedUnion,
+
+    /// Generates a flat tagged union using TypeScript's `type` union.
+    ///
+    /// This is the default.
+    ///
+    /// ```ignore
+    /// export type SomeEnum =
+    ///     { One: null; } |
+    ///     { Two: null; } |
+    ///     { Three: number; } |
+    ///     { Four: [number, number, number]; } |
+    ///     { Five: [string, string]; } |
+    ///     { Six: number[]; };
+    /// ```
     #[default]
     Flat,
+
+    /// Generates a mixed union of string literals and tagged object variants.
+    ///
+    /// Useful when some variants are unit-like and others carry data.
+    ///
+    /// ```ignore
+    /// export type SomeEnum =
+    ///     "One" |
+    ///     "Two" |
+    ///     "Three" |
+    ///     { Four: [number, number, number]; } |
+    ///     { Five: [string, string]; } |
+    ///     { Six: number[]; };
+    /// ```
     Union,
 }
 

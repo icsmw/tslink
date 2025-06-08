@@ -4,28 +4,90 @@ use crate::{
 use proc_macro2::TokenStream;
 use quote::{quote, format_ident};
 
+/// Represents named or referenced entities in a Rust codebase, typically used during TypeScript binding generation.
+///
+/// This enum is designed to describe named constructs such as structs, enums, fields, function arguments,
+/// type aliases, and constants — capturing not only their identity (`String`), but also their context and type information.
+///
+/// It is used when a Rust item has a clear name in the source code and needs to be tracked, transformed, or exported
+/// to a different language model (e.g., TypeScript or JSON).
+///
+/// Each variant represents a distinct kind of referable entity with appropriate metadata for code generation.
 #[derive(Clone, Debug)]
 pub enum Referred {
-    // Name, Context, Field
+    /// A tuple struct declaration.
+    ///
+    /// - `String`: Name of the struct.
+    /// - `Context`: Scope or namespace context.
+    /// - `Option<Box<Nature>>`: The type of the single unnamed field (e.g., `TupleStruct(String, Context, Some(Box::new(Nature::Number)))`).
     TupleStruct(String, Context, Option<Box<Nature>>),
-    // Name, Context, Fields
+
+    /// A classic named-field struct declaration.
+    ///
+    /// - `String`: Name of the struct.
+    /// - `Context`: Context or module where it appears.
+    /// - `Vec<Nature>`: List of fields and their types.
     Struct(String, Context, Vec<Nature>),
-    // Name, Context, Variants, EnumRepresentation
+
+    /// An enum type definition.
+    ///
+    /// - `String`: Enum name.
+    /// - `Context`: Where it is defined.
+    /// - `Vec<Nature>`: Enum variants.
+    /// - `EnumRepresentation`: How the enum is represented (tagged, untagged, externally tagged, etc.).
     Enum(String, Context, Vec<Nature>, EnumRepresentation),
-    // name, context, values, is_flat
+
+    /// A single enum variant, potentially flat (e.g., inline in a struct).
+    ///
+    /// - `String`: Variant name.
+    /// - `Context`: Context of the enum.
+    /// - `Vec<Nature>`: Fields inside this variant.
+    /// - `bool`: Whether the variant is flattened (used inline).
+    /// - `EnumRepresentation`: The same representation as its parent enum.
     EnumVariant(String, Context, Vec<Nature>, bool, EnumRepresentation),
-    // Name, Context, FuncNature
+
+    /// A named function or method.
+    ///
+    /// - `String`: Function name.
+    /// - `Context`: Scope/module info.
+    /// - `Box<Nature>`: Full type of the function (usually a `Nature::Func`).
     Func(String, Context, Box<Nature>),
-    // Name, Context, Nature, Binding
+
+    /// A named struct or enum field.
+    ///
+    /// - `String`: Field name.
+    /// - `Context`: Struct or enum context.
+    /// - `Box<Nature>`: Field type.
+    /// - `Option<String>`: Optional binding name override (e.g., JS/TS alias).
     Field(String, Context, Box<Nature>, Option<String>),
-    // Name, Context, Nature, Binding
+
+    /// A named function argument.
+    ///
+    /// - `String`: Argument name.
+    /// - `Context`: Function or method context.
+    /// - `Box<Nature>`: Argument type.
+    /// - `Option<String>`: Optional binding name or alias.
     FuncArg(String, Context, Box<Nature>, Option<String>),
-    // Name
+
+    /// A reference to a named type.
+    ///
+    /// - `String`: The name being referred to.
+    /// - `Option<Context>`: Where it was resolved from (if known).
     Ref(String, Option<Context>),
-    // Alias, Nature
+
+    /// A generic type alias (e.g., `type T = Result<i32, String>`).
+    ///
+    /// - `String`: Alias name.
+    /// - `Box<Nature>`: Full type that this generic name refers to.
     Generic(String, Box<Nature>),
-    // Name, Context, Type, Value
-    Constant(String, Context, Box<Nature>, String)
+
+    /// A named constant definition.
+    ///
+    /// - `String`: Constant name.
+    /// - `Context`: Location of the constant.
+    /// - `Box<Nature>`: Type of the constant.
+    /// - `String`: Value expression as a string (e.g., `"42"`).
+    Constant(String, Context, Box<Nature>, String),
 }
 
 impl Referred {

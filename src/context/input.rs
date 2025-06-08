@@ -1,18 +1,52 @@
 use crate::context::Target;
 use std::{convert::TryFrom, fmt, path::PathBuf};
 
+/// Describes macro-level attributes that control TypeScript code generation behavior.
+///
+/// Each variant corresponds to a specific directive or modifier used in procedural macros
+/// to guide how Rust types and functions should be translated into TypeScript declarations or JavaScript wrappers.
 #[derive(Clone, Debug)]
 pub enum Input {
+    /// Specifies a list of field names to ignore during code generation.
     Ignore(Vec<String>),
+
+    /// Renames the current item to the specified string in the generated output.
     Rename(String),
+
+    /// A list of `(Target, PathBuf)` pairs indicating where `.ts` files should be written.
     Target(Vec<(Target, PathBuf)>),
+
+    /// Specifies the TypeScript module name to be used in the generated output.
     Module(String),
+
+    /// Instructs the generator to ignore this specific field or method.
     IgnoreSelf,
+
+    /// Marks a function as a constructor (used for struct instantiation).
     Constructor,
+
+    /// Applies snake_case renaming to the given field or method.
     SnakeCaseNaming,
+
+    /// Instructs the generator to emit a `TypeScript` interface for the struct.
     Interface,
+
+    /// Enables argument/result binding mode for JS interop.
+    ///
+    /// Used to convert complex Rust types (e.g., structs) into JSON strings
+    /// before returning them to JavaScript. The TypeScript wrapper will re-parse the string
+    /// into the expected structure on the JS side.
+    ///
+    /// Each pair maps an input or output name to a known structure name.
     Binding(Vec<(String, String)>),
+
+    /// Instructs the generator to emit a `TypeScript` class for the struct.
     Class,
+
+    /// Enables error suppression mode for JS wrappers.
+    ///
+    /// Functions and method calls will be wrapped in `try { ... } catch (e) {}` blocks,
+    /// and their output type will be adjusted to `T | Error`.
     ExceptionSuppression,
 }
 

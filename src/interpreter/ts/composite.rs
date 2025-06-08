@@ -5,6 +5,54 @@ use crate::{
     nature::{Composite, Nature, Natures, Referred, TypeAsString},
 };
 
+/// Generates a TypeScript type **reference** for a composite Rust type (e.g., `Vec<T>`, `Result<T, E>`, `Option<T>`, tuples, functions).
+///
+/// This method converts internal `Composite` variants into valid and idiomatic TypeScript type references for use in:
+/// - function argument types
+/// - return types
+/// - struct field declarations
+///
+/// # Variant Behaviors
+///
+/// - `Array(T)`  
+///   → Emits `T[]`
+///
+/// - `Vec<T>`  
+///   → Emits `T[]`, or returns an error if element type is missing.
+///
+/// - `HashMap<K, V>`  
+///   → Emits `Map<K, V>`, or returns an error if key or value type is missing.
+///
+/// - `Func`  
+///   → Emits a function signature like `(arg1: T, arg2: U) => V` or `(...): Promise<V>` if async.  
+///   → If marked as a constructor and contains generic args, an error is returned (unsupported case).  
+///   → If it's a constructor, emits `(...)` only (no return).
+///
+/// - `Tuple`  
+///   → Emits `[T1, T2, T3]`.
+///
+/// - `Option<T>`  
+///   → Emits `T | null`, or returns an error if type is not set.
+///
+/// - `Result<T, E>`  
+///   → Emits:
+///     - `T` if async mode is enabled (async functions wrap result).
+///     - `T | Error` or `T | (Error & { err?: E })` if `exception_suppression` is enabled.
+///     - `void` if no result and no exception suppression.
+///
+/// - `Undefined`  
+///   → Emits `void`.
+///
+/// # Parameters
+/// - `natures`: Registry of known types (`Natures`), used for reference resolution.
+/// - `buf`: Output buffer to write into.
+/// - `offset`: Current indentation or nesting depth (used for formatting).
+/// - `parent`: Optional parent context for nested declarations.
+///
+/// # Errors
+/// Returns:
+/// - `E::Parsing` if required information is missing (e.g., unbound type in `Vec`, `Option`, etc.).
+/// - `E::Parsing` if a constructor has generic arguments (currently unsupported).
 impl Interpreter for Composite {
     fn reference(
         &self,

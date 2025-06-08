@@ -115,6 +115,24 @@ impl Natures {
     }
 }
 
+/// Represents any possible type in the abstraction layer used for generating TypeScript bindings.
+///
+/// This enum serves as the root of the type system within the crate and encompasses all supported forms of Rust types,
+/// categorized into three major groups:
+///
+/// - [`Primitive`] — Simple built-in types (e.g., `i32`, `bool`, `String`) that map directly to TypeScript primitives.
+/// - [`Referred`] — Named or externally referenced types such as structs, enums, function arguments, fields, constants, etc.
+/// - [`Composite`] — Complex or generic types such as arrays, `Vec<T>`, `HashMap<K, V>`, `Option<T>`, `Result<T, E>`, and function signatures.
+///
+/// `Nature` is used throughout the codebase as a common representation of types in code generation,
+/// enabling consistent treatment across serialization, conversion, formatting, and binding output.
+///
+/// # Example Usage
+///
+/// `Nature` can represent:
+/// - A primitive `bool`: `Nature::Primitive(Primitive::Boolean(...))`
+/// - A named struct: `Nature::Referred(Referred::Struct(...))`
+/// - A `Vec<String>`: `Nature::Composite(Composite::Vec(...))`
 #[derive(Clone, Debug)]
 pub enum Nature {
     Primitive(Primitive),
@@ -123,6 +141,10 @@ pub enum Nature {
 }
 
 impl Nature {
+    /// Returns the names of the function arguments if this `Nature` represents a function signature.
+    ///
+    /// # Errors
+    /// Returns an error if `self` is not a `Composite::Func`.
     pub fn get_fn_args_names(&self) -> Result<Vec<String>, E> {
         if let Nature::Composite(Composite::Func(_, args, _, _, _)) = self {
             Ok(Natures::get_fn_args_names(args))
@@ -131,6 +153,10 @@ impl Nature {
         }
     }
 
+    /// Checks whether the function represented by this `Nature` is marked as `async`.
+    ///
+    /// # Errors
+    /// Returns an error if `self` is not a `Composite::Func`.
     pub fn is_fn_async(&self) -> Result<bool, E> {
         if let Nature::Composite(Composite::Func(_, _, _, asyncness, _)) = self {
             Ok(*asyncness)
@@ -139,6 +165,17 @@ impl Nature {
         }
     }
 
+    /// Attempts to bind another `Nature` into this one, mutating the internal structure.
+    ///
+    /// The binding behavior depends on the variant:
+    /// - For `Referred::Struct` / `Enum` / `EnumVariant`, the new `Nature` is added as a field/variant.
+    /// - For `TupleStruct`, the field is set.
+    /// - For `Composite` types like `Vec`, `Option`, `Result`, `HashMap`, `Tuple`, the new type is assigned
+    ///   to the correct slot (element, key, value, etc.), or an error is returned if already bound.
+    ///
+    /// # Errors
+    /// - If the target does not support binding (e.g., primitives).
+    /// - If a slot is already filled (e.g., `Vec<T>` already has a type).
     pub fn bind(&mut self, nature: Nature) -> Result<(), E> {
         match self {
             Self::Primitive(_) => Err(E::Parsing(String::from("Primitive type cannot be bound"))),
@@ -224,6 +261,9 @@ impl Nature {
         }
     }
 
+    /// Returns `true` if this `Nature` represents a field whose type is a function marked as a constructor.
+    ///
+    /// Used to detect constructor methods in struct definitions.
     pub fn is_method_constructor(&self) -> bool {
         if let Nature::Referred(Referred::Field(_, _, nature, _)) = self {
             if let Nature::Composite(Composite::Func(_, _, _, _, constructor)) = nature.deref() {
@@ -233,6 +273,7 @@ impl Nature {
         false
     }
 
+    /// Returns `true` if this `Nature` represents a field that is marked as ignored in its `Context`.
     pub fn is_field_ignored(&self) -> bool {
         if let Nature::Referred(Referred::Field(name, context, _, _)) = self {
             context.is_ignored(name)
@@ -241,6 +282,10 @@ impl Nature {
         }
     }
 
+    /// Validates that all fields listed in the `#[tslink(ignore(...))]` context directive exist in the struct.
+    ///
+    /// # Errors
+    /// Returns an error if any ignored field is not found among the struct’s actual fields.
     pub fn check_ignored_fields(&self) -> Result<(), E> {
         if let Nature::Referred(Referred::Struct(name, context, fields)) = self {
             let ignored = context.ignored_list();
@@ -270,6 +315,10 @@ impl Nature {
         }
     }
 
+    /// Retrieves the associated `Context` for this type, if applicable.
+    ///
+    /// # Errors
+    /// Returns an error if the `Nature` has no meaningful context, such as for primitives or generics.
     pub fn get_context(&self) -> Result<&Context, E> {
         Ok(match self {
             Self::Primitive(_) => Err(E::Parsing(String::from("Primitives do not have context")))?,

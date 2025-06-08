@@ -7,6 +7,67 @@ use crate::{
 };
 use std::ops::Deref;
 
+/// Implements TypeScript code generation for semantic types categorized as `Referred`,
+/// which represent **named entities** in Rust (e.g., structs, enums, constants, generic aliases).
+///
+/// This implementation handles both:
+/// - **declaration** (e.g., `export interface ... { ... }`)
+/// - **reference** (e.g., usage of a type in function signature or field)
+///
+/// # declaration()
+///
+/// Generates full TypeScript definitions from referred Rust items:
+///
+/// - `Enum` → as `enum`, `type` union, or `interface` based on `EnumRepresentation`:
+///   - `Flat` → `enum` or `interface`
+///   - `Union` → `type` union of object variants
+///   - `DiscriminatedUnion` → `type` union with string literals or object forms
+///
+/// - `EnumVariant` → renders fields of a variant according to representation style and field layout
+///
+/// - `Field` → rendered in parent container (struct, class, etc.) with its resolved type
+///
+/// - `Func` → emits `export declare function ...`, including arguments and optional return `Promise<T>`
+///
+/// - `FuncArg` → generates argument declaration in function definition (used inside `Func`)
+///
+/// - `Struct` → rendered as `interface` or `abstract class` depending on context flags
+///
+/// - `TupleStruct` → rendered as a `type` alias (e.g., `type MyTuple = [T, U]`)
+///
+/// - `Constant` → rendered as `export const NAME = VALUE;`
+///
+/// - `Ref` / `Generic` → not allowed for declaration; generates error
+///
+///
+/// # reference()
+///
+/// Renders inline usage of a type, such as:
+/// - Field declaration: `name: Type`
+/// - Function argument: `arg: Type`
+///
+/// For each variant:
+///
+/// - `Enum`, `Struct`, `TupleStruct`, `Func` → referenced by name
+///
+/// - `EnumVariant` → referenced by variant name as literal or inline object
+///
+/// - `Field` → renders `name: Type` or method signature (e.g., `public abstract method(): Type`)
+///
+/// - `Ref` → emits reference to another module or injects import if necessary
+///
+/// - `Generic`, `Constant`, `FuncArg` → invalid in context of reference, errors returned
+///
+/// # Parameters
+/// - `natures`: Type registry containing all known named types and modules
+/// - `buf`: Output buffer accumulating generated TypeScript code
+/// - `offset`: Indentation handler for multiline formatting
+/// - `parent`: Optional parent scope, used for resolving relative module paths
+///
+/// # Errors
+/// Returns `E::Parsing` when:
+/// - Invalid variant is rendered in the wrong context (e.g., declaring generic alias)
+/// - Required structural assumptions are violated (e.g., missing fields in variant)
 impl Interpreter for Referred {
     fn declaration(
         &self,

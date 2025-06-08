@@ -7,6 +7,20 @@ use crate::{
 };
 use syn::{punctuated::Punctuated, token::Comma, Fields};
 
+/// Parses the fields of an enum variant into a list of `Nature` values.
+///
+/// Supports named (`struct-like`), unnamed (`tuple-like`), and unit variants.
+///
+/// # Parameters
+/// - `fields`: The fields of the enum variant (`syn::Fields`).
+/// - `context`: The current macro context for tracking attributes and scope.
+/// - `cfg`: The global configuration settings.
+///
+/// # Returns
+/// A list of `Nature` instances representing the field types of the variant.
+///
+/// # Errors
+/// Returns an error if any field type fails to be parsed or resolved.
 fn read_variant(fields: &Fields, context: Context, cfg: &Config) -> Result<Vec<Nature>, E> {
     let mut values: Vec<Nature> = vec![];
     match fields {
@@ -31,6 +45,19 @@ fn read_variant(fields: &Fields, context: Context, cfg: &Config) -> Result<Vec<N
     Ok(values)
 }
 
+/// Reads all variants of an enum and attaches them to the given parent as `Referred::EnumVariant`.
+///
+/// This function filters out ignored variants, parses their fields via `read_variant`, and binds
+/// each as a structured representation suitable for TypeScript generation.
+///
+/// # Parameters
+/// - `variants`: The list of enum variants to process.
+/// - `parent`: The parent `Nature`, expected to be a `Referred::Enum` into which the variants are bound.
+/// - `context`: The current macro context.
+/// - `cfg`: Global configuration settings for parsing behavior.
+///
+/// # Errors
+/// Returns an error if field parsing fails or variant binding encounters an issue.
 pub fn read(
     variants: &Punctuated<syn::Variant, Comma>,
     parent: &mut Nature,

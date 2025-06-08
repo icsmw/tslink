@@ -10,7 +10,24 @@ use syn::{
     WherePredicate,
 };
 
+/// Trait for extracting a [`Nature`] representation from a generic constraint or type bound.
+///
+/// This is used when analyzing generics in the form of `T: Trait`, `where T: Fn(...) -> ...`, etc.,
+/// and is particularly important for supporting function-like generics in generated code.
 pub trait ExtractGeneric<T> {
+    /// Attempts to extract a typed `Nature` from a generic bound or predicate.
+    ///
+    /// # Parameters
+    /// - `t`: The syntax node representing a trait bound or type parameter.
+    /// - `generic_ref`: An optional reference to the alias or identifier being bound (e.g., `"T"`).
+    /// - `cfg`: Global configuration settings.
+    ///
+    /// # Returns
+    /// - `Some(Nature)`: If a valid representation is recognized (e.g., a generic function type).
+    /// - `None`: If the bound is irrelevant or ignored (e.g., lifetimes, unknown constraints).
+    ///
+    /// # Errors
+    /// Returns an error if parsing fails or required alias is missing.
     fn extract_generic(
         t: T,
         generic_ref: Option<String>,
@@ -18,6 +35,11 @@ pub trait ExtractGeneric<T> {
     ) -> Result<Option<Nature>, E>;
 }
 
+/// Parses a `TraitBound` (e.g., `T: Fn(...) -> ...`) and constructs a function-type `Nature::Referred::Generic`.
+///
+/// # Errors
+/// - Returns an error if `generic_ref` is not provided.
+/// - Only supports `Fn(...) -> ...` style traits; others are ignored.
 impl ExtractGeneric<&TraitBound> for Nature {
     fn extract_generic(
         tr: &TraitBound,
@@ -68,6 +90,7 @@ impl ExtractGeneric<&TraitBound> for Nature {
     }
 }
 
+/// Parses a `TypeParam` from a `<T: Trait>` declaration and delegates to `TraitBound` extraction.
 impl ExtractGeneric<&TypeParam> for Nature {
     fn extract_generic(
         type_param: &TypeParam,
@@ -95,6 +118,7 @@ impl ExtractGeneric<&TypeParam> for Nature {
     }
 }
 
+/// Parses a `PredicateType` from a `where` clause (`where T: Trait`) and attempts generic extraction.
 impl ExtractGeneric<&PredicateType> for Nature {
     fn extract_generic(
         pre_type: &PredicateType,
@@ -130,10 +154,25 @@ impl ExtractGeneric<&PredicateType> for Nature {
     }
 }
 
+/// Trait for extracting a list of [`Nature`] values from a set of Rust generics.
+///
+/// This trait is designed to be used on full `Generics` blocks, including both inline parameters (`<T: ...>`)
+/// and `where` clauses.
 pub trait ExtractGenerics<T> {
+    /// Extracts all generic constraints as `Nature` definitions.
+    ///
+    /// # Parameters
+    /// - `t`: The generics block to process.
+    /// - `cfg`: Global configuration.
+    ///
+    /// # Returns
+    /// A vector of `Nature::Referred::Generic` entries for use in contextual binding.
     fn extract_generics(t: T, cfg: &Config) -> Result<Vec<Nature>, E>;
 }
 
+/// Extracts all usable generic constraints (from both type parameters and where clauses) into `Nature` definitions.
+///
+/// Ignores lifetimes and unsupported constructs like `T: 'a` or `const N: usize`.
 impl ExtractGenerics<&Generics> for Nature {
     fn extract_generics(generics: &Generics, cfg: &Config) -> Result<Vec<Nature>, E> {
         let mut natures = vec![];

@@ -14,17 +14,62 @@ pub mod cfg;
 
 const TSLINK_BUILD_ENV: &str = "TSLINK_BUILD";
 
+/// Global configuration settings for the code generation process.
+///
+/// `Config` aggregates environment-specific, Cargo-derived, and user-defined settings
+/// that influence how Rust types and functions are translated into JavaScript/TypeScript code.
+///
+/// It is typically constructed once (e.g., from `Cargo.toml` or a macro environment)
+/// and then queried during macro execution or file generation.
 #[derive(Debug, Clone, Default)]
 pub struct Config {
+    /// Indicates whether the configuration has been initialized.
+    ///
+    /// Used to prevent re-initialization or partial access before setup.
     inited: bool,
+
+    /// Raw parsed contents of `[package.metadata.tslink]` or `[tslink]` from `Cargo.toml`, if available.
+    ///
+    /// May be used to retrieve user-defined keys not explicitly mapped to struct fields.
     cargo: Option<Table>,
+
+    /// Controls whether file system writes (e.g., `.ts`, `.d.ts`) are allowed.
+    ///
+    /// Typically disabled during procedural macro expansion or in sandboxed environments.
     pub io_allowed: bool,
+
+    /// Optional filename for the generated Node.js module (e.g., `"lib.node"`).
+    ///
+    /// Used when producing JavaScript FFI wrappers or distributing compiled bindings.
     pub node_mod_filename: Option<String>,
+
+    /// Optional path to the output directory for the Node.js module or compiled artifacts.
     pub node_mod_dist: Option<PathBuf>,
+
+    /// Set of entities (fields, methods, etc.) that should be renamed from `snake_case` to `camelCase` in TypeScript.
+    ///
+    /// Useful for maintaining idiomatic JS/TS naming conventions while preserving Rust semantics.
     pub snake_case_naming: HashSet<SnakeCaseNaming>,
+
+    /// Enables exception suppression in generated JS/TS code.
+    ///
+    /// When active, JS wrappers will wrap function calls in `try/catch` blocks,
+    /// and TypeScript return types will be `T | Error`.
     pub exception_suppression: bool,
+
+    /// Treats all integer types with width > 32 bits (e.g., `i64`, `u64`) as `bigint` in TypeScript.
+    ///
+    /// Prevents precision loss and improves correctness across language boundaries.
     pub int_over_32_as_big_int: bool,
+
+    /// Manual mapping of Rust type names (as strings) to target TypeScript types.
+    ///
+    /// This allows overriding or customizing how specific Rust types appear in `.ts` or `.d.ts` files.
     pub type_map: HashMap<String, String>,
+
+    /// Determines how enums are rendered in TypeScript (e.g., flat union, discriminated union).
+    ///
+    /// Controlled via `[tslink.enum_representation]` or macro-level overrides.
     pub enum_representation: EnumRepresentation,
 }
 

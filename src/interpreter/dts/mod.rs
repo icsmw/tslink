@@ -14,7 +14,13 @@ use std::{
     path::PathBuf,
 };
 
+/// Trait for describing how a given type (`Nature`) is declared or referenced
+/// within a TypeScript declaration file (`*.d.ts`).
+///
+/// This trait allows recursive traversal and structured rendering of types.
+/// Its implementation is simplified here, as `*.d.ts` generation doesn't need imports.
 pub trait Interpreter {
+    /// Writes the full type declaration, usually at the top level.
     fn declaration(
         &self,
         _natures: &Natures,
@@ -24,6 +30,7 @@ pub trait Interpreter {
         Ok(())
     }
 
+    /// Writes a reference to the type (e.g., inside a struct or function).
     fn reference(
         &self,
         _natures: &Natures,
@@ -35,6 +42,8 @@ pub trait Interpreter {
 }
 
 impl Interpreter for Nature {
+    /// Delegates declaration rendering to the specific variant:
+    /// - `Primitive`, `Composite`, or `Referred`.
     fn declaration(
         &self,
         natures: &Natures,
@@ -47,6 +56,8 @@ impl Interpreter for Nature {
             Self::Referred(refered) => refered.declaration(natures, buf, offset),
         }
     }
+
+    /// Same logic for references: recursively resolve how a nested type should be printed.
     fn reference(
         &self,
         natures: &Natures,
@@ -61,6 +72,19 @@ impl Interpreter for Nature {
     }
 }
 
+/// Creates a `lib.d.ts` file and writes the full type declaration into it.
+///
+/// This is the entry point for generating global type definitions. The file is
+/// created in the output directory defined by `config.node_mod_dist`. Previously
+/// created files are tracked via `dropped`, ensuring clean regeneration.
+///
+/// # Arguments
+/// - `w`: The root type or node to declare (e.g., `Nature` or any `Interpreter`).
+/// - `natures`: Shared type registry, used for resolving nested types.
+/// - `dropped`: Tracks written paths to prevent duplication or cleanup needs.
+///
+/// # Errors
+/// Returns an error if file creation or writing fails.
 pub fn write<T>(w: &T, natures: &Natures, dropped: &mut HashSet<PathBuf>) -> Result<(), E>
 where
     T: Interpreter,

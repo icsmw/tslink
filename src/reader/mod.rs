@@ -14,6 +14,36 @@ use quote::ToTokens;
 use std::ops::Deref;
 use syn::{Fields, Item, ItemConst, ItemEnum, ItemStruct};
 
+/// Main entry point for reading and interpreting a Rust item (`struct`, `enum`, `fn`, `impl`, `const`) into a typed [`Nature`] representation.
+///
+/// This function is responsible for analyzing the annotated Rust item, extracting structural type information,
+/// and inserting the result into the shared [`Natures`] registry. Based on the item's kind, the function performs:
+///
+/// - For `struct` and `tuple struct`: Collects fields, determines representation, and stores as `Referred::Struct` or `Referred::TupleStruct`.
+/// - For `enum`: Parses variants and stores as `Referred::Enum`.
+/// - For `fn`: Extracts function signature (unless it's a method or constructor), stores as `Referred::Func`.
+/// - For `impl`: Merges methods into the previously defined struct.
+/// - For `const`: Stores as `Referred::Constant`.
+///
+/// If output generation is enabled (`io_allowed`), the function also invokes TypeScript/JavaScript generation
+/// via `interpreter::ts`, `interpreter::dts`, and `interpreter::js`.
+///
+/// # Parameters
+/// - `item`: The input Rust item to analyze and transform.
+/// - `natures`: The registry to collect parsed types (`Natures`).
+/// - `context`: Macro-level context, including configuration and attributes.
+/// - `cfg`: Global generation configuration.
+///
+/// # Errors
+/// - Returns an error if the item is unsupported, malformed, or already exists in the registry.
+/// - Also returns detailed errors if generation of `.ts`, `.d.ts`, or `.js` files fails.
+///
+/// # Side Effects
+/// - May perform file I/O if `cfg.io_allowed == true` and target paths are configured.
+///
+/// # Note
+/// This function is the root of all type discovery and macro processing —
+/// it's designed to be called once per `Item` encountered by a derive or attribute macro.
 pub fn read(
     item: &mut Item,
     natures: &mut Natures,
