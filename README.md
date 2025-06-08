@@ -455,6 +455,26 @@ export declare class MyStruct {
 }
 ```
 
+### Constants
+
+`tslink` supports an export of constants
+
+```
+# #[macro_use] extern crate tslink;
+# use tslink::tslink;
+
+#[tslink]
+const MY_CONST: &str = "Hello World!";
+```
+
+Would be represented as
+
+```ignore
+export const MY_CONST = "Hello World!";
+```
+
+**Note**. Array constants aren't supported on TypeScript layer.
+
 ### Naming methods/fields
 
 TypeScript/JavaScript standard of naming: snake case naming. Some crates like `node-bindgen` automatically rename fields and methods based on this rule. To fit this behavior `tslink` should know, which fields/methods should be renamed.
