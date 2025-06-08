@@ -9,7 +9,7 @@ resolver = "2"
 crate-type = ["cdylib"]
 path = "src/lib.rs"
 
-[tslink]
+[package.metadata.tslink]
 node = "./dist/index.node"
 snake_case_naming = "methods"
 

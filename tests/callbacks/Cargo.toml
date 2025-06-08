@@ -9,7 +9,7 @@ edition = "2021"
 crate-type = ["cdylib"]
 path = "rs/lib.rs"
 
-[tslink]
+[package.metadata.tslink]
 node = "./dist/index.node"
 snake_case_naming = "methods"
 
