@@ -3,6 +3,8 @@ use std::{collections::HashMap, fmt, io::Error};
 use toml::Table;
 
 const TSLINK_CARGO_KEY: &str = "tslink";
+const PACKAGE_CARGO_KEY: &str = "package";
+const METADATA_CARGO_KEY: &str = "metadata";
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum SnakeCaseNaming {
@@ -89,40 +91,48 @@ pub struct Cfg {
 
 impl Cfg {
     pub fn new(cargo: &Table) -> Self {
-        cargo
-            .get(TSLINK_CARGO_KEY)
-            .and_then(|v| v.as_table())
-            .map(|settings| Cfg {
-                node: settings
-                    .get("node")
-                    .and_then(|v| v.as_str().map(|v| v.to_string())),
-                snake_case_naming: settings
-                    .get("snake_case_naming")
-                    .and_then(|v| v.as_str().map(|v| v.to_string())),
-                exception_suppression: settings
-                    .get("exception_suppression")
-                    .and_then(|v| v.as_bool())
-                    .unwrap_or_default(),
-                int_over_32_as_big_int: settings
-                    .get("int_over_32_as_big_int")
-                    .and_then(|v| v.as_bool())
-                    .unwrap_or_default(),
-                type_map: settings
-                    .get("type_map")
-                    .and_then(|v| v.as_table())
-                    .map(|m| {
-                        m.iter()
-                            .filter_map(|(key, value)| {
-                                value.as_str().map(|v| (key.clone(), v.to_string()))
-                            })
-                            .collect()
-                    })
-                    .unwrap_or_default(),
-                enum_representation: settings
-                    .get("enum_representation")
-                    .and_then(|v| v.as_str().map(|s| s.try_into().unwrap_or_default()))
-                    .unwrap_or_default(),
-            })
-            .unwrap_or_default()
+        if cargo.contains_key(TSLINK_CARGO_KEY) {
+            // Support 0.4.1 > versions
+            cargo.get(TSLINK_CARGO_KEY)
+        } else {
+            // Default settings place after 0.4.1
+            cargo
+                .get(PACKAGE_CARGO_KEY)
+                .and_then(|p| p.get(METADATA_CARGO_KEY))
+                .and_then(|m| m.get(TSLINK_CARGO_KEY))
+        }
+        .and_then(|v| v.as_table())
+        .map(|settings| Cfg {
+            node: settings
+                .get("node")
+                .and_then(|v| v.as_str().map(|v| v.to_string())),
+            snake_case_naming: settings
+                .get("snake_case_naming")
+                .and_then(|v| v.as_str().map(|v| v.to_string())),
+            exception_suppression: settings
+                .get("exception_suppression")
+                .and_then(|v| v.as_bool())
+                .unwrap_or_default(),
+            int_over_32_as_big_int: settings
+                .get("int_over_32_as_big_int")
+                .and_then(|v| v.as_bool())
+                .unwrap_or_default(),
+            type_map: settings
+                .get("type_map")
+                .and_then(|v| v.as_table())
+                .map(|m| {
+                    m.iter()
+                        .filter_map(|(key, value)| {
+                            value.as_str().map(|v| (key.clone(), v.to_string()))
+                        })
+                        .collect()
+                })
+                .unwrap_or_default(),
+            enum_representation: settings
+                .get("enum_representation")
+                .and_then(|v| v.as_str().map(|s| s.try_into().unwrap_or_default()))
+                .unwrap_or_default(),
+        })
+        .unwrap_or_default()
     }
 }

@@ -97,7 +97,7 @@ export interface TestingA {
 }
 ```
 
-> **Note**. Actually type `u64`, `i64`, `usize` and `isize` should be represented as `BigInt`, but in most cases `number` is used instead. To make your code safe, it's better to represent it as `BigInt`. To do it, you can use the setting `int_over_32_as_big_int` in `Cargo.toml` file (section `[tslink]`) with the value `true` (default - `false`).
+> **Note**. Actually type `u64`, `i64`, `usize` and `isize` should be represented as `BigInt`, but in most cases `number` is used instead. To make your code safe, it's better to represent it as `BigInt`. To do it, you can use the setting `int_over_32_as_big_int` in `Cargo.toml` file (section `[package.metadata.tslink]`) with the value `true` (default - `false`).
 
 ## Structs
 
@@ -780,7 +780,7 @@ impl MyScruct {
 
 Please **note**, `node-bindgen` by default applies snake case naming to methods. You should use `#[tslink(snake_case_naming)]` to consider this moment.
 
-By default `node-bindgen` creates `index.node` in `./dist` folder of your `root`. In `Cargo.toml` file should be defined suitable path in section `[tslink]`:
+By default `node-bindgen` creates `index.node` in `./dist` folder of your `root`. In `Cargo.toml` file should be defined suitable path in section `[package.metadata.tslink]`:
 
 File: `./Cargo.toml` (in a `root` of project):
 
@@ -791,7 +791,7 @@ File: `./Cargo.toml` (in a `root` of project):
 [lib]
 ...
 
-[tslink]
+[package.metadata.tslink]
 node = "./dist/index.node"
 
 [dependencies]
@@ -907,7 +907,7 @@ export interface OtherStruct {
 
 ## Configuration
 
-Global configuration of `tslink` can defined in section `[tslink]` of `Cargo.toml` file in the root of your project. It's required in most cases. This settings allows to define a path to a native node module, which will be bound with an npm package.
+Global configuration of `tslink` can defined in section `[package.metadata.tslink]` of `Cargo.toml` file in the root of your project. It's required in most cases. This settings allows to define a path to a native node module, which will be bound with an npm package.
 
 But if tslink is used only to generate interfaces in `*.ts` files, a configuration file can be skipped.
 
@@ -923,7 +923,7 @@ edition = "2021"
 crate-type = ["cdylib"]
 path = "rs/lib.rs"
 
-[tslink]
+[package.metadata.tslink]
 # [required] path to native node module
 node = "./dist/index.node"
 
@@ -943,6 +943,8 @@ int_over_32_as_big_int = true
 | `snake_case_naming = "rule"`          |          | "`methods`", "`fields`" or "`methods,fields`" | global rule of renaming                          |
 | `exception_suppression = true`        |          | `bool`                                        | global rule for javascript exception suppression |
 | `int_over_32_as_big_int = true` | | `bool` | using of BigInt type |
+
+**Note**: Prior to version `0.4.1`, the `[tslink]` section at the root level of `Cargo.toml` was used. Starting from version `0.4.2`, the default location for configuration has been moved to `[package.metadata.tslink]` to ensure full compatibility with Cargo's schema. However, all versions from `0.4.2` onward retain backward compatibility and still check the deprecated root-level `[tslink]` section. In such cases, Cargo will emit a warning about unexpected keys in the manifest.
 
 ## QA and Troubleshooting
 

@@ -1,3 +1,9 @@
+# 0.4.2 (08.06.2025)
+
+## Changes
+
+- Migrate settings to `package.metadata.tslink`
+
 # 0.4.1 (08.06.2025)
 
 ## Changes
