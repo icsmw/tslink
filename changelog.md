@@ -1,3 +1,9 @@
+# 0.4.0 (08.06.2025)
+
+## Features
+
+- Add support of `const` for primitive types
+
 # 0.3.0 (12.01.2025)
 
 ## Features
